@@ -85,15 +85,29 @@ This guide will walk you through every step to create your own Star Trek-style p
    - Follow the prompts to assign ElevenLabs voices to each character.
    - You only need to do this once per character.
 
+2. **Record Speaker Reference Audio:**
+   - For each character, record a 5-10 second WAV file:
+     - Use a good quality microphone
+     - Speak clearly in a quiet environment
+     - Save as mono WAV at 16kHz sample rate
+     - Name format: `voices/samples/character_name.wav`
+   - Update `voices/voice_config.json` with the paths
+
+3. **Validate Voice Setup:**
+   ```
+   python cli/validate_voices.py --script episodes/your_episode_id/script.json --config voices/voice_config.json
+   ```
+   - This checks that all required files and settings are correct.
+
 ---
 
 ## 7. Generate the Audio
 
 1. **Run the audio generation command:**
    ```
-   python cli_entrypoint.py generate-audio --episode your_episode_id
+   python cli/generate_voices.py --script episodes/your_episode_id/script.json --config voices/voice_config.json --outdir episodes/your_episode_id/audio
    ```
-   - This will use ElevenLabs to create all the voices and mix the audio for each scene.
+   - This will use Coqui TTS first, falling back to ElevenLabs if needed.
    - The audio files will be saved in `episodes/your_episode_id/audio/`.
 
 ---
@@ -144,7 +158,7 @@ python cli_entrypoint.py generate-script --episode ep_001
 python register_voices.py
 
 # 5. Generate audio
-python cli_entrypoint.py generate-audio --episode ep_001
+python cli/generate_voices.py --script episodes/ep_001/script.json --config voices/voice_config.json --outdir episodes/ep_001/audio
 
 # 6. Concatenate audio
 python concat_audio.py

@@ -325,14 +325,10 @@ class AudioPipeline:
         if character in self.role_to_character:
             character = self.role_to_character[character]
         
-        if not self.elevenlabs:
-            logger.error("ElevenLabs client not initialized (no API key)")
-            return None
-        
-        # Get voice ID for character
-        voice_identifier = character_voices.get(character)
-        if not voice_identifier:
-            logger.error(f"No voice found for character: {character}")
+        # Get voice config
+        voice_config = self.voice_registry.get_voice(character)
+        if not voice_config:
+            logger.error(f"No voice config found for character: {character}")
             return None
         
         try:
@@ -341,14 +337,39 @@ class AudioPipeline:
             
             # Generate audio file name
             safe_character = ''.join(c for c in character.lower().replace(' ', '_') if c.isalnum() or c == '_')
-            audio_file = temp_dir / f"line_{line_index:03d}_{safe_character}.mp3"
+            audio_file = temp_dir / f"line_{line_index:03d}_{safe_character}.wav"
             
-            # Generate speech
-            audio_data = self.voice_registry.generate_speech(
-                text=content,
-                voice_identifier=voice_identifier,
-                output_path=str(audio_file)
-            )
+            # Try Coqui TTS first
+            try:
+                from tts_engine import get_coqui_engine
+                coqui_engine = get_coqui_engine()
+                coqui_engine.synth(
+                    text=content,
+                    speaker_wav=voice_config.get('speaker_wav'),
+                    language=voice_config.get('language', 'en'),
+                    output_path=str(audio_file)
+                )
+                logger.info(f"Generated with Coqui: {audio_file}")
+            except Exception as e:
+                logger.warning(f"Coqui TTS failed: {e}")
+                
+                # Try ElevenLabs as fallback
+                if not self.elevenlabs:
+                    logger.error("ElevenLabs client not initialized (no API key)")
+                    return None
+                
+                eleven_id = voice_config.get('eleven_id')
+                if not eleven_id:
+                    logger.error(f"No ElevenLabs ID for character: {character}")
+                    return None
+                
+                # Generate speech
+                audio_data = self.voice_registry.generate_speech(
+                    text=content,
+                    voice_identifier=eleven_id,
+                    output_path=str(audio_file)
+                )
+                logger.info(f"Generated with ElevenLabs: {audio_file}")
             
             # Get audio duration using ffmpeg
             probe = ffmpeg.probe(str(audio_file))
