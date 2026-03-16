@@ -1,7 +1,6 @@
 # Environment variables
 .env
-.env.*
-
+# Allow example environment file to be versioned
 # Python
 __pycache__/
 *.py[cod]
@@ -28,16 +27,32 @@ wheels/
 *.log
 logs/
 
+# Generated / local runtime data (keep out of git)
+# NOTE: These directories can be re-created by running the CLI.
+books/
+analysis/
+episodes/
+output/
+temp/
+
 # Audio files
 *.wav
 *.mp3
 *.ogg
 *.flac
+*.m4a
+*.aac
+*.mp4
 audio/
 episodes/*/audio/
 
+# Images / media exports
+*.jpeg
+*.jpg
+*.png
+*.webp
+
 # Temporary files
-temp/
 *.tmp
 
 # IDE

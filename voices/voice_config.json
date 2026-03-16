@@ -1,0 +1,46 @@
+{
+    "engine_order": ["eleven"],
+    "characters": {
+        "naren": {
+            "speaker_wav": "voices/samples/naren.wav",
+            "language": "en",
+            "eleven_id": "BDKXloP9AWigbLIR7oOu"
+        },
+        "aria": {
+            "speaker_wav": "voices/samples/aria.wav",
+            "language": "en",
+            "eleven_id": "1YitDZhATV9VCMV4S1Ec"
+        },
+        "jalen": {
+            "speaker_wav": "voices/samples/jalen.wav",
+            "language": "en",
+            "eleven_id": "VALymqEutvnScP9g2ez7"
+        },
+        "elara": {
+            "speaker_wav": "voices/samples/elara.wav",
+            "language": "en",
+            "eleven_id": "kyC5kWFrQsNJTiLPfIBu"
+        },
+        "sarik": {
+            "speaker_wav": "voices/samples/sarik.wav",
+            "language": "en",
+            "eleven_id": "gONKgryu6yykB97sHxZn"
+        },
+        "narrator": {
+            "speaker_wav": "voices/samples/narrator.wav",
+            "language": "en",
+            "eleven_id": "2Z4LPBF5YDKEVrxgQCjz"
+        }
+    },
+    "audio_settings": {
+        "sample_rate": 16000,
+        "channels": 1,
+        "format": "wav",
+        "quality": "high"
+    },
+    "fallback_settings": {
+        "max_retries": 3,
+        "retry_delay": 1.0,
+        "quality_threshold": 0.7
+    }
+} 

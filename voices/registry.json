@@ -88,5 +88,185 @@
       "style": 0.0,
       "use_speaker_boost": true
     }
+  },
+  "voice_bfc80477": {
+    "voice_registry_id": "voice_bfc80477",
+    "name": "Aria T'Vel (Improved)",
+    "voice_id": "NTYYhif3Ref3SlagDJyF",
+    "description": "A Vulcan female voice that is smooth, calm, and precisely articulated. \nThe voice has a logical, measured quality typical of Vulcans, with perfect enunciation and clear \nvowel pronunciation. There is an undercurrent of warmth and emotional depth that suggests she \nunderstands emotions even while maintaining Vulcan control. The voice should sound intelligent \nand authoritative, with a calm confidence. The tone is steady and controlled, never hurried or \nemotional, but capable of subtle shifts that reveal deeper feelings. The pitch is medium to \nslightly lower for a female voice, conveying wisdom and maturity. Articulation is crisp and \nprecise, with careful pronunciation of consonants.",
+    "character_bio": "",
+    "created_at": 1766804152.5840704,
+    "updated_at": 1766804153.2096922,
+    "settings": {
+      "stability": 0.65,
+      "similarity_boost": 0.8,
+      "style": 0.15,
+      "use_speaker_boost": true
+    }
+  },
+  "voice_2369998f": {
+    "voice_registry_id": "voice_2369998f",
+    "name": "Jalen (Improved)",
+    "voice_id": "mPRt73eGyddBVa9A9CNm",
+    "description": "A male Trill voice that is warm, enthusiastic, and carries the wisdom \nof multiple lifetimes through the symbiont. The voice has a natural eagerness and curiosity that \ncan accelerate when excited about discoveries, while maintaining a foundation of ancient knowledge \nand experience. The tone is friendly and approachable, yet authoritative when needed. There's a \nslight musical quality to the voice, reflecting the Trill culture's appreciation for music and \nart. The voice should sound like it belongs to someone both youthful in energy and ancient in \nwisdom - enthusiastic but never naive. The pitch is medium, with warmth in the lower register. \nThe voice can shift between quick, excited delivery for scientific discoveries and slower, more \ncontemplative tones when sharing wisdom from past hosts.",
+    "character_bio": "",
+    "created_at": 1766804164.325254,
+    "updated_at": 1766804165.0034199,
+    "settings": {
+      "stability": 0.55,
+      "similarity_boost": 0.75,
+      "style": 0.25,
+      "use_speaker_boost": true
+    }
+  },
+  "voice_baee3fe1": {
+    "voice_registry_id": "voice_baee3fe1",
+    "name": "Naren (Improved)",
+    "voice_id": "b9MWoRWjKTSI9ipAOsJV",
+    "description": "A female Bajoran voice that is strong and confident, with the remarkable \nability to shift between commanding authority and spiritual serenity. The voice carries the weight \nof experience and resilience, reflecting someone who has survived occupation and emerged stronger. \nThere is a slight accent that reflects her Bajoran heritage - subtle but present, with a musical \nquality to the pronunciation. The voice should sound like it belongs to a leader - firm when giving \norders, compassionate when comforting, and reverent when speaking of the Prophets. The tone is \nfirm but never harsh, compassionate but never weak. The pitch is medium to slightly lower, conveying \nmaturity and strength. When speaking of spiritual matters, the voice takes on a softer, more \ncontemplative quality. When commanding, it becomes crisp and clear with authority.",
+    "character_bio": "",
+    "created_at": 1766804172.7525973,
+    "updated_at": 1766804173.374411,
+    "settings": {
+      "stability": 0.6,
+      "similarity_boost": 0.8,
+      "style": 0.3,
+      "use_speaker_boost": true
+    }
+  },
+  "voice_10072cb7": {
+    "voice_registry_id": "voice_10072cb7",
+    "name": "Elara (Improved)",
+    "voice_id": "wl2c369YHrfTBCRcQh5X",
+    "description": "A female Caitian voice that is softly musical with a subtle purring \nundertone. The voice should be soothing and gentle, with a playful lilt that can become serious \nand professional when needed. The tone reflects her species' feline nature - smooth, graceful, \nand fluid like a cat's movement. There's a warmth to the voice that makes patients feel at ease, \ncombined with clear, professional articulation that establishes medical authority. The voice has \na slight breathy quality that adds to its gentle nature. When serious or concerned, the playful \nelements fade but the warmth remains. The pitch is medium to slightly higher, with smooth \ntransitions between tones. The voice should sound like someone who is both nurturing and \ncompetent - a healer's voice.",
+    "character_bio": "",
+    "created_at": 1766804180.9897492,
+    "updated_at": 1766804181.5864425,
+    "settings": {
+      "stability": 0.5,
+      "similarity_boost": 0.75,
+      "style": 0.2,
+      "use_speaker_boost": true
+    }
+  },
+  "voice_82b5e91d": {
+    "voice_registry_id": "voice_82b5e91d",
+    "name": "Sarik (Improved)",
+    "voice_id": "RK5lOhdEvnIrQW4427LT",
+    "description": "A male El-Aurian voice that is gentle and reflective, carrying an aura \nof wisdom beyond his years. The voice is deliberate and thoughtful, with a comforting, almost \nlyrical quality that reflects his species' long lifespan and natural empathy. The tone should \nsound like someone who has seen centuries pass - patient, understanding, and deeply empathetic. \nThere's a musical quality to the voice, with smooth, flowing speech patterns. The voice should \nsound calming and reassuring, like a wise counselor or mentor. The pitch is medium to slightly \nlower, with a richness that comes from experience. The voice moves at a measured pace, never \nrushed, with pauses that feel natural and contemplative. When speaking, it sounds like each word \nis carefully chosen and meaningful.",
+    "character_bio": "",
+    "created_at": 1766804189.6057856,
+    "updated_at": 1766804190.1698751,
+    "settings": {
+      "stability": 0.7,
+      "similarity_boost": 0.8,
+      "style": 0.15,
+      "use_speaker_boost": true
+    }
+  },
+  "voice_651729a3": {
+    "voice_registry_id": "voice_651729a3",
+    "name": "Narrator (Improved)",
+    "voice_id": "JidnYYb3vc6McUQCcLcz",
+    "description": "A versatile narrator voice that is clear, authoritative, and engaging. \nThe voice should sound like a professional documentary narrator or audiobook reader - confident \nand easy to listen to for extended periods. The tone is warm but neutral, allowing the story to \ntake center stage. The voice should be articulate with excellent pronunciation, suitable for \ndescribing complex scenes and technical concepts. There should be a sense of gravitas appropriate \nfor Star Trek storytelling - serious when needed, but never melodramatic. The voice should be \nsmooth and flowing, with natural pacing that guides the listener through the narrative. The pitch \nis medium, with good projection and clarity. The voice should feel trustworthy and reliable, like \na skilled storyteller.",
+    "character_bio": "",
+    "created_at": 1766804198.0157294,
+    "updated_at": 1766804198.6095142,
+    "settings": {
+      "stability": 0.65,
+      "similarity_boost": 0.75,
+      "style": 0.1,
+      "use_speaker_boost": true
+    }
+  },
+  "voice_0cd2256a": {
+    "voice_registry_id": "voice_0cd2256a",
+    "name": "Aria T'Vel (Improved)",
+    "voice_id": "1YitDZhATV9VCMV4S1Ec",
+    "description": "A Vulcan female voice that is smooth, calm, and precisely articulated. \nThe voice has a logical, measured quality typical of Vulcans, with perfect enunciation and clear \nvowel pronunciation. There is an undercurrent of warmth and emotional depth that suggests she \nunderstands emotions even while maintaining Vulcan control. The voice should sound intelligent \nand authoritative, with a calm confidence. The tone is steady and controlled, never hurried or \nemotional, but capable of subtle shifts that reveal deeper feelings. The pitch is medium to \nslightly lower for a female voice, conveying wisdom and maturity. Articulation is crisp and \nprecise, with careful pronunciation of consonants.",
+    "character_bio": "",
+    "created_at": 1766812180.4301784,
+    "updated_at": 1766812182.3499134,
+    "settings": {
+      "stability": 0.65,
+      "similarity_boost": 0.8,
+      "style": 0.15,
+      "use_speaker_boost": true
+    }
+  },
+  "voice_998ed53a": {
+    "voice_registry_id": "voice_998ed53a",
+    "name": "Jalen (Improved)",
+    "voice_id": "VALymqEutvnScP9g2ez7",
+    "description": "A male Trill voice that is warm, enthusiastic, and carries the wisdom \nof multiple lifetimes through the symbiont. The voice has a natural eagerness and curiosity that \ncan accelerate when excited about discoveries, while maintaining a foundation of ancient knowledge \nand experience. The tone is friendly and approachable, yet authoritative when needed. There's a \nslight musical quality to the voice, reflecting the Trill culture's appreciation for music and \nart. The voice should sound like it belongs to someone both youthful in energy and ancient in \nwisdom - enthusiastic but never naive. The pitch is medium, with warmth in the lower register. \nThe voice can shift between quick, excited delivery for scientific discoveries and slower, more \ncontemplative tones when sharing wisdom from past hosts.",
+    "character_bio": "",
+    "created_at": 1766812191.7328165,
+    "updated_at": 1766812193.6469507,
+    "settings": {
+      "stability": 0.55,
+      "similarity_boost": 0.75,
+      "style": 0.25,
+      "use_speaker_boost": true
+    }
+  },
+  "voice_b7da5356": {
+    "voice_registry_id": "voice_b7da5356",
+    "name": "Naren (Improved)",
+    "voice_id": "BDKXloP9AWigbLIR7oOu",
+    "description": "A female Bajoran voice that is strong and confident, with the remarkable \nability to shift between commanding authority and spiritual serenity. The voice carries the weight \nof experience and resilience, reflecting someone who has survived occupation and emerged stronger. \nThere is a slight accent that reflects her Bajoran heritage - subtle but present, with a musical \nquality to the pronunciation. The voice should sound like it belongs to a leader - firm when giving \norders, compassionate when comforting, and reverent when speaking of the Prophets. The tone is \nfirm but never harsh, compassionate but never weak. The pitch is medium to slightly lower, conveying \nmaturity and strength. When speaking of spiritual matters, the voice takes on a softer, more \ncontemplative quality. When commanding, it becomes crisp and clear with authority.",
+    "character_bio": "",
+    "created_at": 1766812203.778685,
+    "updated_at": 1766812206.6493056,
+    "settings": {
+      "stability": 0.6,
+      "similarity_boost": 0.8,
+      "style": 0.3,
+      "use_speaker_boost": true
+    }
+  },
+  "voice_cf45f875": {
+    "voice_registry_id": "voice_cf45f875",
+    "name": "Elara (Improved)",
+    "voice_id": "kyC5kWFrQsNJTiLPfIBu",
+    "description": "A female Caitian voice that is softly musical with a subtle purring \nundertone. The voice should be soothing and gentle, with a playful lilt that can become serious \nand professional when needed. The tone reflects her species' feline nature - smooth, graceful, \nand fluid like a cat's movement. There's a warmth to the voice that makes patients feel at ease, \ncombined with clear, professional articulation that establishes medical authority. The voice has \na slight breathy quality that adds to its gentle nature. When serious or concerned, the playful \nelements fade but the warmth remains. The pitch is medium to slightly higher, with smooth \ntransitions between tones. The voice should sound like someone who is both nurturing and \ncompetent - a healer's voice.",
+    "character_bio": "",
+    "created_at": 1766812217.956458,
+    "updated_at": 1766812220.1071663,
+    "settings": {
+      "stability": 0.5,
+      "similarity_boost": 0.75,
+      "style": 0.2,
+      "use_speaker_boost": true
+    }
+  },
+  "voice_7864fa6e": {
+    "voice_registry_id": "voice_7864fa6e",
+    "name": "Sarik (Improved)",
+    "voice_id": "gONKgryu6yykB97sHxZn",
+    "description": "A male El-Aurian voice that is gentle and reflective, carrying an aura \nof wisdom beyond his years. The voice is deliberate and thoughtful, with a comforting, almost \nlyrical quality that reflects his species' long lifespan and natural empathy. The tone should \nsound like someone who has seen centuries pass - patient, understanding, and deeply empathetic. \nThere's a musical quality to the voice, with smooth, flowing speech patterns. The voice should \nsound calming and reassuring, like a wise counselor or mentor. The pitch is medium to slightly \nlower, with a richness that comes from experience. The voice moves at a measured pace, never \nrushed, with pauses that feel natural and contemplative. When speaking, it sounds like each word \nis carefully chosen and meaningful.",
+    "character_bio": "",
+    "created_at": 1766812229.2891893,
+    "updated_at": 1766812231.647247,
+    "settings": {
+      "stability": 0.7,
+      "similarity_boost": 0.8,
+      "style": 0.15,
+      "use_speaker_boost": true
+    }
+  },
+  "voice_7f798f28": {
+    "voice_registry_id": "voice_7f798f28",
+    "name": "Narrator (Improved)",
+    "voice_id": "2Z4LPBF5YDKEVrxgQCjz",
+    "description": "A versatile narrator voice that is clear, authoritative, and engaging. \nThe voice should sound like a professional documentary narrator or audiobook reader - confident \nand easy to listen to for extended periods. The tone is warm but neutral, allowing the story to \ntake center stage. The voice should be articulate with excellent pronunciation, suitable for \ndescribing complex scenes and technical concepts. There should be a sense of gravitas appropriate \nfor Star Trek storytelling - serious when needed, but never melodramatic. The voice should be \nsmooth and flowing, with natural pacing that guides the listener through the narrative. The pitch \nis medium, with good projection and clarity. The voice should feel trustworthy and reliable, like \na skilled storyteller.",
+    "character_bio": "",
+    "created_at": 1766812262.6302063,
+    "updated_at": 1766812265.2569954,
+    "settings": {
+      "stability": 0.65,
+      "similarity_boost": 0.75,
+      "style": 0.1,
+      "use_speaker_boost": true
+    }
   }
 }

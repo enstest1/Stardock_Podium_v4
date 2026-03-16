@@ -86,14 +86,32 @@ class AudioPipeline:
             self.elevenlabs = None
             self.client = None
         
-        # Role to character mapping
+        # Role to character mapping (using lowercase keys to match voice_config.json)
         self.role_to_character = {
-            "COMMANDING OFFICER": "Aria T'Vel",
-            "SCIENCE OFFICER": "Jalen",
-            "SECURITY OFFICER": "Naren",
-            "CHIEF MEDICAL OFFICER": "Elara",
-            "COMMUNICATIONS SPECIALIST": "Sarik"
+            "COMMANDING OFFICER": "aria",
+            "SCIENCE OFFICER": "jalen",
+            "SECURITY OFFICER": "naren",
+            "CHIEF MEDICAL OFFICER": "elara",
+            "COMMUNICATIONS SPECIALIST": "sarik"
         }
+        
+        # Load voice_config.json for voice IDs
+        self.voice_config_path = Path("voices/voice_config.json")
+        self.voice_config = self._load_voice_config()
+    
+    def _load_voice_config(self) -> Dict[str, Any]:
+        """Load voice configuration from voice_config.json.
+        
+        Returns:
+            Voice configuration dictionary
+        """
+        if self.voice_config_path.exists():
+            try:
+                with open(self.voice_config_path, 'r') as f:
+                    return json.load(f)
+            except Exception as e:
+                logger.error(f"Error loading voice config: {e}")
+        return {}
     
     def generate_episode_audio(self, episode_id: str, options: Dict[str, Any]) -> Dict[str, Any]:
         """Generate audio for a complete episode.
@@ -164,9 +182,9 @@ class AudioPipeline:
             # Sort scene results by scene index
             scene_results.sort(key=lambda r: r.get("scene_index", 0))
             
-            # Add intro and outro music
-            intro_file = self._add_intro_music(episode_id, audio_dir)
-            outro_file = self._add_outro_music(episode_id, audio_dir)
+            # Create intro and outro segments (with narration and music)
+            intro_file = self._create_intro_segment(episode_id)
+            outro_file = self._create_outro_segment()
             
             # Assemble full episode
             episode_file = self._assemble_episode(
@@ -283,7 +301,11 @@ class AudioPipeline:
         
         try:
             if line_type == 'dialogue':
-                character = line.get('character', '')
+                # Script uses 'speaker' field, but fall back to 'character' for compatibility
+                character = line.get('speaker', line.get('character', ''))
+                if not character:
+                    logger.warning(f"Empty speaker field in dialogue line {line_index}")
+                    return None
                 return self._generate_character_audio(
                     character, content, line_index, temp_dir, character_voices
                 )
@@ -321,14 +343,56 @@ class AudioPipeline:
         Returns:
             AudioClip or None if generation failed
         """
+        # Extract role from character name if it contains extra info (e.g., "CAPTAIN T'LARA" -> "COMMANDING OFFICER")
+        # Also handle special cases like "KAI (V.O.)" -> narrator
+        original_character = character
+        if "(V.O.)" in character or "(VO)" in character:
+            # Voice-over characters, use narrator voice
+            character = "narrator"
+        elif "CAPTAIN" in character.upper() or "COMMANDING OFFICER" in character.upper():
+            character = "COMMANDING OFFICER"
+        elif "SCIENCE OFFICER" in character.upper():
+            character = "SCIENCE OFFICER"
+        elif "SECURITY OFFICER" in character.upper():
+            character = "SECURITY OFFICER"
+        elif "COMMUNICATIONS SPECIALIST" in character.upper():
+            character = "COMMUNICATIONS SPECIALIST"
+        elif "CHIEF MEDICAL OFFICER" in character.upper() or "MEDICAL OFFICER" in character.upper():
+            character = "CHIEF MEDICAL OFFICER"
+        elif "KAI" in character.upper():
+            # Kai is a Bajoran religious leader, use narrator voice
+            character = "narrator"
+        
         # Map role to character name if needed
         if character in self.role_to_character:
             character = self.role_to_character[character]
+        elif character == "narrator":
+            # Narrator is already the character name, keep it
+            pass
+        else:
+            # Try the original character name
+            character = original_character
         
-        # Get voice config
-        voice_config = self.voice_registry.get_voice(character)
+        # Normalize character name to lowercase for voice_config.json lookup
+        character_key = character.lower().replace(' ', '_').replace("'", "")
+        # Also try with just lowercase
+        character_key_simple = character.lower()
+        
+        # Get voice config from voice_config.json
+        voice_config = None
+        if self.voice_config and 'characters' in self.voice_config:
+            # Try full key first (e.g., "aria_t_vel")
+            if character_key in self.voice_config['characters']:
+                voice_config = self.voice_config['characters'][character_key]
+            # Try simple lowercase (e.g., "aria")
+            elif character_key_simple in self.voice_config['characters']:
+                voice_config = self.voice_config['characters'][character_key_simple]
+            # Try original character name
+            elif character in self.voice_config['characters']:
+                voice_config = self.voice_config['characters'][character]
+        
         if not voice_config:
-            logger.error(f"No voice config found for character: {character}")
+            logger.error(f"No voice config found for character: {character} (tried keys: {character_key}, {character_key_simple}, {character})")
             return None
         
         try:
@@ -339,37 +403,43 @@ class AudioPipeline:
             safe_character = ''.join(c for c in character.lower().replace(' ', '_') if c.isalnum() or c == '_')
             audio_file = temp_dir / f"line_{line_index:03d}_{safe_character}.wav"
             
-            # Try Coqui TTS first
+            # Use ElevenLabs directly (since we're configured for ElevenLabs only)
+            if not self.client:
+                logger.error("ElevenLabs client not initialized (no API key)")
+                return None
+            
+            eleven_id = voice_config.get('eleven_id')
+            if not eleven_id:
+                logger.error(f"No ElevenLabs ID for character: {character}")
+                return None
+            
+            # Generate speech directly using ElevenLabs API
             try:
-                from tts_engine import get_coqui_engine
-                coqui_engine = get_coqui_engine()
-                coqui_engine.synth(
+                from elevenlabs import VoiceSettings
+                
+                # Generate audio using ElevenLabs text_to_speech API
+                audio_chunks = self.client.text_to_speech.convert(
+                    voice_id=eleven_id,
                     text=content,
-                    speaker_wav=voice_config.get('speaker_wav'),
-                    language=voice_config.get('language', 'en'),
-                    output_path=str(audio_file)
+                    model_id="eleven_multilingual_v2",
+                    voice_settings=VoiceSettings(
+                        stability=0.5,
+                        similarity_boost=0.75,
+                        style=0.0,
+                        use_speaker_boost=True
+                    )
                 )
-                logger.info(f"Generated with Coqui: {audio_file}")
-            except Exception as e:
-                logger.warning(f"Coqui TTS failed: {e}")
                 
-                # Try ElevenLabs as fallback
-                if not self.elevenlabs:
-                    logger.error("ElevenLabs client not initialized (no API key)")
-                    return None
+                # Write audio chunks to file
+                with open(audio_file, 'wb') as f:
+                    for chunk in audio_chunks:
+                        f.write(chunk)
                 
-                eleven_id = voice_config.get('eleven_id')
-                if not eleven_id:
-                    logger.error(f"No ElevenLabs ID for character: {character}")
-                    return None
-                
-                # Generate speech
-                audio_data = self.voice_registry.generate_speech(
-                    text=content,
-                    voice_identifier=eleven_id,
-                    output_path=str(audio_file)
-                )
                 logger.info(f"Generated with ElevenLabs: {audio_file}")
+                
+            except Exception as e:
+                logger.error(f"ElevenLabs TTS generation failed: {e}")
+                return None
             
             # Get audio duration using ffmpeg
             probe = ffmpeg.probe(str(audio_file))
@@ -449,13 +519,16 @@ class AudioPipeline:
                         scene_dir: Path) -> Optional[AudioClip]:
         """Find or generate a sound effect based on description.
         
+        First checks for existing files in assets, then generates using ElevenLabs
+        if not found. Generated effects are cached for future use.
+        
         Args:
             description: Sound effect description
             line_index: Index of the line
             scene_dir: Directory for scene audio
         
         Returns:
-            AudioClip or None if not found
+            AudioClip or None if generation fails
         """
         # Clean description to create a search key
         search_key = description.lower().replace(' ', '_').replace('.', '').replace(',', '')
@@ -478,6 +551,7 @@ class AudioPipeline:
                         with open(dest_file, 'wb') as dst:
                             dst.write(src.read())
                     
+                    logger.info(f"Using existing sound effect: {effect_file.name}")
                     return AudioClip(
                         path=str(dest_file),
                         type='sound_effect',
@@ -488,13 +562,52 @@ class AudioPipeline:
                 
                 except Exception as e:
                     logger.error(f"Error processing sound effect: {e}")
+        
+        # No existing file found - generate using ElevenLabs
+        if not self.client:
+            logger.warning("ElevenLabs client not available for sound effect generation")
+            return None
+        
+        try:
+            logger.info(f"Generating sound effect with ElevenLabs: {description}")
             
-        # If no matching sound effect found
-        logger.warning(f"No sound effect found for: {description}")
+            # Generate sound effect using ElevenLabs API
+            audio_chunks = self.client.text_to_sound_effects.convert(
+                text=description,
+                output_format="mp3_44100_128",
+                duration_seconds=2.0,  # Default 2 seconds for most effects
+                prompt_influence=0.5  # Balance between prompt adherence and variety
+            )
+            
+            # Save to assets directory for reuse (cache)
+            cached_file = self.sound_effects_dir / f"{search_key}.mp3"
+            with open(cached_file, 'wb') as f:
+                for chunk in audio_chunks:
+                    f.write(chunk)
+            
+            logger.info(f"Generated and cached sound effect: {cached_file.name}")
+            
+            # Get audio duration using ffmpeg
+            probe = ffmpeg.probe(str(cached_file))
+            duration = float(probe['format']['duration'])
+            
+            # Copy to scene directory
+            dest_file = scene_dir / f"sfx_{line_index:03d}.mp3"
+            with open(cached_file, 'rb') as src:
+                with open(dest_file, 'wb') as dst:
+                    dst.write(src.read())
+            
+            return AudioClip(
+                path=str(dest_file),
+                type='sound_effect',
+                duration=duration,
+                line_index=line_index,
+                volume=1.2  # Slightly louder than dialogue
+            )
         
-        # TODO: Implement synthesized sound effect option when no match found
-        
-        return None
+        except Exception as e:
+            logger.error(f"Error generating sound effect with ElevenLabs: {e}")
+            return None
     
     def _add_scene_ambience(self, scene: Dict[str, Any], scene_dir: Path) -> Optional[AudioClip]:
         """Add ambient sound for the scene.
@@ -563,6 +676,7 @@ class AudioPipeline:
                         with open(dest_file, 'wb') as dst:
                             dst.write(src.read())
                     
+                    logger.info(f"Using existing ambience: {ambience_file.name}")
                     return AudioClip(
                         path=str(dest_file),
                         type='ambience',
@@ -573,9 +687,53 @@ class AudioPipeline:
                 except Exception as e:
                     logger.error(f"Error processing ambience: {e}")
         
-        # If no matching ambience found
-        logger.warning(f"No ambience found for setting: {setting}")
-        return None
+        # No existing file found - generate using ElevenLabs
+        if not self.client:
+            logger.warning("ElevenLabs client not available for ambience generation")
+            return None
+        
+        try:
+            # Create description from keywords for generation
+            ambience_description = f"{', '.join(keywords[:3])}, ambient background"
+            logger.info(f"Generating ambience with ElevenLabs: {ambience_description}")
+            
+            # Generate ambience using ElevenLabs API (longer duration for more natural looping)
+            audio_chunks = self.client.text_to_sound_effects.convert(
+                text=ambience_description,
+                output_format="mp3_44100_128",
+                duration_seconds=20.0,  # 20 seconds for more natural loops (max is 22)
+                prompt_influence=0.4  # Lower influence for more variety in loops
+            )
+            
+            # Save to assets directory for reuse (cache)
+            cache_key = '_'.join(keywords[:2]) if keywords else 'background'
+            cached_file = self.ambience_dir / f"{cache_key}.mp3"
+            with open(cached_file, 'wb') as f:
+                for chunk in audio_chunks:
+                    f.write(chunk)
+            
+            logger.info(f"Generated and cached ambience: {cached_file.name}")
+            
+            # Get audio duration using ffmpeg
+            probe = ffmpeg.probe(str(cached_file))
+            duration = float(probe['format']['duration'])
+            
+            # Copy to scene directory
+            dest_file = scene_dir / f"ambience.mp3"
+            with open(cached_file, 'rb') as src:
+                with open(dest_file, 'wb') as dst:
+                    dst.write(src.read())
+            
+            return AudioClip(
+                path=str(dest_file),
+                type='ambience',
+                duration=duration,
+                volume=0.3  # Lower volume for background
+            )
+        
+        except Exception as e:
+            logger.error(f"Error generating ambience with ElevenLabs: {e}")
+            return None
     
     def _mix_scene_audio(self, line_clips: List[AudioClip], 
                         ambience_clip: Optional[AudioClip],
@@ -618,20 +776,56 @@ class AudioPipeline:
                 .run()
             )
             
-            # Build concatenation file list
+            # Process clips with fade effects (especially for sound effects)
+            processed_clips = []
+            temp_dir = output_file.parent / "processed"
+            temp_dir.mkdir(exist_ok=True)
+            
+            for i, clip in enumerate(line_clips):
+                clip_path = Path(clip.path)
+                processed_path = temp_dir / f"processed_{i:03d}.mp3"
+                
+                # Add fade in/out for sound effects to prevent abrupt cuts
+                if clip.type == 'sound_effect':
+                    fade_in = 0.05  # 50ms fade in
+                    fade_out = 0.2  # 200ms fade out for smooth stop
+                    clip_duration = clip.duration
+                    
+                    # Ensure fade out doesn't exceed clip duration
+                    if clip_duration <= fade_out:
+                        fade_out = clip_duration * 0.3  # Use 30% of duration if too short
+                    
+                    # Apply fade in/out to sound effects
+                    (
+                        ffmpeg
+                        .input(str(clip_path))
+                        .filter('afade', t='in', st=0, d=fade_in)
+                        .filter('afade', t='out', st=max(0, clip_duration - fade_out), d=fade_out)
+                        .output(str(processed_path), acodec='libmp3lame', ar=44100, b='192k')
+                        .overwrite_output()
+                        .global_args('-loglevel', 'error')
+                        .run()
+                    )
+                    processed_clips.append(processed_path)
+                else:
+                    # For dialogue/narration, use original path (no fade needed)
+                    processed_clips.append(clip_path)
+            
+            # Build concatenation file list with processed clips
             concat_file = output_file.parent / "concat.txt"
-            with open(concat_file, 'w') as f:
-                # Add each clip followed by silence
-                for clip in line_clips:
-                    f.write(f"file '{os.path.abspath(clip.path)}'\n")
+            with open(concat_file, 'w', encoding='utf-8') as f:
+                # Add each processed clip followed by silence
+                for clip_path in processed_clips:
+                    abs_path = Path(clip_path).resolve()
+                    f.write(f"file '{abs_path.as_posix()}'\n")
                     f.write(f"file '{os.path.abspath(silence_file)}'\n")
             
-            # Concatenate clips with silence between
+            # Concatenate clips with silence between (re-encode for compatibility)
             dialogue_file = output_file.parent / "dialogue.mp3"
             (
                 ffmpeg
                 .input(str(concat_file), format='concat', safe=0)
-                .output(str(dialogue_file), c='copy')
+                .output(str(dialogue_file), acodec='libmp3lame', ar=44100, b='192k')
                 .overwrite_output()
                 .global_args('-loglevel', 'error')
                 .run()
@@ -639,46 +833,50 @@ class AudioPipeline:
             
             # If we have ambience, mix it with the dialogue
             if ambience_clip:
-                # If ambience is shorter than total duration, loop it
+                # If ambience is shorter than total duration, loop it seamlessly
                 if ambience_clip.duration < total_duration:
+                    ambience_path = Path(ambience_clip.path).resolve()
                     looped_ambience = output_file.parent / "looped_ambience.mp3"
-                    loop_count = int(total_duration / ambience_clip.duration) + 1
                     
-                    # Create concat file for looping
-                    loop_concat = output_file.parent / "loop_concat.txt"
-                    with open(loop_concat, 'w') as f:
-                        for _ in range(loop_count):
-                            f.write(f"file '{ambience_clip.path}'\n")
-                    
-                    # Generate looped ambience
+                    # Use seamless looping with aloop filter for natural sound
                     (
                         ffmpeg
-                        .input(str(loop_concat), format='concat', safe=0)
-                        .output(str(looped_ambience), c='copy', t=str(total_duration))
+                        .input(str(ambience_path))
+                        .filter('aloop', loop=-1, size=2e+09)  # Loop infinitely until cut by duration
+                        .output(str(looped_ambience), t=str(total_duration), acodec='libmp3lame', ar=44100, b='128k')
                         .overwrite_output()
                         .global_args('-loglevel', 'error')
                         .run()
                     )
                     
                     # Mix dialogue and looped ambience
+                    dialogue_stream = ffmpeg.input(str(dialogue_file))
+                    ambience_stream = ffmpeg.input(str(looped_ambience))
                     (
-                        ffmpeg
-                        .input(str(dialogue_file))
-                        .input(str(looped_ambience))
-                        .filter_complex(f'[0:a][1:a]amix=inputs=2:duration=first:weights={1}\\\ {ambience_clip.volume}')
-                        .output(str(output_file), ar=44100)
+                        ffmpeg.output(
+                            dialogue_stream,
+                            ambience_stream,
+                            str(output_file),
+                            filter_complex=f'[0:a]volume=1.0[a0];[1:a]volume={ambience_clip.volume}[a1];[a0][a1]amix=inputs=2:duration=first',
+                            ar=44100
+                        )
                         .overwrite_output()
                         .global_args('-loglevel', 'error')
                         .run()
                     )
                 else:
                     # Mix dialogue and ambience directly
+                    ambience_path = Path(ambience_clip.path).resolve()
+                    dialogue_stream = ffmpeg.input(str(dialogue_file))
+                    ambience_stream = ffmpeg.input(str(ambience_path))
                     (
-                        ffmpeg
-                        .input(str(dialogue_file))
-                        .input(str(ambience_clip.path))
-                        .filter_complex(f'[0:a][1:a]amix=inputs=2:duration=first:weights={1}\\\ {ambience_clip.volume}')
-                        .output(str(output_file), ar=44100)
+                        ffmpeg.output(
+                            dialogue_stream,
+                            ambience_stream,
+                            str(output_file),
+                            filter_complex=f'[0:a]volume=1.0[a0];[1:a]volume={ambience_clip.volume}[a1];[a0][a1]amix=inputs=2:duration=first',
+                            ar=44100
+                        )
                         .overwrite_output()
                         .global_args('-loglevel', 'error')
                         .run()
@@ -703,6 +901,377 @@ class AudioPipeline:
         except Exception as e:
             logger.error(f"Error mixing scene audio: {e}")
             return 0.0
+    
+    def _generate_intro_narration(self, episode_id: str) -> Optional[Path]:
+        """Generate intro narration with episode information.
+        
+        Args:
+            episode_id: ID of the episode
+            
+        Returns:
+            Path to the intro narration audio file or None if failed
+        """
+        try:
+            # Get episode data
+            episode = get_episode(episode_id)
+            if not episode:
+                logger.error(f"Episode not found: {episode_id}")
+                return None
+            
+            # Extract episode information
+            episode_number = episode.get('episode_number', 1)
+            created_at = episode.get('created_at', time.time())
+            
+            # Format date from timestamp
+            from datetime import datetime
+            date_str = datetime.fromtimestamp(created_at).strftime("%B %d, %Y")
+            
+            # Create narration text (TNG style)
+            narration_text = (
+                f"This is the logs of the Celestial Temple. "
+                f"Journeys through the Gamma Quadrant. "
+                f"Star date: {date_str}. "
+                f"Episode number {episode_number}."
+            )
+            
+            # Get narrator voice ID from voice config
+            narrator_config = self.voice_config.get('characters', {}).get('narrator', {})
+            narrator_voice_id = narrator_config.get('eleven_id')
+            
+            if not narrator_voice_id:
+                logger.error("No narrator voice ID found in voice config")
+                return None
+            
+            # Generate narration audio
+            intro_narration_file = self.assets_dir / "music" / "intro_narration.mp3"
+            intro_narration_file.parent.mkdir(exist_ok=True, parents=True)
+            
+            # Generate speech using ElevenLabs
+            if not self.client:
+                logger.error("ElevenLabs client not initialized")
+                return None
+            
+            try:
+                audio_data = self.client.text_to_speech.convert(
+                    voice_id=narrator_voice_id,
+                    text=narration_text,
+                    model_id="eleven_multilingual_v2"
+                )
+                
+                # Save audio file
+                with open(intro_narration_file, 'wb') as f:
+                    if hasattr(audio_data, '__iter__'):
+                        for chunk in audio_data:
+                            f.write(chunk)
+                    else:
+                        f.write(audio_data)
+                
+                logger.info(f"Generated intro narration: {intro_narration_file}")
+                return intro_narration_file
+                
+            except Exception as e:
+                logger.error(f"Error generating intro narration: {e}")
+                return None
+                
+        except Exception as e:
+            logger.error(f"Error generating intro narration: {e}")
+            return None
+    
+    def _generate_outro_narration(self) -> Optional[Path]:
+        """Generate outro narration.
+        
+        Returns:
+            Path to the outro narration audio file or None if failed
+        """
+        try:
+            # Create outro narration text
+            narration_text = (
+                "End of transmission. "
+                "The Celestial Temple awaits our next journey through the stars."
+            )
+            
+            # Get narrator voice ID from voice config
+            narrator_config = self.voice_config.get('characters', {}).get('narrator', {})
+            narrator_voice_id = narrator_config.get('eleven_id')
+            
+            if not narrator_voice_id:
+                logger.error("No narrator voice ID found in voice config")
+                return None
+            
+            # Generate narration audio (only generate once, reuse if exists)
+            outro_narration_file = self.assets_dir / "music" / "outro_narration.mp3"
+            if outro_narration_file.exists():
+                logger.info(f"Reusing existing outro narration: {outro_narration_file}")
+                return outro_narration_file
+            
+            outro_narration_file.parent.mkdir(exist_ok=True, parents=True)
+            
+            # Generate speech using ElevenLabs
+            if not self.client:
+                logger.error("ElevenLabs client not initialized")
+                return None
+            
+            try:
+                audio_data = self.client.text_to_speech.convert(
+                    voice_id=narrator_voice_id,
+                    text=narration_text,
+                    model_id="eleven_multilingual_v2"
+                )
+                
+                # Save audio file
+                with open(outro_narration_file, 'wb') as f:
+                    if hasattr(audio_data, '__iter__'):
+                        for chunk in audio_data:
+                            f.write(chunk)
+                    else:
+                        f.write(audio_data)
+                
+                logger.info(f"Generated outro narration: {outro_narration_file}")
+                return outro_narration_file
+                
+            except Exception as e:
+                logger.error(f"Error generating outro narration: {e}")
+                return None
+                
+        except Exception as e:
+            logger.error(f"Error generating outro narration: {e}")
+            return None
+    
+    def _create_intro_segment(self, episode_id: str) -> Optional[Path]:
+        """Create complete intro segment with music and narration.
+        
+        Note: Intro is regenerated per episode since it includes episode-specific info.
+        
+        Args:
+            episode_id: ID of the episode
+            
+        Returns:
+            Path to the complete intro segment or None if failed
+        """
+        # Store intro in episode-specific location since it includes episode info
+        episode_dir = self.episodes_dir / episode_id / "audio"
+        episode_dir.mkdir(exist_ok=True, parents=True)
+        intro_file = episode_dir / "intro_complete.mp3"
+        
+        try:
+            # Generate narration
+            narration_file = self._generate_intro_narration(episode_id)
+            if not narration_file:
+                logger.warning("Could not generate intro narration")
+                narration_file = None
+            
+            # Look for theme music
+            theme_music = None
+            music_matches = list(self.music_dir.glob("*theme*.mp3")) + \
+                          list(self.music_dir.glob("*intro*.mp3")) + \
+                          list(self.music_dir.glob("*opening*.mp3"))
+            
+            if music_matches:
+                theme_music = music_matches[0]
+                logger.info(f"Using theme music: {theme_music}")
+            
+            # If we have both music and narration, use TNG style: narration first, then music
+            if theme_music and narration_file:
+                intro_file.parent.mkdir(exist_ok=True, parents=True)
+                
+                # Get narration duration
+                narration_probe = ffmpeg.probe(str(narration_file))
+                narration_duration = float(narration_probe['format']['duration'])
+                
+                # Create music segment (15-20 seconds with fade in/out)
+                music_duration = 18.0  # 18 seconds of music
+                music_stream = (
+                    ffmpeg
+                    .input(str(theme_music))
+                    .filter('afade', t='in', st=0, d=2)  # 2 second fade in
+                    .filter('afade', t='out', st=music_duration - 2, d=2)  # 2 second fade out
+                )
+                
+                # Concatenate: narration first, then music (TNG style)
+                concat_file = intro_file.parent / "intro_concat.txt"
+                with open(concat_file, 'w', encoding='utf-8') as f:
+                    f.write(f"file '{Path(narration_file).resolve().as_posix()}'\n")
+                
+                # Create temporary music file for concatenation
+                temp_dir = self.assets_dir / "music" / "temp"
+                temp_dir.mkdir(exist_ok=True, parents=True)
+                music_trimmed = temp_dir / "intro_music.mp3"
+                (
+                    music_stream
+                    .output(str(music_trimmed), t=str(music_duration), acodec='libmp3lame', ar=44100, b='192k')
+                    .overwrite_output()
+                    .global_args('-loglevel', 'error')
+                    .run()
+                )
+                
+                # Add music to concat file
+                with open(concat_file, 'a', encoding='utf-8') as f:
+                    f.write(f"file '{music_trimmed.resolve().as_posix()}'\n")
+                
+                # Concatenate narration + music
+                (
+                    ffmpeg
+                    .input(str(concat_file), format='concat', safe=0)
+                    .output(str(intro_file), acodec='libmp3lame', ar=44100, b='192k')
+                    .overwrite_output()
+                    .global_args('-loglevel', 'error')
+                    .run()
+                )
+                
+                # Cleanup
+                if music_trimmed.exists():
+                    music_trimmed.unlink()
+                if concat_file.exists():
+                    concat_file.unlink()
+                
+            elif narration_file:
+                # Just use narration if no music
+                intro_file.parent.mkdir(exist_ok=True, parents=True)
+                (
+                    ffmpeg
+                    .input(str(narration_file))
+                    .output(str(intro_file), acodec='libmp3lame', b='192k')
+                    .overwrite_output()
+                    .global_args('-loglevel', 'error')
+                    .run()
+                )
+            elif theme_music:
+                # Just use music if no narration
+                intro_file.parent.mkdir(exist_ok=True, parents=True)
+                # Trim to 15 seconds
+                (
+                    ffmpeg
+                    .input(str(theme_music))
+                    .filter('afade', t='in', st=0, d=1)
+                    .filter('afade', t='out', st=14, d=1)
+                    .output(str(intro_file), t='15', acodec='libmp3lame', b='192k')
+                    .overwrite_output()
+                    .global_args('-loglevel', 'error')
+                    .run()
+                )
+            else:
+                logger.warning("No music or narration available for intro")
+                return None
+            
+            logger.info(f"Created complete intro segment: {intro_file}")
+            return intro_file
+            
+        except Exception as e:
+            logger.error(f"Error creating intro segment: {e}")
+            return None
+    
+    def _create_outro_segment(self) -> Optional[Path]:
+        """Create complete outro segment with music and narration.
+        
+        Returns:
+            Path to the complete outro segment or None if failed
+        """
+        outro_file = self.assets_dir / "music" / "outro_complete.mp3"
+        
+        # Check if outro already exists (reuse it)
+        if outro_file.exists():
+            logger.info(f"Reusing existing outro: {outro_file}")
+            return outro_file
+        
+        try:
+            # Generate narration
+            narration_file = self._generate_outro_narration()
+            if not narration_file:
+                logger.warning("Could not generate outro narration")
+                narration_file = None
+            
+            # Look for theme music
+            theme_music = None
+            music_matches = list(self.music_dir.glob("*theme*.mp3")) + \
+                          list(self.music_dir.glob("*outro*.mp3")) + \
+                          list(self.music_dir.glob("*closing*.mp3"))
+            
+            if music_matches:
+                theme_music = music_matches[0]
+                logger.info(f"Using theme music: {theme_music}")
+            
+            # If we have both music and narration, mix them
+            if theme_music and narration_file:
+                # Create temp directory
+                temp_dir = self.assets_dir / "music" / "temp"
+                temp_dir.mkdir(exist_ok=True, parents=True)
+                
+                # Get durations
+                narration_probe = ffmpeg.probe(str(narration_file))
+                narration_duration = float(narration_probe['format']['duration'])
+                
+                # Trim music to match narration + fade in/out
+                music_trimmed = temp_dir / "music_trimmed.mp3"
+                target_duration = narration_duration + 2.0  # Add 2 seconds for fade
+                (
+                    ffmpeg
+                    .input(str(theme_music))
+                    .filter('afade', t='in', st=0, d=1)
+                    .filter('afade', t='out', st=target_duration - 1, d=1)
+                    .output(str(music_trimmed), t=str(target_duration), acodec='libmp3lame', b='128k')
+                    .overwrite_output()
+                    .global_args('-loglevel', 'error')
+                    .run()
+                )
+                
+                # Mix narration and music (narration louder)
+                outro_file.parent.mkdir(exist_ok=True, parents=True)
+                narration_stream = ffmpeg.input(str(narration_file))
+                music_stream = ffmpeg.input(str(music_trimmed))
+                (
+                    ffmpeg.output(
+                        narration_stream,
+                        music_stream,
+                        str(outro_file),
+                        filter_complex='[0:a]volume=1.0[a0];[1:a]volume=0.3[a1];[a0][a1]amix=inputs=2:duration=first',
+                        acodec='libmp3lame',
+                        ar=44100,
+                        b='192k'
+                    )
+                    .overwrite_output()
+                    .global_args('-loglevel', 'error')
+                    .run()
+                )
+                
+                # Cleanup
+                if music_trimmed.exists():
+                    music_trimmed.unlink()
+                
+            elif narration_file:
+                # Just use narration if no music
+                outro_file.parent.mkdir(exist_ok=True, parents=True)
+                (
+                    ffmpeg
+                    .input(str(narration_file))
+                    .output(str(outro_file), acodec='libmp3lame', b='192k')
+                    .overwrite_output()
+                    .global_args('-loglevel', 'error')
+                    .run()
+                )
+            elif theme_music:
+                # Just use music if no narration
+                outro_file.parent.mkdir(exist_ok=True, parents=True)
+                # Trim to 10 seconds
+                (
+                    ffmpeg
+                    .input(str(theme_music))
+                    .filter('afade', t='in', st=0, d=1)
+                    .filter('afade', t='out', st=9, d=1)
+                    .output(str(outro_file), t='10', acodec='libmp3lame', b='192k')
+                    .overwrite_output()
+                    .global_args('-loglevel', 'error')
+                    .run()
+                )
+            else:
+                logger.warning("No music or narration available for outro")
+                return None
+            
+            logger.info(f"Created complete outro segment: {outro_file}")
+            return outro_file
+            
+        except Exception as e:
+            logger.error(f"Error creating outro segment: {e}")
+            return None
     
     def _add_intro_music(self, episode_id: str, audio_dir: Path) -> Optional[Path]:
         """Add intro music for the episode.
@@ -841,25 +1410,35 @@ class AudioPipeline:
         try:
             # Create concatenation file
             concat_file = audio_dir / "episode_concat.txt"
-            with open(concat_file, 'w') as f:
+            with open(concat_file, 'w', encoding='utf-8') as f:
                 # Add intro if available
                 if intro_file and intro_file.exists():
-                    f.write(f"file '{intro_file}'\n")
+                    abs_path = Path(intro_file).resolve()
+                    f.write(f"file '{abs_path.as_posix()}'\n")
                 
-                # Add each scene in order
+                # Add each scene in order (use absolute paths for ffmpeg compatibility)
                 for scene in sorted(valid_scenes, key=lambda s: s.get("scene_index", 0)):
-                    f.write(f"file '{scene['audio_file']}'\n")
+                    scene_file = scene['audio_file']
+                    # Convert to Path and resolve to absolute path
+                    scene_path = Path(scene_file).resolve()
+                    # Verify file exists
+                    if not scene_path.exists():
+                        logger.warning(f"Scene audio file not found: {scene_path}")
+                        continue
+                    # Use forward slashes for ffmpeg compatibility (works on Windows too)
+                    f.write(f"file '{scene_path.as_posix()}'\n")
                 
                 # Add outro if available
                 if outro_file and outro_file.exists():
-                    f.write(f"file '{outro_file}'\n")
+                    abs_path = Path(outro_file).resolve()
+                    f.write(f"file '{abs_path.as_posix()}'\n")
             
-            # Concatenate all files
+            # Concatenate all files (re-encode to ensure compatibility)
             output_file = audio_dir / "full_episode.mp3"
             (
                 ffmpeg
                 .input(str(concat_file), format='concat', safe=0)
-                .output(str(output_file), c='copy')
+                .output(str(output_file), acodec='libmp3lame', ar=44100, b='192k')
                 .overwrite_output()
                 .global_args('-loglevel', 'error')
                 .run()

@@ -380,22 +380,25 @@ class VoiceRegistry:
         )
         
         try:
-            # Generate audio
-            audio_data = self.elevenlabs.generate(
+            # Generate audio using the text_to_speech API
+            audio_data = self.elevenlabs.text_to_speech.convert(
+                voice_id=voice_id,
                 text=text,
-                voice=voice_id,
-                model="eleven_monolingual_v1",
+                model_id="eleven_multilingual_v2",
                 voice_settings=voice_settings
             )
             
             # Convert generator to bytes if needed
-            if hasattr(audio_data, '__iter__'):
+            if hasattr(audio_data, '__iter__') and not isinstance(audio_data, bytes):
                 audio_data = b''.join(chunk for chunk in audio_data)
             
             # Save to file if output path is specified
             if output_path:
                 with open(output_path, 'wb') as f:
-                    f.write(audio_data)
+                    if isinstance(audio_data, bytes):
+                        f.write(audio_data)
+                    else:
+                        f.write(audio_data.read() if hasattr(audio_data, 'read') else bytes(audio_data))
                 logger.info(f"Audio saved to {output_path}")
             
             return audio_data

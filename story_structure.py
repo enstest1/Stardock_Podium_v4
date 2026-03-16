@@ -27,6 +27,7 @@ except ImportError:
 # Local imports
 from mem0_client import get_mem0_client
 from reference_memory_sync import search_references
+from episode_memory import get_episode_memory
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -278,16 +279,27 @@ class StoryStructure:
             
             prompt += ". The title should be catchy, intriguing, and reference sci-fi concepts."
             
-            # Query the AI
-            response = self.client.chat.completions.create(
-                model="gpt-4o",
-                messages=[
-                    {"role": "system", "content": "You are a professional sci-fi writer specializing in Star Trek."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.7,
-                max_tokens=50
-            )
+            # Use OpenRouter with Claude Opus 4.5 if available, otherwise fallback to OpenAI
+            if self.using_openrouter:
+                response = self.openrouter_client.chat.completions.create(
+                    model="anthropic/claude-opus-4.5",
+                    messages=[
+                        {"role": "system", "content": "You are a professional sci-fi writer specializing in Star Trek."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature=0.7,
+                    max_tokens=50
+                )
+            else:
+                response = self.client.chat.completions.create(
+                    model="gpt-4o",
+                    messages=[
+                        {"role": "system", "content": "You are a professional sci-fi writer specializing in Star Trek."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature=0.7,
+                    max_tokens=50
+                )
             
             # Extract and clean the title
             title = response.choices[0].message.content.strip()
@@ -422,16 +434,27 @@ class StoryStructure:
             Format each character as a detailed profile that can be used for voice casting and character development.
             """
             
-            # Query the AI
-            response = self.client.chat.completions.create(
-                model="gpt-4o",
-                messages=[
-                    {"role": "system", "content": "You are a Star Trek universe expert and character creator."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.8,
-                max_tokens=2000
-            )
+            # Use OpenRouter with Claude Opus 4.5 if available, otherwise fallback to OpenAI
+            if self.using_openrouter:
+                response = self.openrouter_client.chat.completions.create(
+                    model="anthropic/claude-opus-4.5",
+                    messages=[
+                        {"role": "system", "content": "You are a Star Trek universe expert and character creator."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature=0.8,
+                    max_tokens=2000
+                )
+            else:
+                response = self.client.chat.completions.create(
+                    model="gpt-4o",
+                    messages=[
+                        {"role": "system", "content": "You are a Star Trek universe expert and character creator."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature=0.8,
+                    max_tokens=2000
+                )
             
             # Extract character data from response
             character_text = response.choices[0].message.content
@@ -570,6 +593,34 @@ class StoryStructure:
             # Extract reference text
             reference_text = "\n".join([ref.get("memory", "") for ref in references])
             
+            # Get previous episode context for continuity (if not first episode)
+            previous_context = ""
+            try:
+                episode_number = episode.get("episode_number", 0)
+                if episode_number > 1:
+                    memory_manager = get_episode_memory()
+                    context_data = memory_manager.get_previous_episode_context(
+                        current_episode_number=episode_number,
+                        series=episode.get("series"),
+                        limit=15
+                    )
+                    
+                    # Format previous context for prompt
+                    if context_data.get("plot_points"):
+                        previous_context += "\n\nPREVIOUS EPISODE PLOT POINTS:\n"
+                        previous_context += "\n".join(context_data["plot_points"][:5])
+                    
+                    if context_data.get("unresolved_threads"):
+                        previous_context += "\n\nUNRESOLVED THREADS TO CONSIDER:\n"
+                        previous_context += "\n".join(context_data["unresolved_threads"][:3])
+                    
+                    if context_data.get("character_states"):
+                        previous_context += "\n\nCHARACTER STATES FROM PREVIOUS EPISODES:\n"
+                        previous_context += "\n".join(context_data["character_states"][:5])
+            except Exception as e:
+                logger.warning(f"Could not retrieve previous episode context (non-critical): {e}")
+                previous_context = ""
+            
             # Prepare character information
             character_info = "\n".join([
                 f"{char.get('name', 'Unknown')}: {char.get('species', 'Unknown')} - {char.get('role', 'Unknown')}"
@@ -589,7 +640,8 @@ class StoryStructure:
                         scene_number=len(tasks) + 1,
                         total_scenes=sum(scenes_per_beat.values()),
                         reference_text=reference_text,
-                        character_info=character_info
+                        character_info=character_info,
+                        previous_context=previous_context
                     )
                     tasks.append(task)
             
@@ -609,7 +661,8 @@ class StoryStructure:
     
     async def _generate_scene_outline(self, episode: Dict[str, Any], beat: Dict[str, Any],
                                     scene_number: int, total_scenes: int,
-                                    reference_text: str, character_info: str) -> Dict[str, Any]:
+                                    reference_text: str, character_info: str,
+                                    previous_context: str = "") -> Dict[str, Any]:
         """Generate a single scene outline.
         
         Args:
@@ -650,6 +703,8 @@ class StoryStructure:
             REFERENCE MATERIAL:
             {reference_text[:500] if reference_text else "No specific reference material."}
             
+            {previous_context if previous_context else ""}
+            
             Create a detailed scene outline with:
             1. Setting (where the scene takes place)
             2. Character participants (who is in this scene)
@@ -662,13 +717,10 @@ class StoryStructure:
             Target scene length: {scene_duration//60} minutes {scene_duration%60} seconds.
             """
             
-            # Decide whether to use OpenAI or OpenRouter
-            use_openrouter = self.using_openrouter and random.random() < 0.3  # 30% chance to use OpenRouter if available
-            
-            # Query the AI
-            if use_openrouter:
+            # Use OpenRouter with Claude Opus 4.5 if available, otherwise fallback to OpenAI
+            if self.using_openrouter:
                 response = await self.async_openrouter_client.chat.completions.create(
-                    model="anthropic/claude-3-opus",
+                    model="anthropic/claude-opus-4.5",
                     messages=[
                         {"role": "system", "content": "You are an expert screenwriter specializing in science fiction and Star Trek."},
                         {"role": "user", "content": prompt}
@@ -818,6 +870,15 @@ class StoryStructure:
             logger.info("Saving script to file...")
             self._save_script(episode_id, script)
             
+            # Auto-extract memories for continuity (optional - only if episode has script)
+            try:
+                logger.info("Extracting memories from episode for continuity...")
+                memory_manager = get_episode_memory()
+                memory_manager.extract_memories_from_episode(episode_id)
+                logger.info("Memory extraction completed")
+            except Exception as e:
+                logger.warning(f"Memory extraction failed (non-critical): {e}")
+            
             logger.info(f"Script generation completed for episode: {episode.get('title')}")
             return script
         
@@ -839,8 +900,24 @@ class StoryStructure:
         
         # Get character information
         character_info = ""
+        character_contexts = []
         for char in episode.get('characters', []):
-            character_info += f"{char.get('name', '')}: {char.get('species', '')} - {char.get('role', '')}\n"
+            char_name = char.get('name', '')
+            character_info += f"{char_name}: {char.get('species', '')} - {char.get('role', '')}\n"
+            
+            # Get character continuity context if not first episode
+            try:
+                episode_number = episode.get("episode_number", 0)
+                if episode_number > 1:
+                    memory_manager = get_episode_memory()
+                    char_context = memory_manager.get_character_continuity_context(
+                        character_name=char_name,
+                        current_episode_number=episode_number
+                    )
+                    if char_context:
+                        character_contexts.append(f"{char_name}'s previous developments: {', '.join(char_context[:3])}")
+            except Exception:
+                pass  # Non-critical, continue without character context
         
         # Create context for generation
         logger.info("Creating context for scene generation...")
@@ -852,6 +929,10 @@ class StoryStructure:
             f"Scene Number: {scene.get('scene_number', '')}\n\n"
             f"Character Information:\n{character_info}\n"
         )
+        
+        # Add character continuity context if available
+        if character_contexts:
+            context += "\n" + "\n".join(character_contexts) + "\n"
         
         # Get reference material
         logger.info("Searching for relevant reference material...")
@@ -877,15 +958,27 @@ class StoryStructure:
         try:
             # Generate scene content
             logger.info("Sending request to AI model...")
-            response = self.client.chat.completions.create(
-                model="gpt-4o",
-                messages=[
-                    {"role": "system", "content": "You are an expert screenwriter for audio dramas."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.7,
-                max_tokens=2000
-            )
+            # Use OpenRouter with Claude Opus 4.5 if available, otherwise fallback to OpenAI
+            if self.using_openrouter:
+                response = self.openrouter_client.chat.completions.create(
+                    model="anthropic/claude-opus-4.5",
+                    messages=[
+                        {"role": "system", "content": "You are an expert screenwriter for audio dramas."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature=0.7,
+                    max_tokens=2000
+                )
+            else:
+                response = self.client.chat.completions.create(
+                    model="gpt-4o",
+                    messages=[
+                        {"role": "system", "content": "You are an expert screenwriter for audio dramas."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature=0.7,
+                    max_tokens=2000
+                )
             
             # Parse the generated content
             logger.info("Parsing generated content...")

@@ -318,6 +318,93 @@ def cmd_generate_scenes(args):
     from story_structure import generate_scenes
     return asyncio.run(generate_scenes(args.episode_id))
 
+@register_command(
+    name="extract-memories",
+    help_text="Extract and store memories from an episode for continuity",
+    arguments=[
+        {'name': 'episode_id', **STR_ARG, 'help': 'ID of the episode to extract memories from'}
+    ]
+)
+def cmd_extract_memories(args):
+    """Extract memories from an episode."""
+    from episode_memory import extract_memories
+    memories = extract_memories(args.episode_id)
+    print(f"Extracted memories for episode {args.episode_id}")
+    print(f"Categories: {list(memories.keys())}")
+    for category, entries in memories.items():
+        print(f"  {category}: {len(entries)} entries")
+    return True
+
+@register_command(
+    name="view-memories",
+    help_text="View memories for an episode",
+    arguments=[
+        {'name': 'episode_id', **STR_ARG, 'help': 'ID of the episode to view memories for'},
+        {'name': '--category', **STR_ARG, 'help': 'Filter by memory category', 'required': False}
+    ]
+)
+def cmd_view_memories(args):
+    """View memories for an episode."""
+    from episode_memory import get_episode_memory
+    memory_manager = get_episode_memory()
+    
+    if args.category:
+        memories = memory_manager.get_all_memories(episode_id=args.episode_id, category=args.category)
+    else:
+        memories = memory_manager.get_all_memories(episode_id=args.episode_id)
+    
+    print(f"Found {len(memories)} memories for episode {args.episode_id}")
+    for memory in memories[:10]:  # Show first 10
+        metadata = memory.get('metadata', {})
+        print(f"\nCategory: {metadata.get('category', 'unknown')}")
+        print(f"Content: {memory.get('memory', '')[:200]}...")
+    
+    return True
+
+@register_command(
+    name="get-continuity",
+    help_text="Get continuity context from previous episodes",
+    arguments=[
+        {'name': 'episode_id', **STR_ARG, 'help': 'ID of the current episode'},
+        {'name': '--limit', **INT_ARG, 'help': 'Maximum number of memories to retrieve', 'default': 20}
+    ]
+)
+def cmd_get_continuity(args):
+    """Get continuity context for an episode."""
+    from episode_memory import get_episode_memory
+    from story_structure import get_story_structure
+    memory_manager = get_episode_memory()
+    story_structure = get_story_structure()
+    
+    # Get episode to find episode number
+    episode = story_structure.get_episode(args.episode_id)
+    if not episode:
+        print(f"Episode not found: {args.episode_id}")
+        return False
+    
+    episode_number = episode.get("episode_number", 0)
+    series = episode.get("series")
+    
+    context = memory_manager.get_previous_episode_context(
+        current_episode_number=episode_number,
+        series=series,
+        limit=args.limit
+    )
+    
+    print(f"Continuity context for episode {episode_number}:\n")
+    print(f"Plot Points: {len(context.get('plot_points', []))}")
+    print(f"Character States: {len(context.get('character_states', []))}")
+    print(f"Unresolved Threads: {len(context.get('unresolved_threads', []))}")
+    print(f"Relationships: {len(context.get('relationships', []))}")
+    print(f"World Building: {len(context.get('world_building', []))}")
+    
+    if context.get('unresolved_threads'):
+        print("\nUnresolved Threads:")
+        for thread in context['unresolved_threads'][:5]:
+            print(f"  - {thread[:150]}...")
+    
+    return True
+
 def main():
     """Main entry point for the CLI."""
     # Create required directories
