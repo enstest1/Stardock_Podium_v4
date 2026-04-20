@@ -238,6 +238,9 @@ class KokoroEngine(TTSEngine):
                 chunks = list(self._pipeline(clean_text, voice=voice, speed=1.0))
                 if not chunks:
                     raise SynthError(f'Kokoro returned no audio for: {text[:80]}')
+                # Clean each chunk *before* concatenation so Kokoro's
+                # per-chunk end-of-sequence chirps get trimmed at each seam,
+                # not just at the very end of the full utterance.
                 parts: list[np.ndarray] = []
                 for c in chunks:
                     if c.audio is None:
@@ -245,11 +248,13 @@ class KokoroEngine(TTSEngine):
                     arr = c.audio
                     if hasattr(arr, 'cpu'):
                         arr = arr.cpu().numpy()
-                    parts.append(np.asarray(arr, dtype=np.float32).reshape(-1))
+                    arr = np.asarray(arr, dtype=np.float32).reshape(-1)
+                    arr = _clean_kokoro_audio(arr, _KOKORO_SAMPLE_RATE)
+                    if arr.size:
+                        parts.append(arr)
                 if not parts:
                     raise SynthError(f'Kokoro returned no audio for: {text[:80]}')
                 audio = np.concatenate(parts)
-                audio = _clean_kokoro_audio(audio, _KOKORO_SAMPLE_RATE)
                 sf.write(output_path, audio, _KOKORO_SAMPLE_RATE)
             logger.info('Kokoro TTS synthesis complete: %s', output_path)
         except SynthError:
@@ -270,11 +275,20 @@ class KokoroEngine(TTSEngine):
                 try:
                     self._pipeline.load_single_voice(str(p))
                     return str(p)
-                except Exception:
-                    logger.warning(
-                        'Could not load custom voice %s, using default.',
-                        speaker_wav,
+                except Exception as e:
+                    logger.error(
+                        'Kokoro rejected WAV reference %s (%s) — falling '
+                        "back to 'af_heart'. Kokoro v0.9+ needs a built-in "
+                        'voice name (e.g. am_michael, bm_george) or a .pt '
+                        'voice tensor, NOT a raw .wav. Set kokoro_voice in '
+                        'voice_config.json to avoid this.',
+                        speaker_wav, e,
                     )
+            else:
+                logger.error(
+                    'speaker_wav %s not found on disk — falling back to '
+                    "'af_heart'.", speaker_wav,
+                )
             return 'af_heart'
         return speaker_wav or 'af_heart'
 

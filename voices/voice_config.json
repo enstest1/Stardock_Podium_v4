@@ -1,41 +1,65 @@
 {
     "engine_order": ["kokoro"],
+    "_voice_assignment_notes": [
+        "kokoro_voice picks a built-in Kokoro v0.9+ voice embedding and is the",
+        "preferred field. speaker_wav is retained for documentation / future",
+        "WAV-based engines (XTTS, F5-TTS). Kokoro v0.9+ cannot clone raw WAVs —",
+        "pointing it at a .wav silently falls back to af_heart."
+    ],
     "characters": {
         "captain_amara_okonkwo": {
+            "kokoro_voice": "af_bella",
             "speaker_wav": "voices/samples/Star_Trek_Horizon/captain_amara_okonkwo.wav",
-            "language": "en"
+            "language": "en",
+            "notes": "Captain — warm, authoritative female lead."
         },
         "commander_tevan": {
+            "kokoro_voice": "am_michael",
             "speaker_wav": "voices/samples/Star_Trek_Horizon/commander_tevan.wav",
-            "language": "en"
+            "language": "en",
+            "notes": "First officer — measured, logical cadence."
         },
         "lieutenant_commander_korath": {
+            "kokoro_voice": "am_onyx",
             "speaker_wav": "voices/samples/Star_Trek_Horizon/lt_cmdr_korath.wav",
-            "language": "en"
+            "language": "en",
+            "notes": "Security/tactical — deep, intimidating."
         },
         "subcommander_vreenak": {
+            "kokoro_voice": "bm_daniel",
             "speaker_wav": "voices/samples/Star_Trek_Horizon/subcommander_vreenak.wav",
-            "language": "en"
+            "language": "en",
+            "notes": "Antagonist — British, cunning, sibilant."
         },
         "lieutenant_commander_damar_tain": {
+            "kokoro_voice": "am_liam",
             "speaker_wav": "voices/samples/Star_Trek_Horizon/lt_cmdr_damar_tain.wav",
-            "language": "en"
+            "language": "en",
+            "notes": "Clear American officer voice."
         },
         "lieutenant_commander_kira_jaro": {
+            "kokoro_voice": "af_nicole",
             "speaker_wav": "voices/samples/Star_Trek_Horizon/lt_cmdr_kira_jaro.wav",
-            "language": "en"
+            "language": "en",
+            "notes": "Focused, determined female officer."
         },
         "lieutenant_zhanil_thkethris": {
+            "kokoro_voice": "bf_alice",
             "speaker_wav": "voices/samples/Star_Trek_Horizon/lt_zhanil_thkethris.wav",
-            "language": "en"
+            "language": "en",
+            "notes": "British distinctive — alien-science specialist feel."
         },
         "lieutenant_verix_dax": {
+            "kokoro_voice": "am_fenrir",
             "speaker_wav": "voices/samples/Star_Trek_Horizon/lt_verix_dax.wav",
-            "language": "en"
+            "language": "en",
+            "notes": "Wise, deeper voice — suits a joined Trill."
         },
         "narrator": {
+            "kokoro_voice": "bm_george",
             "speaker_wav": "voices/samples/Star_Trek_Horizon/narrator.wav",
-            "language": "en"
+            "language": "en",
+            "notes": "Main narrator — British gravitas, Picard/Stewart-adjacent."
         }
     },
     "aliases": {

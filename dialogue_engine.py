@@ -93,6 +93,41 @@ def resolve_character_voice_config(
     return None
 
 
+def _pick_voice_id(entry: Dict[str, Any], character_key: str) -> str:
+    """Pick the actual voice identifier to hand to KokoroEngine.synth.
+
+    Kokoro v0.9+ takes a built-in voice name (e.g. ``am_michael``, ``bm_george``)
+    and cannot clone raw WAV files — pointing it at a .wav silently falls back
+    to ``af_heart``, which is the single biggest cause of "every character
+    sounds the same" in the finished episode.
+
+    Preference order:
+
+    1. ``kokoro_voice`` — explicit Kokoro built-in voice (the right answer).
+    2. ``speaker_wav`` — legacy path; passed through so a future voice-cloning
+       engine (XTTS, F5-TTS) can still see it, but Kokoro will warn and fall
+       back to the default voice if this is what it receives.
+
+    If neither is set we raise so the caller can surface a clear error
+    instead of silently rendering with ``af_heart``.
+    """
+    voice = entry.get('kokoro_voice')
+    if voice:
+        return str(voice)
+    speaker_wav = entry.get('speaker_wav')
+    if speaker_wav:
+        logger.warning(
+            'Character %r has no kokoro_voice; passing speaker_wav %r '
+            '— Kokoro will fall back to the default voice.',
+            character_key, speaker_wav,
+        )
+        return str(speaker_wav)
+    raise ValueError(
+        f'Character {character_key!r} has neither kokoro_voice nor '
+        'speaker_wav in voice_config.json'
+    )
+
+
 class KokoroDialogueSynthesizer:
     """Local dialogue synthesis via Kokoro."""
 
@@ -132,17 +167,12 @@ class KokoroDialogueSynthesizer:
             raise ValueError(
                 f'No voice_config entry for character key: {character_voice_key}'
             )
-        speaker_wav = entry.get('speaker_wav')
-        if not speaker_wav:
-            raise ValueError(
-                f'Character {character_voice_key!r} has no speaker_wav in '
-                'voice_config.json'
-            )
+        voice_id = _pick_voice_id(entry, character_voice_key)
         lang = entry.get('language', 'en')
         engine = get_kokoro_engine()
         engine.synth(
             text=text,
-            speaker_wav=speaker_wav,
+            speaker_wav=voice_id,
             language=lang,
             output_path=output_path,
         )
@@ -169,14 +199,12 @@ class KokoroDialogueSynthesizer:
                 break
         if key is None:
             key = character_display
-        speaker_wav = entry.get('speaker_wav')
-        if not speaker_wav:
-            raise ValueError(f'No speaker_wav for speaker {character_display!r}')
+        voice_id = _pick_voice_id(entry, key)
         lang = entry.get('language', 'en')
         engine = get_kokoro_engine()
         engine.synth(
             text=text,
-            speaker_wav=speaker_wav,
+            speaker_wav=voice_id,
             language=lang,
             output_path=output_path,
         )
