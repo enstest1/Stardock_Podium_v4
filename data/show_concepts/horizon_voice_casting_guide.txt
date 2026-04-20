@@ -1,0 +1,313 @@
+STAR TREK: HORIZON — Voice Casting Guide
+==========================================
+
+Place finished samples in: voices/samples/
+Format needed: WAV, mono, 16kHz (I'll convert your MP3s automatically)
+Duration: 6-8 seconds of clear speech (5s minimum)
+
+
+========================================================================
+1. CAPTAIN AMARA OKONKWO
+========================================================================
+Save as: captain_amara_okonkwo.mp3
+
+Species:      Human
+Gender:       Female
+Age feel:     Late 40s — at her peak, seasoned but not tired
+Voice type:   Rich contralto, deliberate pacing
+Accent:       Nigerian-British with Starfleet formality layered over warmth
+Tone:         Authoritative, warm underneath, rarely raises voice — when she does, it matters
+Personality:  Quiet gravity. Leads through clarity of purpose, not charisma.
+              Weighs every word before speaking. Inspirational when needed
+              but prefers letting actions speak.
+Think of:     Gugu Mbatha-Raw's gravitas, Viola Davis's control,
+              Wunmi Mosaku's quiet intensity
+What to look for:
+              A woman whose voice makes you stop and listen. Not loud —
+              *commanding*. You should feel the weight of experience in
+              every sentence.
+
+Audition line:
+"This is the USS Enterprise, stardate 82451.3. Captain's log. We are
+forty-seven hours past the wormhole and the Gamma Quadrant stretches
+before us like an open question. My crew is ready. Whether the quadrant
+is ready for us remains to be seen. Okonkwo out."
+
+
+========================================================================
+2. COMMANDER TEVAN
+========================================================================
+Save as: commander_tevan.mp3
+
+Species:      Vulcan
+Gender:       Male
+Age feel:     Indeterminate — could be 60, could be 120. Vulcans age slowly.
+Voice type:   Measured baritone, precise diction
+Accent:       Neutral, slightly slower than human speech, subtle emphasis
+              on logical connectives
+Tone:         Logical, dry wit that non-Vulcans sometimes miss, pauses
+              feel intentional not hesitant
+Personality:  Intellectually curious in a way that reads as dry humor.
+              Controlled fascination with the unknown. The kind of Vulcan
+              who finds humans "fascinating" and means it.
+Think of:     Benedict Cumberbatch's precision, Mark Strong's calm control,
+              Leonard Nimoy's cadence
+What to look for:
+              A man who sounds like he's thought about what he's saying for
+              ten minutes before opening his mouth. Never rushes. Every
+              syllable is placed deliberately.
+
+Audition line:
+"Captain, the sensor readings are... unusual. I would not say anomalous
+— that implies we understand the baseline well enough to identify
+deviation. We do not. I recommend caution, though I acknowledge that
+recommendation has never once slowed this crew down."
+
+
+========================================================================
+3. LIEUTENANT COMMANDER KORATH
+========================================================================
+Save as: lt_cmdr_korath.mp3
+
+Species:      Klingon
+Gender:       Male
+Age feel:     Late 30s — a warrior in his prime
+Voice type:   Deep resonant bass, controlled intensity
+Accent:       Learned Federation Standard as an adult — slight growl on
+              hard consonants (K, G, T, D), rolls Rs slightly
+Tone:         Philosophical warrior. Contemplative one moment, commanding
+              the next. Sees violence as a last resort that must be
+              executed perfectly.
+Personality:  Not the screaming Klingon stereotype. This is an evolved
+              warrior who sees protecting explorers as the highest honor.
+              Surprisingly thoughtful. Quotes his father often.
+Think of:     Michael Dorn's Worf but more philosophical, Idris Elba's
+              deep register, James Earl Jones's rumble
+What to look for:
+              The deepest male voice you can find. Should vibrate in your
+              chest when he speaks. But also capable of quiet, thoughtful
+              delivery — not just shouting.
+
+Audition line:
+"There is no dishonor in patience. My father taught me that a blade
+drawn too soon is a blade wasted. But make no mistake — when I draw
+mine, it will be the last thing our enemies see. Tactical stations,
+stand ready."
+
+
+========================================================================
+4. SUBCOMMANDER VREENAK
+========================================================================
+Save as: subcommander_vreenak.mp3
+
+Species:      Romulan
+Gender:       Female
+Age feel:     Mid 40s — experienced intelligence operative
+Voice type:   Soprano with silk-over-steel quality
+Accent:       Romulan — elongated vowels, precise sibilants (S and Z
+              sounds linger slightly), slight pause before answering
+              direct questions
+Tone:         Every sentence sounds like it might contain hidden meaning
+              even when it doesn't. Elegant danger.
+Personality:  Genuinely committed to the Alliance but can't fully shed
+              Romulan methods. Sees information control as a tool, not a
+              moral failing. Finds Starfleet's openness admirable and
+              tactically naive in equal measure.
+Think of:     Cate Blanchett's regal precision, Tilda Swinton's
+              otherworldly quality, Shohreh Aghdashloo's dangerous elegance
+What to look for:
+              A woman who sounds like she knows three secrets about you and
+              is deciding which one to mention. Smooth, controlled, never
+              flustered. Beautiful voice with an edge underneath.
+
+Audition line:
+"How fascinating. Starfleet sends its finest ship into unknown territory
+and calls it exploration. The Romulan Senate would call it something
+else entirely. But I did not come aboard to debate semantics. I came
+because this mission matters. Whatever that costs."
+
+
+========================================================================
+5. LIEUTENANT COMMANDER DAMAR TAIN
+========================================================================
+Save as: lt_cmdr_damar_tain.mp3
+
+Species:      Cardassian
+Gender:       Male
+Age feel:     Mid 30s — brilliant young engineer
+Voice type:   Tenor, clipped efficiency
+Accent:       Cardassian — slightly nasal quality, emphasis on final
+              syllables of key words, speaks in technical shorthand when
+              stressed
+Tone:         Clinical directness. Delivers bad news matter-of-factly,
+              good news with restrained warmth. Impatient with inefficiency.
+Personality:  Brilliant and pragmatic. Haunted by Cardassia's history
+              without being defined by it. Uses engineering problems to
+              impose order on chaos. Dry wit when relaxed. Serving
+              alongside Bajorans is complicated and he knows it.
+Think of:     Andrew Scott's clipped delivery, Oscar Isaac's intensity,
+              a young David Tennant's speed
+What to look for:
+              A man who talks fast when explaining something technical, as
+              if the words can barely keep up with his brain. Slightly
+              nasal. Precise. Not warm by default — warmth is earned.
+
+Audition line:
+"Warp core efficiency is at ninety-seven point three percent. I can get
+it to ninety-nine if the bridge stops routing unnecessary power to the
+forward sensor array. Engineering does not perform miracles on request.
+We perform them on schedule."
+
+
+========================================================================
+6. LIEUTENANT COMMANDER KIRA JARO
+========================================================================
+Save as: lt_cmdr_kira_jaro.mp3
+
+Species:      Bajoran
+Gender:       Female
+Age feel:     Early 30s — passionate, still has wonder
+Voice type:   Clear mezzo-soprano, musical quality
+Accent:       Bajoran — softened consonants, slight lilt on questions,
+              prayer cadences occasionally surface
+Tone:         Speaks faster when excited by discovery, slower when
+              processing difficult emotions. Faith and science coexist
+              naturally in her.
+Personality:  Carries Bajoran spiritual tradition into scientific inquiry.
+              Sees exploration as seeking the Prophets' purpose. Intensely
+              focused, occasionally stubborn, capable of profound wonder.
+              Requested this posting because the Gamma Quadrant shaped her
+              people's destiny.
+Think of:     Nana Visitor's Kira passion but younger, Jenna Coleman's
+              brightness, Lupita Nyong'o's clarity
+What to look for:
+              A woman whose voice lights up when she's excited. Musical
+              quality — you should hear the lilt, the rise and fall. Warm
+              but with steel underneath when pushed.
+
+Audition line:
+"These readings — Commander, look at this. The subspace variance matches
+patterns described in the Orb texts. The Prophets spoke of a threshold
+beyond the temple. I always thought it was metaphor. What if it wasn't?
+What if we're standing at it right now?"
+
+
+========================================================================
+7. LIEUTENANT ZHANIL TH'KETHRIS
+========================================================================
+Save as: lt_zhanil_thkethris.mp3
+
+Species:      Andorian
+Gender:       Female
+Age feel:     Late 20s — young but razor sharp
+Voice type:   Alto, crisp attack on consonants
+Accent:       Andorian — slight buzz on sibilants (S/Z sounds), emphasis
+              on action verbs, clipped endings
+Tone:         Short direct sentences in tactical situations. More expansive
+              in personal moments. Fiercely protective.
+Personality:  Combines Andorian martial tradition with genuine warmth toward
+              crewmates she considers under her protection. Quick to assess
+              threats, slow to trust, fiercely loyal once trust is earned.
+              The youngest senior officer — has something to prove.
+Think of:     Michelle Rodriguez's toughness, Zoe Saldana's edge,
+              Florence Pugh's directness
+What to look for:
+              A woman who sounds like she could bark an order and you'd obey
+              before thinking about it. Crisp, no wasted syllables. Military
+              cadence. But you should also hear that she cares underneath
+              the armor.
+
+Audition line:
+"Perimeter secure. Deck seven, clear. Deck eight, clear. I do not like
+how quiet it is. Quiet on an Andorian vessel means someone is waiting.
+I want two teams on rotating patrol and I want them armed. Move."
+
+
+========================================================================
+8. LIEUTENANT VERIX DAX
+========================================================================
+Save as: lt_verix_dax.mp3
+
+Species:      Trill (Joined — carries the Dax symbiont, ~300 years of
+              memories from previous hosts)
+Gender:       Male
+Age feel:     Physically 35, but sounds like he's lived centuries —
+              because he has
+Voice type:   Warm tenor, unhurried cadence
+Accent:       Trill — barely perceptible, manifests as unusual word choices
+              and references to events no one else remembers
+Tone:         Speaks as if time moves differently. Unflappable calm.
+              Occasional archaic phrases from previous hosts surface
+              naturally. Never seems surprised.
+Personality:  The Dax symbiont's centuries of experience create unflappable
+              calm and occasionally unsettling perspective on mortality.
+              Combines scientific rigor with genuine compassion. Sees
+              medicine as the most intimate form of exploration. The crew's
+              emotional anchor.
+Think of:     Patrick Stewart's warmth, Jeff Bridges' laid-back wisdom,
+              Sam Elliott's unhurried storytelling
+What to look for:
+              A man who sounds like your favorite storytelling uncle —
+              unhurried, warm, wise. The kind of voice that makes you lean
+              in. Never rushes because he's seen it all before and knows
+              panic helps nothing.
+
+Audition line:
+"I have watched seventeen crews set out on missions they called
+unprecedented. Emony Dax served on the first ship through the Briar
+Patch. Tobin nearly died cataloguing the Badlands. And yet, here we are
+again. The universe keeps offering doors. Dax keeps walking through them."
+
+
+========================================================================
+9. NARRATOR
+========================================================================
+Save as: narrator.mp3
+
+Role:         Series narrator — speaks the cold-open captain's log header,
+              intro sequence, outro sign-off, and any non-dialogue
+              narration / scene description lines in the script.
+              NOT a character on the ship. A neutral voice-of-the-show.
+Gender:       Open — whatever reads as "trusted documentary narrator"
+Age feel:     40s–60s — lived-in, settled, unhurried
+Voice type:   Warm baritone or low mezzo, broadcast-clean, resonant mids
+Accent:       Neutral North American or neutral mid-Atlantic — nothing
+              regional strong enough to place the narrator in a location
+Tone:         Grounded, literary, quietly reverent. Think of the way a
+              great nature documentary narrator frames awe — never sells
+              the drama, lets the material carry it. Confident without
+              authority-posturing.
+Personality:  The narrator is the show's memory. They have watched this
+              crew from the outside, know where the story is going, and
+              are telling it to you the way you'd tell a friend about
+              something that mattered. No winks. No theatrics.
+Think of:     Peter Coyote (Ken Burns docs), Mary Louise-Parker's
+              measured warmth, David Attenborough's restrained wonder,
+              Keith David's gravity without the menace
+What to look for:
+              A voice you would let read you a bedtime story that is
+              also somehow a voice you trust to deliver bad news. Clean
+              diction. No vocal fry. No upspeak. Long-breath pacing —
+              this voice does not rush and does not need to.
+
+Audition line:
+"Stardate 82451.3. Eighty years after the Dominion War ended, the Alpha
+Quadrant learned a harder lesson than peace: that peace, to last, must
+be built. The starship Enterprise carries that lesson into the dark.
+This is the beginning of her first voyage. It will not go the way
+anyone on board expects."
+
+
+========================================================================
+QUICK REFERENCE — File Names
+========================================================================
+
+voices/samples/captain_amara_okonkwo.mp3     -> Human female captain
+voices/samples/commander_tevan.mp3            -> Vulcan male first officer
+voices/samples/lt_cmdr_korath.mp3             -> Klingon male tactical
+voices/samples/subcommander_vreenak.mp3       -> Romulan female intel
+voices/samples/lt_cmdr_damar_tain.mp3         -> Cardassian male engineer
+voices/samples/lt_cmdr_kira_jaro.mp3          -> Bajoran female science
+voices/samples/lt_zhanil_thkethris.mp3        -> Andorian female security
+voices/samples/lt_verix_dax.mp3               -> Trill male doctor
+voices/samples/narrator.mp3                   -> Series narrator (non-character)

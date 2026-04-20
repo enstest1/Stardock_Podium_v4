@@ -29,19 +29,23 @@ logger = logging.getLogger(__name__)
 class EPUBProcessor:
     """Handler for processing EPUB files for reference ingestion."""
     
-    def __init__(self, books_dir: str = "books", analysis_dir: str = "analysis"):
+    def __init__(self, books_dir: Optional[str] = None, analysis_dir: Optional[str] = None):
         """Initialize the EPUB processor.
-        
+
         Args:
-            books_dir: Directory to store processed book files
-            analysis_dir: Directory to store analysis files
+            books_dir: Directory to store processed book files. When None,
+                resolves via ``config.paths.BOOKS_DIR`` which honors the
+                ``STARDOCK_BOOKS_DIR`` env var for cloud deployments.
+            analysis_dir: Directory to store analysis files. When None,
+                resolves via ``config.paths.ANALYSIS_DIR``.
         """
-        self.books_dir = Path(books_dir)
-        self.analysis_dir = Path(analysis_dir)
-        
+        from config.paths import BOOKS_DIR, ANALYSIS_DIR
+        self.books_dir = Path(books_dir) if books_dir else BOOKS_DIR
+        self.analysis_dir = Path(analysis_dir) if analysis_dir else ANALYSIS_DIR
+
         # Create directories if they don't exist
-        self.books_dir.mkdir(exist_ok=True)
-        self.analysis_dir.mkdir(exist_ok=True)
+        self.books_dir.mkdir(parents=True, exist_ok=True)
+        self.analysis_dir.mkdir(parents=True, exist_ok=True)
         
         # HTML to text converter
         self.html_converter = html2text.HTML2Text()
@@ -169,11 +173,13 @@ class EPUBProcessor:
         """
         chapters = []
         
-        # Get spine items (the reading order)
+        # Spine returns list of (item_id, linear) tuples
         spine_items = book.spine
         
-        for item_id in spine_items:
-            # Skip if it's the navigation item ('nav' or 'ncx')
+        for spine_entry in spine_items:
+            item_id = spine_entry[0] if isinstance(
+                spine_entry, (list, tuple)) else spine_entry
+            
             if item_id in ('nav', 'ncx'):
                 continue
             

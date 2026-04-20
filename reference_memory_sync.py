@@ -30,8 +30,9 @@ class ReferenceMemorySync:
         self.epub_processor = get_processor()
         self.mem0_client = get_mem0_client()
         
-        # Create sync status directory
-        self.sync_dir = Path("data/sync_status")
+        # Create sync status directory (honors STARDOCK_DATA_DIR override)
+        from config.paths import SYNC_STATUS_DIR
+        self.sync_dir = SYNC_STATUS_DIR
         self.sync_dir.mkdir(exist_ok=True, parents=True)
     
     def sync_book(self, book_id: str, force: bool = False) -> Dict[str, Any]:
@@ -253,7 +254,30 @@ class ReferenceMemorySync:
                 }, f, indent=2)
         except Exception as e:
             logger.error(f"Error saving all books sync status: {e}")
-        
+
+        # Auto-trigger Tier 1 extraction after all books are synced
+        if summary.get("total_sections_synced", 0) > 0:
+            try:
+                logger.info(
+                    "All books synced — running series bible extraction..."
+                )
+                from book_knowledge import (
+                    SeriesBibleExtractor,
+                    reload_knowledge_context,
+                )
+                extractor = SeriesBibleExtractor()
+                extractor.extract_from_all_books(force=False)
+                reload_knowledge_context()
+                logger.info(
+                    "Series bible extracted and knowledge context reloaded."
+                )
+            except Exception as e:
+                logger.warning(
+                    "Series bible extraction failed (non-critical, "
+                    "episodes will still generate): %s",
+                    e,
+                )
+
         return {
             "summary": summary,
             "book_results": results
@@ -336,20 +360,36 @@ def get_memory_sync() -> ReferenceMemorySync:
     
     return _memory_sync
 
-def sync_references(book_id: Optional[str] = None, force: bool = False) -> Dict[str, Any]:
+def sync_references(
+    book_id: Optional[str] = None,
+    force: bool = False,
+    force_bible: bool = False,
+) -> Dict[str, Any]:
     """Sync reference materials to memory.
-    
+
     Args:
         book_id: Optional ID of a specific book to sync
         force: Whether to force sync even if already synced
-    
+        force_bible: Re-run series bible extraction after a single-book sync
+
     Returns:
         Dictionary with sync results
     """
     memory_sync = get_memory_sync()
-    
+
     if book_id:
-        return memory_sync.sync_book(book_id, force=force)
+        result = memory_sync.sync_book(book_id, force=force)
+        if force_bible:
+            try:
+                from book_knowledge import (
+                    SeriesBibleExtractor,
+                    reload_knowledge_context,
+                )
+                SeriesBibleExtractor().extract_from_all_books(force=True)
+                reload_knowledge_context()
+            except Exception as e:
+                logger.warning("Force bible extraction failed: %s", e)
+        return result
     else:
         return memory_sync.sync_all_books(force=force)
 

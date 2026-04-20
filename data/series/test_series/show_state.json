@@ -1,0 +1,9 @@
+{
+  "series_id": "test_series",
+  "active_threads": [],
+  "character_states": {},
+  "world_facts": [],
+  "unresolved_hooks": [],
+  "last_updated_episode_id": null,
+  "schema_version": 1
+}

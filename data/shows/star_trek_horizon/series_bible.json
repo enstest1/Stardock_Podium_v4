@@ -1,0 +1,128 @@
+{
+  "universe": "Star Trek",
+  "era": "32nd Century, Post-Burn (circa 3188 and after)",
+  "technology": [
+    "Red Angel suit — time-travel technology capable of transporting individuals and starships across centuries",
+    "Long-range sensors — detection systems, often degraded or non-functional post-Burn",
+    "Defense grid — starbase protective systems, frequently in disrepair in this era",
+    "Dilithium-based warp drive — rendered unreliable galaxy-wide after the Burn"
+  ],
+  "species": [
+    {
+      "name": "Human",
+      "traits": "Resilient, idealistic, committed to Federation values even in isolation and hardship",
+      "speech_patterns": "Formal when on duty, uses contractions freely, inspirational rhetoric common among commanders"
+    }
+  ],
+  "locations": [
+    "Starbase 906 — remote Federation outpost, strategically valuable, under-resourced and isolated post-Burn",
+    "Terralysium — intended destination for USS Discovery's time jump, a planet with human settlers",
+    "USS Discovery — Crossfield-class starship, serial number SC0064-0974SHN, displaced from 2257 to the 32nd century"
+  ],
+  "starships": [
+    "USS Discovery (Crossfield-class, SC0064-0974SHN)"
+  ],
+  "command_hierarchy": [
+    "Commander — senior ranking officer (e.g., Commander Marshak, Commander Michael Burnham)",
+    "Science Officer — specialized crew position",
+    "Security Chief — responsible for base/ship defense",
+    "General crew/staff"
+  ],
+  "recurring_themes": [
+    "Isolation and self-reliance in the absence of Federation support",
+    "Maintaining hope and ideals during catastrophic collapse",
+    "The burden of leadership when resources are scarce",
+    "Loyalty to Federation principles despite impossible odds",
+    "Negotiation over surrender as a moral imperative",
+    "Technology as both salvation and mystery"
+  ],
+  "dialogue_rules": [
+    "Commanders deliver formal, inspirational speeches to rally crews, often invoking Federation ideals",
+    "The phrase 'For the Federation!' serves as a rallying cry and affirmation",
+    "Characters reference classical quotes and literature to convey wisdom or reflection",
+    "Security and tactical officers speak bluntly and directly about threats",
+    "Leaders frame dire situations with acknowledgment of hardship followed by resolve"
+  ],
+  "tone": "Somber yet hopeful; emphasizes perseverance, duty, and quiet heroism in a fractured galaxy where the Federation is a fading memory but its ideals endure",
+  "moral_framework": "Starfleet officers uphold Federation values—compassion, aid to those in need, refusal to abandon hope—even when isolated and outmatched; surrender is unacceptable, but negotiation and diplomacy are preferred over violence",
+  "forbidden": [
+    "Abundant dilithium or easy warp travel (the Burn made this scarce)",
+    "Readily available Starfleet reinforcements or communication with Federation Command",
+    "Fully functional advanced technology on remote outposts",
+    "23rd or 24th century technology levels without explanation",
+    "Casual time travel without significant consequences",
+    "Anachronistic references to pre-Burn Federation as still intact"
+  ],
+  "show_id": "star_trek_horizon",
+  "show_name": "Star Trek Horizon",
+  "concept": "Star Trek: Horizon — Level 1 Show Concept Prompt\r\n==================================================\r\n\r\nThe year is 2455 — approximately 80 years after the Dominion War. The Alpha Quadrant has entered a new age. The Federation, Klingon Empire, Romulan Star Empire, and Cardassian Union have forged a Grand Alliance, born from shared sacrifice and decades of hard-won trust. Old enemies are now uneasy partners with a common purpose: push outward.\r\n\r\nThe Ship: The USS Enterprise, NCC-1701-H. The most advanced vessel the Alliance has ever produced — a joint engineering triumph incorporating Federation, Klingon, Romulan, and Cardassian technology. She's faster, tougher, and more versatile than any Enterprise before her. Her mission: deep exploration of the Gamma Quadrant, beyond the Bajoran wormhole, into territories the Dominion once controlled and vast regions no Alpha Quadrant species has ever charted.\r\n\r\nThe Crew: A mixed-species crew reflecting the Alliance itself. Federation officers form the command backbone, but every department has allied personnel. A Klingon tactical officer who views this assignment as the highest honor of the warrior tradition — protecting explorers on the frontier. A Romulan intelligence liaison whose loyalties are genuine but whose methods make Starfleet officers uncomfortable. A Cardassian chief engineer, brilliant and pragmatic, serving on a ship alongside Bajorans — history neither of them can forget. A Bajoran science officer who requested this posting specifically because the Gamma Quadrant shaped her people's destiny, and she intends to understand it. Supporting crew from Trill, Andorian, Vulcan, and newer allied species.\r\n\r\nThe Captain: A seasoned Federation captain in the Picard-Sisko lineage — diplomatic but decisive, cerebral but unafraid to act. Someone who earned their chair through a career that included both deep space exploration and the messy realities of alliance politics. Not young and brash, not old and tired — at their peak. The kind of captain who makes you believe the chair of the Enterprise still means something. The crew respects them not because of the ship's name, but because of who they are. The LLM should determine gender, species, name, and specifics.\r\n\r\nTone: Earned optimism. These people believe in the mission because they've seen what happens when civilizations stop reaching outward. Pragmatic, competent, professional — but capable of wonder. Drama comes from real ethical dilemmas, alliance friction, and the unknowns of deep space, not from interpersonal dysfunction. Adults doing hard jobs well.\r\n\r\nThe Frontier — Gamma Quadrant: The Dominion War ended 80 years ago, but the Gamma Quadrant is vast. The Dominion's remnants have fractured — some factions seek peace, others resent the Alpha Quadrant's intrusion. Beyond former Dominion space lie entirely unknown civilizations, ancient ruins predating the Founders, spatial phenomena that challenge everything the Federation knows about physics. The further the Enterprise pushes, the clearer it becomes: the Alpha Quadrant alliance, the most powerful coalition in known history, may not be enough for what's out there.\r\n\r\nTechnology: A visible, logical progression from the TNG/DS9/VOY era. No magic leaps — just 80 years of steady advancement amplified by four civilizations pooling their knowledge. Quantum slipstream variants, enhanced shield harmonics incorporating Klingon redundancy philosophy, Romulan cloaking tech shared under treaty (with limitations), Cardassian efficiency in power systems. It all feels earned.\r\n\r\nEpisode Format: Every episode opens with: \"This is the USS Enterprise, stardate [XYZ]. [Captain's personal log entry — a brief, character-revealing reflection on what's ahead or what just happened.]\" This cold open grounds the audience in time, place, and the captain's state of mind before the story begins.\r\n\r\nWhat this show is NOT: Not a reboot or reimagining — it's a continuation. Not grimdark — conflict is real but hope is the point. Not a thousand-year time skip — you can trace the lineage from Kirk to Picard to Sisko to this. Not a crew of dysfunctional misfits — these are the best of the best, chosen for the most important ship in the fleet.",
+  "target_cast_size": 8,
+  "cast_concept": "The cast forms a command-level ensemble reflecting the Alliance's composition: a Federation captain and first officer providing the Starfleet backbone, with department heads from each major Alliance species creating natural dramatic friction. The Klingon, Romulan, Cardassian, and Bajoran officers each carry their civilization's history and values into every decision, making routine operations a constant negotiation between worldviews. Supporting this core are officers from established Federation member species who provide continuity with Trek tradition while the Alliance representatives push the show into new territory. Every character has earned their position through demonstrated excellence, and their conflicts emerge from genuinely different philosophies about exploration, security, and the Alliance's purpose—not from incompetence or personal grudges.",
+  "main_cast": [
+    {
+      "name": "Captain Amara Okonkwo",
+      "species": "Human",
+      "role": "Commanding Officer",
+      "personality": "Possesses the quiet gravity of someone who has seen both the best and worst of what the galaxy offers and chosen to believe in the mission anyway. Leads through clarity of purpose rather than charisma, though she can rally a crew when needed.",
+      "backstory": "Rose through Starfleet during the difficult decades of Alliance-building, serving as first officer during the Romulan Reunification Crisis and commanding a border patrol vessel during the Cardassian Reconstruction. Her appointment to the Enterprise-H was controversial—some wanted a more politically connected captain—but she earned it through a career of making impossible situations work. Daughter of a Starfleet admiral and a Federation diplomat, she grew up understanding that exploration and politics are inseparable.",
+      "voice_description": "Rich contralto with deliberate pacing; speaks as if every word has been weighed. Nigerian-British accent with Starfleet formality layered over warmth. Rarely raises her voice—when she does, it matters."
+    },
+    {
+      "name": "Commander Tevan",
+      "species": "Vulcan",
+      "role": "First Officer / Executive Officer",
+      "personality": "Intellectually curious in a way that sometimes reads as dry humor to non-Vulcans. Provides logical counterweight to the emotional complexity of an Alliance crew while harboring a deep, carefully controlled fascination with the unknown.",
+      "backstory": "Served fifteen years in Vulcan Science Academy deep space research before transferring to Starfleet, an unusual career path that gives him perspective outside typical command-track thinking. His previous posting was as science officer on a long-range survey vessel that made first contact with three species. Requested the Enterprise specifically because the Gamma Quadrant represents the greatest scientific opportunity of the era.",
+      "voice_description": "Measured baritone with precise diction; pauses between thoughts feel intentional rather than hesitant. Speaks slightly slower than humans, with subtle emphasis on key logical points. Occasional dry observations delivered completely deadpan."
+    },
+    {
+      "name": "Lieutenant Commander Korath",
+      "species": "Klingon",
+      "role": "Chief Tactical Officer",
+      "personality": "Embodies the evolution of Klingon honor—sees protecting explorers as the highest calling because it requires courage without glory. Surprisingly philosophical about violence, viewing it as a last resort that must be executed perfectly.",
+      "backstory": "Comes from a minor house that distinguished itself during the Dominion War through sacrifice rather than conquest. Trained in both Klingon Defense Force and Starfleet tactical doctrines, he's one of the first generation of Klingon officers who see the Alliance as their natural home rather than a compromise. His father died defending a Federation colony; he considers this posting the fulfillment of that legacy.",
+      "voice_description": "Deep, resonant bass with controlled intensity; speaks with the cadence of someone who learned Federation Standard as an adult but has mastered it. Growls slightly on hard consonants. Can shift from contemplative to commanding in an instant."
+    },
+    {
+      "name": "Subcommander Vreenak",
+      "species": "Romulan",
+      "role": "Intelligence Liaison / Second Officer",
+      "personality": "Genuinely committed to the Alliance but cannot entirely shed Romulan methods—sees information control and strategic misdirection as tools, not moral failings. Finds Starfleet's transparency both admirable and tactically naive.",
+      "backstory": "Named for a senator who died during the Dominion War, she carries the weight of Romulan sacrifice that made the Alliance possible. Rose through the Tal Shiar's reformed successor agency before being selected for this posting as a symbol of Romulan commitment. Her loyalty is real, but she maintains intelligence networks the captain doesn't know about—not from treachery, but from genuine belief that someone must watch the shadows.",
+      "voice_description": "Soprano with silk-over-steel quality; every sentence sounds like it might contain hidden meaning even when it doesn't. Slight pause before answering direct questions. Romulan accent manifests as elongated vowels and precise sibilants."
+    },
+    {
+      "name": "Lieutenant Commander Damar Tain",
+      "species": "Cardassian",
+      "role": "Chief Engineer",
+      "personality": "Brilliant, pragmatic, and haunted by his people's history without being defined by it. Uses engineering problems as a way to impose order on a universe that proved chaotic and cruel to Cardassia.",
+      "backstory": "Born during the Dominion occupation of Cardassia, orphaned in the aftermath, raised in Federation-assisted reconstruction programs. His name honors both the resistance leader and the spymaster—his parents' attempt to reconcile Cardassia's contradictions. Graduated top of his class from a joint Cardassian-Federation engineering academy. Serving alongside Bajorans is difficult, but he believes the Alliance only works if everyone faces history honestly.",
+      "voice_description": "Tenor with clipped efficiency; speaks in technical shorthand when stressed. Cardassian accent emerges as slightly nasal quality and emphasis on final syllables. Delivers bad news with clinical directness, good news with genuine but restrained warmth."
+    },
+    {
+      "name": "Lieutenant Commander Kira Jaro",
+      "species": "Bajoran",
+      "role": "Chief Science Officer",
+      "personality": "Carries her people's spiritual tradition into scientific inquiry—sees exploration as a form of seeking the Prophets' purpose. Intensely focused, occasionally stubborn, but capable of profound wonder.",
+      "backstory": "Granddaughter of a Resistance fighter and a Vedek, she grew up hearing stories of the Occupation and the Celestial Temple. Studied the wormhole's properties at the Bajoran Science Institute before joining Starfleet specifically to explore the Gamma Quadrant. Working with Cardassians tests her daily, but she believes the Prophets placed her here for a reason. Her faith is quiet but unshakeable.",
+      "voice_description": "Clear mezzo-soprano with musical quality; Bajoran accent softens consonants and adds slight lilt to questions. Speaks faster when excited by discovery, slower when processing difficult emotions. Prayer cadences occasionally surface in her speech patterns."
+    },
+    {
+      "name": "Lieutenant Zhanil Th'Kethris",
+      "species": "Andorian",
+      "role": "Chief of Security",
+      "personality": "Combines Andorian martial tradition with genuine warmth toward crewmates she considers under her protection. Quick to assess threats, slow to trust, but fiercely loyal once trust is earned.",
+      "backstory": "Third-generation Starfleet from a family that helped found the Federation. Served in Starfleet Security during several Alliance integration crises, developing expertise in managing multi-species crews under pressure. Requested this posting because she believes the Enterprise represents what her ancestors fought for—and she intends to make sure it survives to prove them right.",
+      "voice_description": "Alto with crisp attack on consonants; Andorian accent manifests as slight buzz on sibilants and emphasis on action verbs. Speaks in short, direct sentences during tactical situations, more expansively in personal moments. Antennae movement audible as subtle shifts in her breathing patterns."
+    },
+    {
+      "name": "Lieutenant Verix Dax",
+      "species": "Trill (Joined)",
+      "role": "Chief Medical Officer",
+      "personality": "The Dax symbiont's centuries of experience manifest as unflappable calm and occasionally unsettling perspective on mortality. Combines scientific rigor with genuine compassion, seeing medicine as the most intimate form of exploration.",
+      "backstory": "Verix is the Dax symbiont's twelfth host, carrying memories that span the Federation's history including previous Enterprise missions. The current host was a trauma surgeon during a border conflict before joining, chosen specifically because Dax needed someone who understood loss. Serves as unofficial counselor to senior staff, offering perspective that only centuries of accumulated wisdom can provide.",
+      "voice_description": "Warm tenor with unhurried cadence; speaks as if time moves differently for someone with three hundred years of memory. Occasional archaic phrasings surface from previous hosts. Trill accent barely perceptible—mostly manifests as unusual word choices and references to events no one else remembers firsthand."
+    }
+  ],
+  "created_at": 1776567461.1962886
+}

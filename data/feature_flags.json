@@ -1,0 +1,11 @@
+{
+  "USE_STORY_OS": false,
+  "USE_AGENTIC_PIPELINE": false,
+  "USE_SHOW_STATE_DIFF_PROMPTS": false,
+  "USE_DIRECTOR_INLINE": false,
+  "USE_BIBLE_RAG": false,
+  "USE_GENERATION_TRACE": false,
+  "USE_DIA2_DIALOGUE": false,
+  "USE_BARK_SFX": false,
+  "USE_AUDIO_QA_BLOCK": false
+}

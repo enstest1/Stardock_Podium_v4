@@ -34,8 +34,9 @@ class EpisodeMemory:
     
     def __init__(self):
         """Initialize the episode memory manager."""
+        from config.paths import EPISODES_DIR
         self.mem0_client = get_mem0_client()
-        self.episodes_dir = Path("episodes")
+        self.episodes_dir = EPISODES_DIR
     
     def _load_episode_data(self, episode_id: str) -> Optional[Dict[str, Any]]:
         """Load episode data from files (structure.json and script.json).
@@ -515,7 +516,7 @@ class EpisodeMemory:
             Success status
         """
         try:
-            episode_dir = Path("episodes") / episode_id
+            episode_dir = self.episodes_dir / episode_id
             episode_dir.mkdir(parents=True, exist_ok=True)
             
             memories_file = episode_dir / "memories.json"
@@ -547,7 +548,7 @@ class EpisodeMemory:
             Dictionary of memory entries by category, or None if not found
         """
         try:
-            episode_dir = Path("episodes") / episode_id
+            episode_dir = self.episodes_dir / episode_id
             memories_file = episode_dir / "memories.json"
             
             if not memories_file.exists():
@@ -584,7 +585,11 @@ class EpisodeMemory:
             "episode_id": episode_id,
             "created_at": time.time()
         })
-        
+        # Ensure series is present for cross-episode filtering (Mem0 + prompts)
+        ep_obj = self._load_episode_data(episode_id)
+        if ep_obj and ep_obj.get('series'):
+            metadata.setdefault('series', ep_obj.get('series'))
+
         # Add to memory
         return self.mem0_client.add_episode_memory(
             content=content,
@@ -742,21 +747,26 @@ class EpisodeMemory:
         Returns:
             Dictionary with context organized by category
         """
-        # Search for previous episode memories
-        query = f"episode {current_episode_number - 1}" if current_episode_number > 1 else "episode 1"
-        
         # Get all recent memories
         all_memories = self.get_all_memories()
-        
+
         # Filter to previous episodes
         previous_memories = []
         for memory in all_memories:
             metadata = memory.get('metadata', {})
             ep_num = metadata.get('episode_number', 0)
-            
+
             # Include memories from previous episodes
             if ep_num > 0 and ep_num < current_episode_number:
-                if not series or metadata.get('series') == series:
+                series_meta = metadata.get('series')
+                if not series:
+                    match_series = True
+                elif series_meta is None or series_meta == '':
+                    # Legacy rows without series still count for continuity
+                    match_series = True
+                else:
+                    match_series = series_meta == series
+                if match_series:
                     previous_memories.append(memory)
         
         # Sort by episode number (most recent first)

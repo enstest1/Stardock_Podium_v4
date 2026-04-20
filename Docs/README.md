@@ -12,7 +12,7 @@ Stardock Podium ingests sci-fi reference materials and generates complete, Star 
 - **Vector Memory**: Store and retrieve reference materials using Mem0 vector database
 - **Save-the-Cat Story Structure**: Generate well-structured episodes following proven storytelling beats
 - **Character Continuity**: Maintain consistent characters across episodes with memory of prior developments
-- **Voice Synthesis**: High-quality character voices using ElevenLabs API
+- **Voice Synthesis**: Local **Kokoro** TTS with `voices/samples/` reference WAVs
 - **Audio Production**: Complete audio pipeline with music, sound effects, and post-processing
 - **Quality Checking**: Automated script and audio quality verification
 - **Windows 10 Native**: Designed to run natively on Windows 10 without Docker or WSL
@@ -26,8 +26,8 @@ Stardock Podium ingests sci-fi reference materials and generates complete, Star 
 - FFmpeg (added to PATH)
 - API keys for:
   - OpenAI or OpenRouter
-  - ElevenLabs
-  - Mem0
+  - Mem0 (optional for local Mem0 config)
+  - ElevenLabs (optional; legacy voice-registry features only)
 
 ### Setup
 

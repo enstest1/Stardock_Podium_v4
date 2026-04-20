@@ -25,9 +25,11 @@ except ImportError:
     raise
 
 # Local imports
-from mem0_client import get_mem0_client
-from reference_memory_sync import search_references
+from book_knowledge import get_knowledge_context
 from episode_memory import get_episode_memory
+from mem0_client import get_mem0_client
+from script_line_ids import ensure_script_line_ids
+from config.paths import SHOWS_DIR
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -53,7 +55,7 @@ class StoryStructure:
             "name": "Setup",
             "description": "Introduces the main characters, their habits, and their world.",
             "percentage": 0.10,
-            "duration_factor": 0.08
+            "duration_factor": 0.13
         },
         {
             "name": "Catalyst",
@@ -83,7 +85,7 @@ class StoryStructure:
             "name": "Fun and Games",
             "description": "The promise of the premise is explored. The enjoyable part of the story.",
             "percentage": 0.40,
-            "duration_factor": 0.15
+            "duration_factor": 0.20
         },
         {
             "name": "Midpoint",
@@ -95,7 +97,7 @@ class StoryStructure:
             "name": "Bad Guys Close In",
             "description": "Antagonistic forces regroup and close in on the protagonist.",
             "percentage": 0.60,
-            "duration_factor": 0.08
+            "duration_factor": 0.14
         },
         {
             "name": "All Is Lost",
@@ -119,7 +121,7 @@ class StoryStructure:
             "name": "Finale",
             "description": "The protagonist proves they've changed and succeeds (or fails tragically).",
             "percentage": 0.85,
-            "duration_factor": 0.12
+            "duration_factor": 0.22
         },
         {
             "name": "Final Image",
@@ -164,7 +166,48 @@ class StoryStructure:
         else:
             self.using_openrouter = False
             logger.warning("OPENROUTER_API_KEY not found in environment variables")
-    
+
+        # Load book knowledge (Tier 1: series bible + style profile)
+        self.knowledge = get_knowledge_context()
+        if not self.knowledge.is_ready():
+            logger.warning(
+                "Book knowledge not ready — run `python main.py ingest` first. "
+                "Episodes will generate without series bible context."
+            )
+
+    def complete_text(
+        self,
+        system: str,
+        user: str,
+        max_tokens: int = 800,
+    ) -> str:
+        """Single chat completion (sync); shared by agentic planner."""
+        try:
+            if self.using_openrouter:
+                response = self.openrouter_client.chat.completions.create(
+                    model="anthropic/claude-opus-4.5",
+                    messages=[
+                        {"role": "system", "content": system},
+                        {"role": "user", "content": user},
+                    ],
+                    temperature=0.65,
+                    max_tokens=min(max_tokens, 4096),
+                )
+            else:
+                response = self.client.chat.completions.create(
+                    model="gpt-4o",
+                    messages=[
+                        {"role": "system", "content": system},
+                        {"role": "user", "content": user},
+                    ],
+                    temperature=0.65,
+                    max_tokens=max_tokens,
+                )
+            return (response.choices[0].message.content or "").strip()
+        except Exception as e:
+            logger.error("complete_text failed: %s", e)
+            return ""
+
     def generate_episode_structure(self, episode_data: Dict[str, Any]) -> Dict[str, Any]:
         """Generate the structure for a new podcast episode.
         
@@ -211,6 +254,38 @@ class StoryStructure:
             "metadata": {}
         }
         
+        # Pull season arc context (Level 2) if the show has a plan
+        try:
+            from show_os.seasons import SeasonPlanner
+            show_id = self.knowledge.series_bible.get('show_id')
+            current_season = None
+
+            if show_id:
+                show_state_path = (
+                    SHOWS_DIR / show_id / 'show_state.json'
+                )
+                if show_state_path.exists():
+                    with open(show_state_path) as f:
+                        current_season = json.load(f).get(
+                            'current_season')
+
+            if show_id and current_season:
+                planner = SeasonPlanner()
+                slot = planner.get_episode_slot(
+                    show_id, current_season, episode_number)
+                if slot:
+                    episode['season_number'] = current_season
+                    episode['arc_slot'] = slot
+                    logger.info(
+                        'Episode %s has arc beat: %s',
+                        episode_number,
+                        slot.get('arc_beat', '')[:80],
+                    )
+        except Exception as e:
+            logger.warning(
+                'Could not load season arc context '
+                '(non-critical): %s', e)
+
         # Add episode to memory
         self._add_episode_to_memory(episode)
         
@@ -229,14 +304,20 @@ class StoryStructure:
             List of beats with calculated durations
         """
         total_seconds = target_duration * 60
-        
+
+        # Template factors may not sum to 1.0 after edits; normalize so total
+        # runtime matches target (tests and scheduling depend on this).
+        raw_factors = [float(b['duration_factor']) for b in self.BEAT_SHEET]
+        factor_sum = sum(raw_factors) or 1.0
+        norm_factors = [f / factor_sum for f in raw_factors]
+
         beats = []
-        for beat in self.BEAT_SHEET:
-            beat_duration = int(total_seconds * beat["duration_factor"])
-            
+        for beat, nf in zip(self.BEAT_SHEET, norm_factors):
+            beat_duration = int(total_seconds * nf)
+
             # Calculate timepoints for the beat
-            start_percent = beat["percentage"] - (beat["duration_factor"] / 2)
-            end_percent = beat["percentage"] + (beat["duration_factor"] / 2)
+            start_percent = beat['percentage'] - (nf / 2)
+            end_percent = beat['percentage'] + (nf / 2)
             
             start_time = int(total_seconds * start_percent)
             end_time = int(total_seconds * end_percent)
@@ -374,72 +455,98 @@ class StoryStructure:
     
     def generate_character_cast(self, episode_id: str) -> List[Dict[str, Any]]:
         """Generate a cast of characters for the episode.
-        
+
+        When Story OS is enabled and a series bible defines ``main_cast``,
+        the permanent cast is used as-is and the LLM only invents 0-2
+        episode-specific guest characters.  This keeps names stable across
+        episodes so registered voices carry over.
+
         Args:
             episode_id: ID of the episode
-        
+
         Returns:
             List of character dictionaries
         """
-        # Load episode data
         episode = self.get_episode(episode_id)
         if not episode:
             logger.error(f"Episode not found: {episode_id}")
             return []
-        
+
+        bible_cast = self._load_bible_cast(episode)
+        if bible_cast:
+            return self._generate_with_permanent_cast(
+                episode_id, episode, bible_cast)
+
         try:
-            # Search for existing character archetypes in memory
             character_archetypes = self.mem0_client.search_memory(
                 "Star Trek character archetypes",
                 user_id="reference_materials",
                 memory_type=self.mem0_client.REFERENCE_MATERIAL,
                 limit=3
             )
-            
-            # Create context from episode data
+
             context = {
                 "title": episode["title"],
                 "theme": episode["theme"],
                 "series": episode["series"]
             }
-            
-            # Create prompt for character generation
-            existing_archetypes = "\n".join([arch["memory"] for arch in character_archetypes])
-            
+
+            existing_archetypes = "\n".join(
+                [arch["memory"] for arch in character_archetypes])
+
+            target_cast_size = self.knowledge.series_bible.get(
+                "target_cast_size")
+            cast_concept = self.knowledge.series_bible.get(
+                "cast_concept", "")
+
+            if target_cast_size:
+                cast_instruction = (
+                    f"Generate exactly {target_cast_size} "
+                    "main cast members."
+                )
+            else:
+                cast_instruction = (
+                    "Generate a cast appropriate to the show's "
+                    "premise (anywhere from 2 to 12 members)."
+                )
+
             prompt = f"""
-            Generate a cast of 4-6 main characters for a Star Trek-style podcast episode.
-            
-            Episode Title: {context['title']}
-            Series: {context['series']}
-            Theme: {context['theme'] or 'Not specified'}
-            
-            Character Information Reference:
-            {existing_archetypes}
-            
-            For each character, provide:
-            1. Name
-            2. Species
-            3. Role on the ship/station
-            4. Personality traits
-            5. Key backstory elements
-            6. Voice description (for voice acting)
-            
-            The cast should be diverse and should typically include:
-            - A commanding officer
-            - A science or technical specialist
-            - A security or tactical officer
-            - A medical or counselor role
-            - 1-2 additional specialists or guest characters
-            
-            Format each character as a detailed profile that can be used for voice casting and character development.
-            """
+{cast_instruction}
+
+EPISODE CONTEXT:
+Title: {context['title']}
+Series: {context['series']}
+Theme: {context['theme'] or 'Not specified'}
+
+SHOW CAST CONCEPT:
+{cast_concept if cast_concept else "Determine the right cast composition based on the show's premise."}
+
+Character archetypes from reference material:
+{existing_archetypes}
+
+For each character, provide:
+1. Name
+2. Species
+3. Role
+4. Personality traits
+5. Key backstory elements
+6. Voice description (for voice acting — be specific about tone, cadence, accent)
+
+The cast should serve the story you're telling, not a generic template.
+Format each character as a detailed profile.
+"""
             
             # Use OpenRouter with Claude Opus 4.5 if available, otherwise fallback to OpenAI
             if self.using_openrouter:
                 response = self.openrouter_client.chat.completions.create(
                     model="anthropic/claude-opus-4.5",
                     messages=[
-                        {"role": "system", "content": "You are a Star Trek universe expert and character creator."},
+                        {
+                            "role": "system",
+                            "content": self.knowledge.build_system_prompt(
+                                "You are a Star Trek universe expert and character creator."
+                            ),
+                        },
                         {"role": "user", "content": prompt}
                     ],
                     temperature=0.8,
@@ -449,7 +556,12 @@ class StoryStructure:
                 response = self.client.chat.completions.create(
                     model="gpt-4o",
                     messages=[
-                        {"role": "system", "content": "You are a Star Trek universe expert and character creator."},
+                        {
+                            "role": "system",
+                            "content": self.knowledge.build_system_prompt(
+                                "You are a Star Trek universe expert and character creator."
+                            ),
+                        },
                         {"role": "user", "content": prompt}
                     ],
                     temperature=0.8,
@@ -471,7 +583,193 @@ class StoryStructure:
         except Exception as e:
             logger.error(f"Error generating characters: {e}")
             return []
-    
+
+    def _load_bible_cast(self, episode: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Return main_cast from any available source.
+
+        Sources checked in order:
+        1. ``self.knowledge.series_bible`` (set by ``new-show``)
+        2. Story OS series bible (set by ``init-story-os``)
+        """
+        # Path 1: new-show writes main_cast into the global bible
+        global_cast = self.knowledge.series_bible.get(
+            'main_cast', [])
+        if global_cast:
+            cast = []
+            for c in global_cast:
+                char = dict(c) if isinstance(c, dict) else {}
+                if char.get('name'):
+                    char.setdefault(
+                        'character_id',
+                        f"char_{uuid.uuid4().hex[:8]}")
+                    char['cast_type'] = 'permanent'
+                    cast.append(char)
+            if cast:
+                return cast
+
+        # Path 2: Story OS series bible
+        try:
+            from story_os.flags import feature_enabled
+            if not feature_enabled('USE_STORY_OS', default=False):
+                return []
+            from story_os.context import series_key_from_episode
+            from story_os.io import load_series_bible
+            sid = series_key_from_episode(episode)
+            bible = load_series_bible(sid)
+            if bible and bible.main_cast:
+                return [m.model_dump() for m in bible.main_cast]
+        except Exception as e:
+            logger.warning('Could not load bible cast: %s', e)
+        return []
+
+    def _prior_guest_names(self, episode: Dict[str, Any],
+                            bible_names: set) -> List[str]:
+        """Return names of past guest characters from show state.
+
+        Checks both the ``data/shows/`` past_guests list and the
+        Story OS show-state character_states.
+        """
+        names: List[str] = []
+
+        # Path 1: data/shows/<show_id>/show_state.json
+        try:
+            show_id = self.knowledge.series_bible.get('show_id')
+            if show_id:
+                state_path = (
+                    SHOWS_DIR / show_id / 'show_state.json'
+                )
+                if state_path.exists():
+                    with open(state_path) as f:
+                        state = json.load(f)
+                    for g in state.get('past_guests', []):
+                        n = g.get('name', '')
+                        if n and n not in bible_names:
+                            names.append(n)
+        except Exception:
+            pass
+
+        # Path 2: Story OS show state
+        try:
+            from story_os.context import series_key_from_episode
+            from story_os.io import load_show_state
+            sid = series_key_from_episode(episode)
+            state = load_show_state(sid)
+            if state is not None:
+                for n in state.character_states:
+                    if n not in bible_names and n not in names:
+                        names.append(n)
+        except Exception:
+            pass
+
+        return names
+
+    def _generate_with_permanent_cast(
+        self,
+        episode_id: str,
+        episode: Dict[str, Any],
+        bible_cast: List[Dict[str, Any]],
+    ) -> List[Dict[str, Any]]:
+        """Use permanent cast from bible, optionally add guest characters.
+
+        The LLM receives the list of prior guest characters so it can
+        bring one back (recurring guest) or invent someone new.
+        """
+        logger.info(
+            'Using %s permanent cast members from series bible.',
+            len(bible_cast),
+        )
+        bible_names = {c.get('name', '') for c in bible_cast}
+        cast_names = ', '.join(sorted(bible_names - {''}))
+        theme = episode.get('theme') or 'general'
+
+        prior_guests = self._prior_guest_names(episode, bible_names)
+        guest_history = ''
+        if prior_guests:
+            guest_history = (
+                '\nPrevious guest characters who appeared in '
+                'earlier episodes (you may bring one back if it '
+                'fits the theme): '
+                + ', '.join(prior_guests[:10])
+                + '\n'
+            )
+
+        guest_prompt = (
+            f"The permanent crew is: {cast_names}.\n"
+            f"Episode theme: {theme}\n"
+            f"{guest_history}\n"
+            "If this episode's theme benefits from 1-2 guest "
+            "characters (e.g. an alien ambassador, a returning "
+            "informant, a stranded pilot), generate ONLY the guest "
+            "characters. You may reuse a previous guest if it "
+            "makes narrative sense, or create someone new.\n"
+            "Use this format per character:\n"
+            "Name, Species, Role, Personality, Backstory, "
+            "Voice description.\n"
+            "If no guests are needed, reply with: NO_GUESTS"
+        )
+        guests: List[Dict[str, Any]] = []
+        try:
+            raw = self.complete_text(
+                'You are a Star Trek universe character designer.',
+                guest_prompt,
+                max_tokens=600,
+            )
+            if raw and 'NO_GUESTS' not in raw.upper():
+                guests = self._parse_characters(raw)
+                for g in guests:
+                    g['cast_type'] = 'guest'
+                if guests:
+                    logger.info(
+                        'Added %s guest character(s) for this episode.',
+                        len(guests),
+                    )
+        except Exception as e:
+            logger.warning('Guest character generation skipped: %s', e)
+
+        for c in bible_cast:
+            c.setdefault('cast_type', 'permanent')
+
+        characters = bible_cast + guests
+        episode['characters'] = characters
+        self._save_episode(episode)
+
+        # Record guests in show_state for future reference
+        try:
+            show_id = self.knowledge.series_bible.get('show_id')
+            if show_id:
+                state_path = (
+                    SHOWS_DIR / show_id / 'show_state.json'
+                )
+                if state_path.exists():
+                    with open(state_path) as f:
+                        state = json.load(f)
+                    existing = {
+                        g.get('name')
+                        for g in state.get('past_guests', [])
+                    }
+                    for char in characters:
+                        if (
+                            char.get('cast_type') == 'guest'
+                            and char.get('name') not in existing
+                        ):
+                            state.setdefault(
+                                'past_guests', []).append({
+                                    'name': char.get('name'),
+                                    'species': char.get('species'),
+                                    'role': char.get('role'),
+                                    'first_appearance_episode': (
+                                        episode.get(
+                                            'episode_number')),
+                                })
+                    with open(state_path, 'w') as f:
+                        json.dump(state, f, indent=2)
+        except Exception as e:
+            logger.warning(
+                'Could not update past_guests in '
+                'show_state: %s', e)
+
+        return characters
+
     def _parse_characters(self, character_text: str) -> List[Dict[str, Any]]:
         """Parse character descriptions from generated text.
         
@@ -586,12 +884,11 @@ class StoryStructure:
                 scene_count = max(1, int((beat["duration_seconds"] / target_seconds) * target_scenes))
                 scenes_per_beat[beat["name"]] = scene_count
             
-            # Search for relevant reference materials
-            query = f"Star Trek {episode.get('theme', '')}"
-            references = search_references(query, limit=3)
-            
-            # Extract reference text
-            reference_text = "\n".join([ref.get("memory", "") for ref in references])
+            # Tier 2: RAG context (full chunks, no truncation here)
+            reference_text = self.knowledge.get_rag_context(
+                episode_theme=episode.get("theme", ""),
+                limit=6,
+            )
             
             # Get previous episode context for continuity (if not first episode)
             previous_context = ""
@@ -620,7 +917,16 @@ class StoryStructure:
             except Exception as e:
                 logger.warning(f"Could not retrieve previous episode context (non-critical): {e}")
                 previous_context = ""
-            
+
+            story_os_extra = ""
+            try:
+                from story_os.flags import feature_enabled
+                from story_os.context import build_prompt_enrichment
+                if feature_enabled('USE_STORY_OS', default=False):
+                    story_os_extra = build_prompt_enrichment(episode)
+            except Exception as e:
+                logger.warning('Story OS scene context skipped: %s', e)
+
             # Prepare character information
             character_info = "\n".join([
                 f"{char.get('name', 'Unknown')}: {char.get('species', 'Unknown')} - {char.get('role', 'Unknown')}"
@@ -641,7 +947,8 @@ class StoryStructure:
                         total_scenes=sum(scenes_per_beat.values()),
                         reference_text=reference_text,
                         character_info=character_info,
-                        previous_context=previous_context
+                        previous_context=previous_context,
+                        extra_context=story_os_extra,
                     )
                     tasks.append(task)
             
@@ -662,7 +969,8 @@ class StoryStructure:
     async def _generate_scene_outline(self, episode: Dict[str, Any], beat: Dict[str, Any],
                                     scene_number: int, total_scenes: int,
                                     reference_text: str, character_info: str,
-                                    previous_context: str = "") -> Dict[str, Any]:
+                                    previous_context: str = "",
+                                    extra_context: str = "") -> Dict[str, Any]:
         """Generate a single scene outline.
         
         Args:
@@ -701,10 +1009,12 @@ class StoryStructure:
             {character_info}
             
             REFERENCE MATERIAL:
-            {reference_text[:500] if reference_text else "No specific reference material."}
+            {reference_text if reference_text else "No specific reference material."}
             
             {previous_context if previous_context else ""}
-            
+
+            {extra_context if extra_context else ""}
+
             Create a detailed scene outline with:
             1. Setting (where the scene takes place)
             2. Character participants (who is in this scene)
@@ -819,12 +1129,18 @@ class StoryStructure:
         
         return scene
     
-    def generate_episode_script(self, episode_id: str) -> Dict[str, Any]:
+    def generate_episode_script(
+        self,
+        episode_id: str,
+        extra_preamble: str = '',
+    ) -> Dict[str, Any]:
         """Generate a complete script for an episode.
-        
+
         Args:
             episode_id: ID of the episode
-        
+            extra_preamble: Optional block prepended to each scene prompt
+                (e.g. agentic plan).
+
         Returns:
             Dictionary with complete script
         """
@@ -857,10 +1173,25 @@ class StoryStructure:
             for i, scene in enumerate(episode.get("scenes", []), 1):
                 logger.info(f"Generating script for scene {i}/{total_scenes}: {scene.get('beat', 'Unknown beat')}")
                 # Generate script for this scene
-                scene_script = self._generate_scene_script(episode, scene)
+                scene_script = self._generate_scene_script(
+                    episode, scene, extra_preamble=extra_preamble)
                 script["scenes"].append(scene_script)
                 logger.info(f"Completed scene {i}/{total_scenes}")
             
+            ensure_script_line_ids(script)
+            try:
+                from draft_store import apply_line_overrides
+                apply_line_overrides(script, episode_id)
+            except Exception as e:
+                logger.warning('Pin overrides skipped: %s', e)
+            try:
+                from story_os.flags import feature_enabled as _fe
+                if _fe('USE_DIRECTOR_INLINE', default=False):
+                    from director_pass import augment_script_with_director
+                    augment_script_with_director(script)
+            except Exception as e:
+                logger.warning('Director pass skipped: %s', e)
+
             # Update episode with script
             logger.info("Updating episode with generated script...")
             episode["script"] = script
@@ -878,7 +1209,18 @@ class StoryStructure:
                 logger.info("Memory extraction completed")
             except Exception as e:
                 logger.warning(f"Memory extraction failed (non-critical): {e}")
-            
+
+            try:
+                from story_os.flags import feature_enabled as _fe2
+                if _fe2('USE_STORY_OS', default=False):
+                    from story_os.context import series_key_from_episode
+                    from story_os.show_state import update_show_state_after_script
+                    sid = series_key_from_episode(episode)
+                    update_show_state_after_script(
+                        sid, episode_id, episode, script)
+            except Exception as e:
+                logger.warning('Show state update skipped: %s', e)
+
             logger.info(f"Script generation completed for episode: {episode.get('title')}")
             return script
         
@@ -886,13 +1228,19 @@ class StoryStructure:
             logger.error(f"Error generating episode script: {e}")
             return {}
     
-    def _generate_scene_script(self, episode: Dict[str, Any], scene: Dict[str, Any]) -> Dict[str, Any]:
+    def _generate_scene_script(
+        self,
+        episode: Dict[str, Any],
+        scene: Dict[str, Any],
+        extra_preamble: str = '',
+    ) -> Dict[str, Any]:
         """Generate detailed script for a scene.
-        
+
         Args:
             episode: Episode data
             scene: Scene data
-        
+            extra_preamble: Optional instructions prepended to the prompt
+
         Returns:
             Dictionary with scene script
         """
@@ -933,18 +1281,53 @@ class StoryStructure:
         # Add character continuity context if available
         if character_contexts:
             context += "\n" + "\n".join(character_contexts) + "\n"
-        
-        # Get reference material
+
+        # Season arc context (Level 2)
+        if episode.get('arc_slot'):
+            slot = episode['arc_slot']
+            context += (
+                f"\nSEASON ARC \u2014 {slot.get('arc_title', '')}:\n"
+                f"{slot.get('arc_summary', '')}\n"
+                f"\nTHIS EPISODE'S ARC BEAT:\n"
+                f"{slot.get('arc_beat', '')}\n"
+                f"Tension: {slot.get('tension_level', 'rising')}\n"
+                f"Arc importance: "
+                f"{slot.get('arc_importance', 'central')}\n"
+            )
+
+        # Get reference material (Tier 2 RAG)
         logger.info("Searching for relevant reference material...")
-        reference_text = search_references(
-            query=f"{scene.get('beat', '')} {scene.get('setting', '')}",
-            limit=3
+        reference_text = self.knowledge.get_rag_context(
+            scene_beat=scene.get("beat", ""),
+            scene_setting=scene.get("setting", ""),
+            episode_theme=episode.get("theme", ""),
+            limit=6,
         )
         
+        story_os_block = ""
+        try:
+            from story_os.flags import feature_enabled as _fe3
+            from story_os.context import build_prompt_enrichment
+            if _fe3('USE_STORY_OS', default=False):
+                story_os_block = build_prompt_enrichment(episode)
+        except Exception:
+            story_os_block = ""
+
         # Create prompt
         logger.info("Creating generation prompt...")
+        preamble_parts = []
+        if (extra_preamble or '').strip():
+            preamble_parts.append(extra_preamble.strip())
+        if story_os_block:
+            preamble_parts.append(
+                'STORY OS (constraints and continuity):\n' + story_os_block)
+        preamble = '\n\n'.join(p for p in preamble_parts if p).strip()
         prompt = (
             f"Generate a detailed script for a Star Trek audio drama scene.\n\n"
+        )
+        if preamble:
+            prompt += preamble + "\n\n"
+        prompt += (
             f"Context:\n{context}\n"
             f"Reference Material:\n{reference_text}\n\n"
             f"Generate a scene that includes:\n"
@@ -963,7 +1346,12 @@ class StoryStructure:
                 response = self.openrouter_client.chat.completions.create(
                     model="anthropic/claude-opus-4.5",
                     messages=[
-                        {"role": "system", "content": "You are an expert screenwriter for audio dramas."},
+                        {
+                            "role": "system",
+                            "content": self.knowledge.build_system_prompt(
+                                "You are an expert screenwriter for audio dramas."
+                            ),
+                        },
                         {"role": "user", "content": prompt}
                     ],
                     temperature=0.7,
@@ -973,7 +1361,12 @@ class StoryStructure:
                 response = self.client.chat.completions.create(
                     model="gpt-4o",
                     messages=[
-                        {"role": "system", "content": "You are an expert screenwriter for audio dramas."},
+                        {
+                            "role": "system",
+                            "content": self.knowledge.build_system_prompt(
+                                "You are an expert screenwriter for audio dramas."
+                            ),
+                        },
                         {"role": "user", "content": prompt}
                     ],
                     temperature=0.7,
@@ -1008,74 +1401,182 @@ class StoryStructure:
     
     def _parse_script_lines(self, script_content: str) -> List[Dict[str, Any]]:
         """Parse script content into structured lines.
-        
+
+        Accepts two screenplay styles and normalizes both into the same
+        ``{type, character, content}`` line records:
+
+        1. **Markdown style** (what OpenRouter LLMs emit by default)::
+
+               **CAPTAIN OKONKWO (V.O.)**
+               *(measured, formal)*
+
+               Captain's log, stardate 865471.3. ...
+
+           Speaker headers are ``**NAME**`` on their own line, optionally
+           with a trailing parenthetical like ``(V.O.)`` / ``(CONT'D)``.
+           Subsequent non-header paragraphs are attached to that speaker
+           until the next header appears.
+
+        2. **Colon style**::
+
+               CAPTAIN OKONKWO: Status, Commander.
+
+           One-shot speaker-and-line in a single paragraph.
+
+        Italic-parenthetical director notes like ``*(warm but commanding)*``,
+        bracketed scene descriptions ``[...]``, and parenthesized sound
+        cues ``(warp core hum)`` are emitted as ``description`` /
+        ``sound_effect`` records respectively. Pure markdown noise
+        (``---``, ``****``, empty lines, ``# headings``) is dropped.
+
         Args:
-            script_content: Generated script content
-        
+            script_content: Generated script content.
+
         Returns:
-            List of line dictionaries
+            List of line dictionaries ready for ``script.json``.
         """
-        lines = []
-        
-        # Split script into paragraphs
+        lines: List[Dict[str, Any]] = []
+
+        header_re = re.compile(
+            r"""^\*\*\s*
+                ([A-Z][A-Z0-9 .\'\-]+?)     # CAPS speaker name
+                \s*
+                (?:\([^)]*\)\s*)*            # optional (V.O.), (CONT'D), etc.
+                \*\*\s*:?\s*$                # closing ** and optional trailing ':'
+            """,
+            re.VERBOSE,
+        )
+        colon_re = re.compile(
+            r"""^([A-Z][A-Z0-9 .\'\-]+?)     # CAPS speaker name
+                \s*
+                (?:\([^)]*\)\s*)*            # optional (V.O.), (CONT'D), etc.
+                :\s*
+                (.+)                         # dialogue (DOTALL)
+            """,
+            re.VERBOSE | re.DOTALL,
+        )
+        italic_paren_re = re.compile(
+            r'^\s*\*+\s*\(\s*(.+?)\s*\)\s*\*+\s*$', re.DOTALL)
+        bracket_re = re.compile(r'^\s*\[\s*(.+?)\s*\]\s*$', re.DOTALL)
+        paren_only_re = re.compile(
+            r'^\s*\(\s*(.+?)\s*\)\s*$', re.DOTALL)
+        noise_re = re.compile(
+            r'^\s*(?:[-*_=~]{3,}|\*{2,}|#{1,6}\s.*|\*)\s*$')
+        markdown_header_ignore = {
+            'SCENE DESCRIPTION',
+        }
+
+        def strip_md(text: str) -> str:
+            text = text.replace('**', '')
+            text = re.sub(
+                r'^\*+\s*\(\s*(.+?)\s*\)\s*\*+\s*$',
+                r'(\1)',
+                text.strip(),
+                flags=re.DOTALL,
+            )
+            return text.strip()
+
+        def emit_speaker_line(character: str, content: str) -> None:
+            cleaned = strip_md(content)
+            if not cleaned:
+                return
+            if character.upper() == 'NARRATOR':
+                lines.append({
+                    'type': 'narration',
+                    'content': cleaned,
+                })
+            else:
+                lines.append({
+                    'type': 'dialogue',
+                    'character': character,
+                    'content': cleaned,
+                })
+
         paragraphs = re.split(r'\n{2,}', script_content)
-        
-        scene_description = ""
-        
+        current_speaker: Optional[str] = None
+
         for paragraph in paragraphs:
             paragraph = paragraph.strip()
             if not paragraph:
                 continue
-            
-            # Check for scene description in brackets
-            description_match = re.search(r'\[(.*?)\]', paragraph)
-            if description_match:
-                scene_description = description_match.group(1).strip()
-                # Check if there's content after the description
-                remaining = re.sub(r'\[(.*?)\]', '', paragraph).strip()
-                if not remaining:
-                    lines.append({
-                        "type": "description",
-                        "content": scene_description
-                    })
+            if noise_re.match(paragraph):
+                continue
+
+            parts = paragraph.split('\n', 1)
+            first_line = parts[0].strip()
+            remainder = parts[1].strip() if len(parts) > 1 else ''
+
+            header_match = header_re.match(first_line)
+            if header_match:
+                speaker = header_match.group(1).strip().rstrip(':').strip()
+                if speaker in markdown_header_ignore:
+                    current_speaker = None
+                    if remainder:
+                        cleaned = strip_md(remainder)
+                        if cleaned:
+                            lines.append({
+                                'type': 'description',
+                                'content': cleaned,
+                            })
                     continue
-                paragraph = remaining
-            
-            # Check for sound effect in parentheses
-            sound_effect_match = re.search(r'\((.*?)\)', paragraph)
-            if sound_effect_match and len(sound_effect_match.group(0)) > len(paragraph) * 0.7:
+                current_speaker = speaker
+                if remainder:
+                    if italic_paren_re.match(remainder):
+                        continue
+                    emit_speaker_line(speaker, remainder)
+                continue
+
+            colon_match = colon_re.match(paragraph)
+            if colon_match:
+                speaker = colon_match.group(1).strip()
+                dialogue = colon_match.group(2).strip()
+                if speaker in markdown_header_ignore:
+                    cleaned = strip_md(dialogue)
+                    if cleaned:
+                        lines.append({
+                            'type': 'description',
+                            'content': cleaned,
+                        })
+                    continue
+                emit_speaker_line(speaker, dialogue)
+                current_speaker = speaker
+                continue
+
+            if bracket_re.match(paragraph):
+                inner = bracket_re.match(paragraph).group(1).strip()
                 lines.append({
-                    "type": "sound_effect",
-                    "content": sound_effect_match.group(1).strip()
+                    'type': 'description',
+                    'content': inner,
                 })
                 continue
-            
-            # Check for character dialogue
-            dialogue_match = re.search(r'^([A-Z][A-Z\s]+)(?:\s*\(.*?\))?\:\s*(.*)', paragraph)
-            if dialogue_match:
-                character = dialogue_match.group(1).strip()
-                dialogue = dialogue_match.group(2).strip()
-                
-                # Check if it's the narrator
-                if character.upper() == "NARRATOR":
-                    lines.append({
-                        "type": "narration",
-                        "content": dialogue
-                    })
-                else:
-                    lines.append({
-                        "type": "dialogue",
-                        "character": character,
-                        "content": dialogue
-                    })
+
+            if italic_paren_re.match(paragraph):
+                inner = italic_paren_re.match(paragraph).group(1).strip()
+                lines.append({
+                    'type': 'description',
+                    'content': inner,
+                })
                 continue
-            
-            # If no specific format matched, treat as description
-            lines.append({
-                "type": "description",
-                "content": paragraph
-            })
-        
+
+            if paren_only_re.match(paragraph):
+                inner = paren_only_re.match(paragraph).group(1).strip()
+                lines.append({
+                    'type': 'sound_effect',
+                    'content': inner,
+                })
+                continue
+
+            cleaned = strip_md(paragraph)
+            if not cleaned:
+                continue
+            if current_speaker:
+                emit_speaker_line(current_speaker, cleaned)
+            else:
+                lines.append({
+                    'type': 'description',
+                    'content': cleaned,
+                })
+
         return lines
     
     def _save_script(self, episode_id: str, script: Dict[str, Any]) -> None:
@@ -1089,8 +1590,9 @@ class StoryStructure:
         episode_dir.mkdir(exist_ok=True)
         
         script_file = episode_dir / "script.json"
-        
+
         try:
+            ensure_script_line_ids(script)
             with open(script_file, 'w') as f:
                 json.dump(script, f, indent=2)
             
@@ -1222,13 +1724,20 @@ async def generate_scenes(episode_id: str) -> List[Dict[str, Any]]:
 
 def generate_script(episode_id: str) -> Dict[str, Any]:
     """Generate script for an episode.
-    
+
+    When ``USE_AGENTIC_PIPELINE`` is enabled, runs the multi-pass agent
+    (plan + scripted generation + quality pass metadata).
+
     Args:
         episode_id: ID of the episode
-    
+
     Returns:
         Dictionary with complete script
     """
+    from story_os.flags import feature_enabled
+    if feature_enabled('USE_AGENTIC_PIPELINE', default=False):
+        from story_pipeline_agent import run_agentic_episode_script
+        return run_agentic_episode_script(episode_id)
     story_structure = get_story_structure()
     return story_structure.generate_episode_script(episode_id)
 

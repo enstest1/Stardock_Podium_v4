@@ -1,139 +1,164 @@
-# TTS Workflow Documentation
+# Stardock Podium — End-to-End Workflow (v4+)
 
-## Overview
-This document outlines the complete workflow for using the Text-to-Speech (TTS) system in our project. The system uses Coqui TTS as the primary engine with ElevenLabs as a fallback option.
+This document describes the **current** production path after the Kokoro-first
+and Story OS refactor. Older references to **Coqui** (historical local TTS) and
+**ElevenLabs** as the default dialogue engine are **obsolete** for the main
+audio pipeline.
 
-## Voice Setup Process
+---
 
-### 1. Voice Sample Recording
-1. Record voice samples for each character:
-   - Duration: 5-10 seconds of clear speech
-   - Format: WAV file, mono channel
-   - Sample rate: 16kHz
-   - Location: `voices/samples/`
-   - Naming: `character_name.wav`
+## 1. High-level stages
 
-### 2. Voice Configuration
-1. Create/update voice configuration in `voices/voice_config.json`:
-   (see PROJECTSTRUCUTRE.md for details)
+| Stage | Module / entry | Output |
+|--------|------------------|--------|
+| Ingest reference | `epub_processor`, `reference_memory_sync` | `books/`, Mem0 |
+| Episode shell | `story_structure.generate_episode_structure` | `episodes/<id>/structure.json` |
+| Cast | `story_structure.generate_character_cast` | `structure.json` characters |
+| Scenes | `story_structure.generate_scenes` | Scene outlines |
+| Script | `story_structure.generate_script` / `generate_episode_script` | `script.json` |
+| Memory extract | `episode_memory.extract_memories_from_episode` | Mem0 + `memories.json` |
+| Quality | `quality_checker`; optional `audio_qa` (flags) | `quality_check.json`, `audio/audio_qa_report.json` |
+| Voice lines (CLI) | `cli/generate_voices.py` | WAV per line |
+| Full mix | `audio_pipeline.generate_episode_audio` | `episodes/<id>/audio/` |
 
-### 3. API Configuration
-1. ElevenLabs API (Fallback):
-   - Create account at elevenlabs.io
-   - Get API key from dashboard
-   - Add to `.env`:
-     ```
-     ELEVENLABS_API_KEY=your_key_here
-     ```
-   - Configure voice IDs in `voice_config.json`
-2. Coqui TTS (Primary):
-   - No API key required
-   - Uses local model: "tts_models/multilingual/multi-dataset/your_tts"
-   - Requires torch==2.2.0+cpu
+---
 
-### 4. Validation
-1. Run voice validation:
-   ```bash
-   python cli/validate_voices.py --config voices/voice_config.json
-   ```
-2. Check for any validation errors and fix them
+## 2. Story generation (text)
 
-## Script Preparation (NEW FORMAT)
+1. **Structure** — Save the Cat **episode** beats, metadata, empty scenes.
+2. **Characters** — LLM cast; names must match `voices/voice_config.json` keys
+   (or role mapping in `audio_pipeline`).
+3. **Scenes** — Beat-driven outlines. For episode number &gt; 1, continuity
+   context comes from `episode_memory.get_previous_episode_context` (Mem0 +
+   `series` metadata; legacy rows **without** `series` still match).
+4. **Script** — Per-scene dialogue. With **`USE_AGENTIC_PIPELINE`**, run
+   **`story_pipeline_agent.run_agentic_episode_script`**: LLM beat plan → same
+   per-scene writer with plan as preamble → optional **`draft_store`** snapshot
+   → script **`quality_checker`** pass. Otherwise a single **`generate_episode_script`**
+   pass. CLI: **`python cli_entrypoint.py generate-script <episode_id>`**.
+5. **Memory** — After script save, heuristics push categorized memories; every
+   write includes **`series`** when the episode record has it.
 
-### 1. Script Format
-Podcast episode scripts must use the following JSON structure for each scene:
-```json
-{
-  "title": "Episode Title",
-  "episode_id": "ep_xxxxxxxx",
-  "scenes": [
-    {
-      "scene_id": "scene_xxxxxxxx",
-      "scene_number": 1,
-      "beat": "Opening Image",
-      "setting": "Bridge of the USS Example",
-      "lines": [
-        {"type": "description", "content": "Scene description here."},
-        {"type": "sound_effect", "content": "Sound effect description."},
-        {"type": "narration", "content": "Narration text."},
-        {"type": "dialogue", "speaker": "CHARACTER NAME", "content": "Spoken line."},
-        {"type": "description", "content": "END SCENE"}
-      ]
-    }
-  ]
-}
-```
-- Each scene's `lines` array must use objects with a `type` field (`description`, `sound_effect`, `narration`, `dialogue`) and a `content` field. Dialogue lines must also include a `speaker` field.
-- This format is required for all future podcast episodes.
+### Story OS (optional, flags)
 
-### 2. Script Placement
-- Place scripts in `episodes/<episode_id>/script.json`
+- **`data/feature_flags.json`** and env vars (e.g. `USE_STORY_OS=1`,
+  `USE_AGENTIC_PIPELINE=1`, `USE_DIRECTOR_INLINE`, `USE_BIBLE_RAG`,
+  `USE_GENERATION_TRACE`, `USE_AUDIO_QA_BLOCK`).
+- On-disk layout under **`data/series/<series_id>/`** (`series_id` = slug from
+  series name): **`series_bible.json`**, **`show_state.json`**, optional
+  **`series_arc.json`**, **`season_plan.json`**, **`episode_slots/<N>.json`**
+  (one file per planned episode index **`N`**, matched to
+  **`episode_number`**).
+- **Planner** — `story_os.planner.plan_and_write`; CLI **`plan-season`**.
+- **Bible RAG** — `story_os.bible_rag` + CLI **`ingest-series-bible`**; snippets
+  are injected when **`USE_BIBLE_RAG`** is on.
+- **Show state** — `story_os.show_state.update_show_state_after_script` runs
+  after each successful script save when **`USE_STORY_OS`** is on.
+- **Prompt wiring** — `story_os.context.build_prompt_enrichment` is appended in
+  **`generate_scenes`** (outlines) and **`_generate_scene_script`** (lines).
+- **Collaboration** — `episodes/<id>/pins.json` (`line_overrides`) and
+  **`drafts/`** snapshots via **`draft_store`**.
+- **Director** — `director_pass.augment_script_with_director` when
+  **`USE_DIRECTOR_INLINE`** (adds per-line **`director`** metadata).
+- **Tracing** — `generation_trace.log_step` → **`logs/generation/<run>.jsonl`**
+  when **`USE_GENERATION_TRACE`**.
+- **Exports** — `export_timeline.export_episode_timeline` →
+  **`episodes/<id>/exports/timeline.json`**; CLI **`export-timeline`**.
+- Schemas: **`story_os/models.py`** (Pydantic). Init templates: CLI
+  **`init-story-os`**.
 
-### 3. Validation
-- Use the CLI validation tool to check script and voice configuration before generating audio.
+---
 
-## Audio Generation Process
+## 3. Script JSON format
 
-### 1. Generate Audio for a Script
+Episodes use `episodes/<episode_id>/script.json` with scenes and lines:
+
+- **`type`**: `description` | `dialogue` | `narration` | `sound_effect`
+- **`content`**: line text
+- **Dialogue**: `speaker` or `character` (both supported)
+- **Optional** (recommended for future ADR / pins): **`line_id`** (UUID),
+  **`director`** object (pause, sfx cue, etc.). Use **`script_line_ids`** to
+  assign missing ids before save.
+
+---
+
+## 4. Voices and dialogue TTS (Kokoro)
+
+1. **Samples** — Mono **16 kHz** WAV, ~**5–10 s**, under `voices/samples/`.
+2. **Config** — `voices/voice_config.json`:
+   - `"engine_order": ["kokoro"]` for local-only dialogue.
+   - Each character: **`speaker_wav`**, **`language`** (e.g. `"en"`).
+   - **`narrator`** entry required for narration, intro, and outro lines.
+3. **Synthesis** — `dialogue_engine.KokoroDialogueSynthesizer` wraps
+   `tts_engine.KokoroEngine`. **`audio_pipeline`** and
+   **`cli/generate_voices.py`** use this path for speech.
+4. **Validation** — `python cli/validate_voices.py --config voices/voice_config.json`
+
+**ElevenLabs** is optional (legacy `voice_registry` cloud APIs). It is **not**
+required for `audio_pipeline` dialogue.
+
+---
+
+## 5. Sound effects and ambience (library-first)
+
+1. Place files under **`assets/sound_effects/`**, **`assets/ambience/`**,
+   **`assets/music/`**.
+2. The pipeline **does not** generate SFX/ambience from cloud APIs.
+3. If no file matches a cue, the run appends to
+   **`episodes/<id>/needed_audio_assets.json`** so you can add assets and
+   re-run.
+
+---
+
+## 6. Audio pipeline run
+
 ```bash
-python cli/generate_voices.py --script path/to/your_script.json --output output_dir/
+python main.py
+# or programmatically:
+from audio_pipeline import generate_episode_audio
+generate_episode_audio('<episode_id>', {})
 ```
-- The `--script` argument should point to your episode script in the new format.
-- The `--output` argument specifies the directory for generated audio files.
 
-### 2. Quality Control
-1. Review generated audio files
-2. Check for any issues:
-   - Audio quality
-   - Voice consistency
-   - Timing and pacing
-3. Regenerate if necessary
+- Scene dialogue → **Kokoro** WAV stems → mix (ffmpeg).
+- Intro/outro narration → **Kokoro** to `assets/music/intro_narration.wav`
+  and `outro_narration.wav` (WAV), then combined with theme music if present.
 
-## Troubleshooting
+---
 
-### Common Issues
-1. Voice Sample Issues:
-   - Wrong format: Convert to WAV, mono, 16kHz
-   - Poor quality: Re-record with better conditions
-   - Wrong duration: Keep between 5-10 seconds
-2. Generation Issues:
-   - Coqui TTS fails: System will automatically fall back to ElevenLabs
-   - ElevenLabs fails: Check API key and internet connection
+## 7. Environment
 
-### Fallback Process
-1. If Coqui TTS fails:
-   - System automatically switches to ElevenLabs
-   - Uses configured fallback voice ID
-   - Logs the failure for review
+| Variable | Role |
+|----------|------|
+| `OPENAI_API_KEY` or `OPENROUTER_API_KEY` | LLM for story generation |
+| `MEM0_API_KEY` | Optional Mem0 cloud |
+| `ELEVENLABS_API_KEY` | **Optional** — only for legacy voice-registry cloud |
 
-## Best Practices
+Kokoro needs local **PyTorch** + **kokoro-tts** per `requirements.txt` and the
+**checkpoint** file expected by `tts_engine` (`kokoro-tts-base-ft.pt`).
 
-### Script Writing
-- Use the new line-based format for all scenes
-- Use clear, concise descriptions and dialogue
-- Place sound effects and narration as separate lines
-- End each scene with a description line: `{ "type": "description", "content": "END SCENE" }`
-- Validate script structure before audio generation
+---
 
-### Voice Recording
-- Use a quiet environment
-- Maintain consistent distance from microphone
-- Speak clearly and naturally
-- Avoid background noise
+## 8. Roadmap (short)
 
-### Configuration
-- Keep voice configurations organized
-- Document any special requirements
-- Regular validation of configurations
+Optional work (LUFS, agentic patches, vector bible RAG, `series_arc` CLI,
+pytest/CI, Dia2/Bark) is tracked in detail here:
 
-### Maintenance
-- Regular testing of voice samples
-- Update configurations as needed
-- Monitor system performance
-- Keep dependencies updated
+**[`BACKLOG.md`](BACKLOG.md)**
 
-### API Usage
-- Monitor ElevenLabs API usage
-- Implement proper error handling
-- Use appropriate fallback settings
-- Regular API key rotation
+---
+
+## 9. Quick command reference
+
+```bash
+pip install -r requirements.txt
+python main.py --help
+python cli_entrypoint.py init-story-os --series "Main Series"
+python cli_entrypoint.py plan-season --series "Main Series" --season s1 --episodes 10
+python cli_entrypoint.py ingest-series-bible --series "Main Series" ./Docs/bible_md
+python cli_entrypoint.py generate-script <episode_id>
+python cli_entrypoint.py export-timeline <episode_id>
+python cli/validate_voices.py --config voices/voice_config.json
+python cli/generate_voices.py --script episodes/<id>/script.json --output ...
+```
+
+For project layout see `Docs/Docs_New/PROJECTSTRUCUTRE.md`.

@@ -1,0 +1,25 @@
+{
+  "season_id": "s1",
+  "series_id": "test_series",
+  "episode_count": 3,
+  "beats": [
+    {
+      "beat_id": "stc_0",
+      "beat_name": "Opening Image",
+      "episode_index": 1,
+      "notes": "Sets the tone, mood, and style. Gives a snapshot of the starting world and its problems."
+    },
+    {
+      "beat_id": "stc_7",
+      "beat_name": "Fun and Games",
+      "episode_index": 2,
+      "notes": "The promise of the premise is explored. The enjoyable part of the story."
+    },
+    {
+      "beat_id": "stc_14",
+      "beat_name": "Final Image",
+      "episode_index": 3,
+      "notes": "Shows how the world has changed, often mirroring the opening image."
+    }
+  ]
+}

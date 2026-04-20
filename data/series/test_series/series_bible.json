@@ -1,0 +1,50 @@
+{
+  "series_id": "test_series",
+  "title": "Test Series",
+  "themes": [],
+  "tone_notes": "",
+  "taboos": [],
+  "finale_notes": "",
+  "main_cast": [
+    {
+      "name": "Naren",
+      "species": "Human",
+      "role": "Commanding Officer",
+      "personality": "Calm, strategic, leads from the front",
+      "backstory": "Veteran captain with decades of deep-space experience",
+      "voice_description": "Deep, authoritative baritone"
+    },
+    {
+      "name": "Aria",
+      "species": "Human",
+      "role": "Science Officer",
+      "personality": "Curious, analytical, empathetic",
+      "backstory": "Prodigy xenobiologist with a gift for first-contact situations",
+      "voice_description": "Clear, warm mezzo"
+    },
+    {
+      "name": "Jalen",
+      "species": "Human",
+      "role": "Tactical Officer",
+      "personality": "Bold, loyal, quick-thinking under fire",
+      "backstory": "Former ground-forces sergeant promoted to the bridge",
+      "voice_description": "Crisp, energetic tenor"
+    },
+    {
+      "name": "Elara",
+      "species": "Betazoid",
+      "role": "Ship's Counselor",
+      "personality": "Perceptive, gentle, quietly fierce",
+      "backstory": "Telepathic counselor who can sense emotional undercurrents",
+      "voice_description": "Soft, soothing alto"
+    },
+    {
+      "name": "Sarik",
+      "species": "Vulcan",
+      "role": "Chief Engineer",
+      "personality": "Logical, laconic, unexpectedly witty",
+      "backstory": "Brilliant engineer who chose Starfleet over the Vulcan Science Academy",
+      "voice_description": "Even, measured baritone"
+    }
+  ]
+}

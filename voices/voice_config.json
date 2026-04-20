@@ -1,36 +1,87 @@
 {
-    "engine_order": ["eleven"],
+    "engine_order": ["kokoro"],
     "characters": {
-        "naren": {
-            "speaker_wav": "voices/samples/naren.wav",
-            "language": "en",
-            "eleven_id": "BDKXloP9AWigbLIR7oOu"
+        "captain_amara_okonkwo": {
+            "speaker_wav": "voices/samples/Star_Trek_Horizon/captain_amara_okonkwo.wav",
+            "language": "en"
         },
-        "aria": {
-            "speaker_wav": "voices/samples/aria.wav",
-            "language": "en",
-            "eleven_id": "1YitDZhATV9VCMV4S1Ec"
+        "commander_tevan": {
+            "speaker_wav": "voices/samples/Star_Trek_Horizon/commander_tevan.wav",
+            "language": "en"
         },
-        "jalen": {
-            "speaker_wav": "voices/samples/jalen.wav",
-            "language": "en",
-            "eleven_id": "VALymqEutvnScP9g2ez7"
+        "lieutenant_commander_korath": {
+            "speaker_wav": "voices/samples/Star_Trek_Horizon/lt_cmdr_korath.wav",
+            "language": "en"
         },
-        "elara": {
-            "speaker_wav": "voices/samples/elara.wav",
-            "language": "en",
-            "eleven_id": "kyC5kWFrQsNJTiLPfIBu"
+        "subcommander_vreenak": {
+            "speaker_wav": "voices/samples/Star_Trek_Horizon/subcommander_vreenak.wav",
+            "language": "en"
         },
-        "sarik": {
-            "speaker_wav": "voices/samples/sarik.wav",
-            "language": "en",
-            "eleven_id": "gONKgryu6yykB97sHxZn"
+        "lieutenant_commander_damar_tain": {
+            "speaker_wav": "voices/samples/Star_Trek_Horizon/lt_cmdr_damar_tain.wav",
+            "language": "en"
+        },
+        "lieutenant_commander_kira_jaro": {
+            "speaker_wav": "voices/samples/Star_Trek_Horizon/lt_cmdr_kira_jaro.wav",
+            "language": "en"
+        },
+        "lieutenant_zhanil_thkethris": {
+            "speaker_wav": "voices/samples/Star_Trek_Horizon/lt_zhanil_thkethris.wav",
+            "language": "en"
+        },
+        "lieutenant_verix_dax": {
+            "speaker_wav": "voices/samples/Star_Trek_Horizon/lt_verix_dax.wav",
+            "language": "en"
         },
         "narrator": {
-            "speaker_wav": "voices/samples/narrator.wav",
-            "language": "en",
-            "eleven_id": "2Z4LPBF5YDKEVrxgQCjz"
+            "speaker_wav": "voices/samples/Star_Trek_Horizon/narrator.wav",
+            "language": "en"
         }
+    },
+    "aliases": {
+        "captain_okonkwo": "captain_amara_okonkwo",
+        "okonkwo": "captain_amara_okonkwo",
+        "amara_okonkwo": "captain_amara_okonkwo",
+
+        "tevan": "commander_tevan",
+
+        "korath": "lieutenant_commander_korath",
+        "lt_commander_korath": "lieutenant_commander_korath",
+        "commander_korath": "lieutenant_commander_korath",
+
+        "vreenak": "subcommander_vreenak",
+
+        "damar_tain": "lieutenant_commander_damar_tain",
+        "damar": "lieutenant_commander_damar_tain",
+        "tain": "lieutenant_commander_damar_tain",
+        "lt_commander_damar_tain": "lieutenant_commander_damar_tain",
+        "commander_damar_tain": "lieutenant_commander_damar_tain",
+
+        "kira_jaro": "lieutenant_commander_kira_jaro",
+        "kira": "lieutenant_commander_kira_jaro",
+        "jaro": "lieutenant_commander_kira_jaro",
+        "lt_commander_kira_jaro": "lieutenant_commander_kira_jaro",
+        "commander_kira_jaro": "lieutenant_commander_kira_jaro",
+
+        "zhanil_thkethris": "lieutenant_zhanil_thkethris",
+        "zhanil": "lieutenant_zhanil_thkethris",
+        "thkethris": "lieutenant_zhanil_thkethris",
+        "lieutenant_thkethris": "lieutenant_zhanil_thkethris",
+        "lt_thkethris": "lieutenant_zhanil_thkethris",
+        "lt_zhanil_thkethris": "lieutenant_zhanil_thkethris",
+
+        "verix_dax": "lieutenant_verix_dax",
+        "verix": "lieutenant_verix_dax",
+        "dax": "lieutenant_verix_dax",
+        "dr_dax": "lieutenant_verix_dax",
+        "doctor_dax": "lieutenant_verix_dax",
+        "lt_verix_dax": "lieutenant_verix_dax",
+
+        "helm_officer": "narrator",
+        "computer": "narrator",
+        "com_officer": "narrator",
+        "tactical_officer": "narrator",
+        "ensign": "narrator"
     },
     "audio_settings": {
         "sample_rate": 16000,
@@ -43,4 +94,4 @@
         "retry_delay": 1.0,
         "quality_threshold": 0.7
     }
-} 
+}

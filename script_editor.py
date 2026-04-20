@@ -14,6 +14,8 @@ import re
 from pathlib import Path
 from typing import Dict, List, Any, Optional, Union
 import uuid
+
+from script_line_ids import ensure_script_line_ids
 import tempfile
 import subprocess
 import shutil
@@ -130,7 +132,8 @@ class ScriptEditor:
         try:
             # Update modified timestamp
             script['updated_at'] = time.time()
-            
+            ensure_script_line_ids(script)
+
             with open(script_file, 'w') as f:
                 json.dump(script, f, indent=2)
             
@@ -764,8 +767,8 @@ class ScriptEditor:
             episode = get_episode(episode_id)
             if episode is not None and not episode.get('scenes'):
                 logger.info(f"Generating scenes for episode: {episode_id}")
-                import asyncio
-                asyncio.run(generate_scenes(episode_id))
+                from story_os.asyncio_compat import run_coro
+                run_coro(generate_scenes(episode_id))
             # Generate script
             logger.info(f"Generating script for episode: {episode_id}")
             generate_script = None

@@ -1,10 +1,11 @@
 # Core dependencies
 openai>=1.0.0
 ebooklib>=0.18.0
-elevenlabs>=0.2.24
+html2text>=2024.2.26
 ffmpeg-python>=0.2.0
+pydantic>=2.0.0
 nltk>=3.8.1
-mem0>=0.1.0  # Vector database client
+mem0ai>=1.0.0  # Vector database client (PyPI name is mem0ai)
 
 # Utilities
 requests>=2.31.0
@@ -22,8 +23,12 @@ pytest>=7.3.1
 pytest-asyncio>=0.21.0
 
 # TTS Dependencies
-torch==2.2.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
-git+https://github.com/hexgrad/Kokoro-TTS.git@main
+# Default `pip install -r` resolves torch from PyPI. On a GPU machine, prefer a
+# CUDA wheel so Kokoro can use CUDA — see README (devlog). Re-running this
+# file after a manual CUDA install should not pin you back to +cpu.
+torch>=2.2.0  # install CUDA build separately per README (GPU)
+kokoro>=0.3.0
 soundfile==0.12.1
 librosa==0.10.2
-elevenlabs==1.1.0
+# Optional: legacy ElevenLabs (voice_registry / cloud); not required for audio_pipeline
+# elevenlabs>=1.0.0

@@ -1,0 +1,26 @@
+{
+  "sentence_rhythm": "Mixed rhythm with declarative statements punctuating longer explanatory passages; tends toward direct, purposeful sentences that build momentum during crisis moments; uses fragments for emphasis",
+  "dialogue_style": "Speeches carry weight and formality befitting Starfleet tradition; subtext emerges through what characters choose to acknowledge versus avoid; rallying cries and collective affirmations punctuate key moments",
+  "scene_openings": "Often begin with situational framing—establishing the tactical or emotional stakes before introducing character action; context-setting through acknowledgment of dire circumstances",
+  "pacing": "Tension built through accumulation of problems and resource scarcity; release comes through moments of collective resolve or decisive leadership choices; crisis drives forward momentum",
+  "vocabulary_register": "Accessible military-institutional language; Starfleet terminology used naturally; occasional literary or philosophical references woven in; formal during speeches, pragmatic during tactical discussions",
+  "description_density": "Sparse on physical description, focused on functional details—sensor status, defense capabilities, crew state; emotional atmosphere conveyed through collective mood rather than elaborate scene-painting",
+  "character_interiority": "Moderate; leaders shown weighing options and recalling relevant knowledge; internal reflection tends toward practical problem-solving rather than extended emotional exploration",
+  "conflict_style": "External threats force internal choices; conflict resolved through leadership decisions, negotiation consideration, and collective commitment; surrender explicitly rejected in favor of agency",
+  "recurring_motifs": [
+    "Federation ideals as sustaining faith",
+    "lights kept burning against darkness",
+    "isolation and self-reliance",
+    "the old giving way to necessity",
+    "sufficiently advanced technology as magic",
+    "duty as chosen burden"
+  ],
+  "what_to_avoid": [
+    "Cynicism about Starfleet values",
+    "excessive technical jargon without emotional grounding",
+    "passive protagonists waiting for rescue",
+    "abandoning hope or collective identity",
+    "lengthy introspection during crisis moments",
+    "dismissing the weight of institutional symbols"
+  ]
+}

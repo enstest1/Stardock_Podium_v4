@@ -138,11 +138,15 @@ class Mem0Client:
         
         try:
             if hasattr(self, 'client'):
-                # Using managed platform
-                result = self.client.add(content, user_id=user_id, metadata=metadata)
+                # Managed platform — mem0ai>=1.0
+                result = self.client.add(
+                    content,
+                    user_id=user_id,
+                    metadata=metadata,
+                )
             else:
-                # Using local memory
-                result = self.memory.add(content, user_id=user_id, metadata=metadata)
+                result = self.memory.add(
+                    content, user_id=user_id, metadata=metadata)
             
             logger.debug(f"Added memory: {result}")
             return result
@@ -164,22 +168,33 @@ class Mem0Client:
             List of memory objects matching the query
         """
         try:
-            filters = None
-            if memory_type:
-                filters = {"memory_type": memory_type}
-            
             if hasattr(self, 'client'):
-                # Using managed platform
-                results = self.client.search(query, user_id=user_id, 
-                                           metadata=filters, limit=limit)
+                # Managed platform — mem0ai>=1.0 requires
+                # user_id inside filters. Custom fields like
+                # memory_type go inside metadata={}.
+                search_filters = {'user_id': user_id}
+                if memory_type:
+                    search_filters['metadata'] = {
+                        'memory_type': memory_type}
+                raw = self.client.search(
+                    query,
+                    filters=search_filters,
+                    limit=limit,
+                )
+                # API may return {'results': [...]} or a bare list
+                if isinstance(raw, dict):
+                    results = raw.get('results', [])
+                else:
+                    results = raw if isinstance(raw, list) else []
             else:
-                # Using local memory
-                search_results = self.memory.search(query, user_id=user_id, limit=limit)
-                
-                # Filter by memory_type if specified
+                search_results = self.memory.search(
+                    query, user_id=user_id, limit=limit)
                 if memory_type and 'results' in search_results:
-                    results = [r for r in search_results['results'] 
-                              if r.get('metadata', {}).get('memory_type') == memory_type]
+                    results = [
+                        r for r in search_results['results']
+                        if r.get('metadata', {}).get(
+                            'memory_type') == memory_type
+                    ]
                 else:
                     results = search_results.get('results', [])
             
@@ -201,25 +216,26 @@ class Mem0Client:
         """
         try:
             if hasattr(self, 'client'):
-                # Using managed platform
+                # Managed platform — mem0ai>=1.0 uses filters={}
+                search_filters = {'user_id': user_id}
                 if memory_type:
-                    filters = {
-                        "AND": [
-                            {"user_id": user_id},
-                            {"metadata": {"memory_type": memory_type}}
-                        ]
-                    }
-                    results = self.client.get_all(version="v2", filters=filters)
+                    search_filters['metadata'] = {
+                        'memory_type': memory_type}
+                raw = self.client.get_all(
+                    filters=search_filters)
+                if isinstance(raw, dict):
+                    results = raw.get('results', [])
                 else:
-                    results = self.client.get_all(user_id=user_id)
+                    results = raw if isinstance(raw, list) else []
             else:
-                # Using local memory
-                all_memories = self.memory.get_all(user_id=user_id)
-                
-                # Filter by memory_type if specified
+                all_memories = self.memory.get_all(
+                    user_id=user_id)
                 if memory_type and 'results' in all_memories:
-                    results = [r for r in all_memories['results'] 
-                              if r.get('metadata', {}).get('memory_type') == memory_type]
+                    results = [
+                        r for r in all_memories['results']
+                        if r.get('metadata', {}).get(
+                            'memory_type') == memory_type
+                    ]
                 else:
                     results = all_memories.get('results', [])
             

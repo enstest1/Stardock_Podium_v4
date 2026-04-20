@@ -1,0 +1,71 @@
+{
+  "show_id": "star_trek_horizon",
+  "season_number": 1,
+  "arc_prompt": "The USS Enterprise-H crosses through the Bajoran wormhole on its maiden voyage into the Gamma Quadrant. Early episodes establish the crew dynamic and the tensions inherent in an Alliance ship where Klingon, Romulan, Cardassian, and Bajoran officers must work alongside Starfleet. The Enterprise makes first contact with a Dominion splinter faction that claims to want peace. Mid-season, deep in uncharted space beyond former Dominion territory, they discover ruins of a civilization that predates the Founders by millions of years \u2014 ruins that contain technology the Alliance cannot explain. The season builds toward a first contact with a powerful unknown species called the Architects, who claim the ruins belong to them and view the Alpha Quadrant's intrusion into the Gamma Quadrant as a violation of ancient boundaries. The crew must decide whether exploration this far from home is an act of courage or recklessness, and whether the Alliance they represent is ready for what they have found.",
+  "episode_count": 10,
+  "arc_title": "The Architects of Silence",
+  "arc_summary": "The USS Enterprise-H's maiden voyage into the Gamma Quadrant tests the fragile Alliance when they encounter a Dominion splinter faction seeking peace and discover ancient ruins that predate the Founders by millions of years. As they push deeper into uncharted space, they attract the attention of the Architects\u2014a powerful species who view the Alpha Quadrant's exploration as a violation of boundaries older than any civilization they know. The crew must confront whether their mission of discovery has awakened something the Alliance is not prepared to face.",
+  "episode_beats": [
+    {
+      "episode_number": 1,
+      "arc_beat": "The Enterprise-H crosses through the Bajoran wormhole on its maiden voyage. Establish the crew dynamics, Alliance tensions, and the weight of the mission as they take their first steps into the Gamma Quadrant.",
+      "tension_level": "rising",
+      "arc_importance": "central"
+    },
+    {
+      "episode_number": 2,
+      "arc_beat": "First contact with the Dominion splinter faction, the Covenant of the New Link, who claim to seek peace. The crew debates whether to trust them while Vreenak's intelligence methods clash with Starfleet protocols.",
+      "tension_level": "rising",
+      "arc_importance": "central"
+    },
+    {
+      "episode_number": 3,
+      "arc_beat": "A character-focused episode where Damar Tain and Kira Jaro must work together to solve a ship crisis, forcing them to confront the Cardassian-Bajoran history they carry. The Alliance's internal fractures are examined through their personal struggle.",
+      "tension_level": "breather",
+      "arc_importance": "subplot"
+    },
+    {
+      "episode_number": 4,
+      "arc_beat": "The Enterprise discovers the first ancient ruins\u2014a derelict station of impossible age and unknown origin. Initial scans reveal technology that defies Alliance understanding. Seeds of the larger mystery are planted.",
+      "tension_level": "rising",
+      "arc_importance": "central"
+    },
+    {
+      "episode_number": 5,
+      "arc_beat": "Korath leads an away mission that goes wrong, testing his warrior's code against the realities of exploration. Meanwhile, the Covenant warns the Enterprise that they are entering space even the Founders feared.",
+      "tension_level": "rising",
+      "arc_importance": "subplot"
+    },
+    {
+      "episode_number": 6,
+      "arc_beat": "Deep in uncharted space, the Enterprise finds a vast ruin complex\u2014an entire dead world covered in structures millions of years old. They achieve a false victory by activating a database, but this sends a signal into deep space. Mid-season turning point.",
+      "tension_level": "peak",
+      "arc_importance": "central"
+    },
+    {
+      "episode_number": 7,
+      "arc_beat": "A breather episode dealing with the psychological toll of being so far from home. Verix Dax helps crew members process their isolation while Tevan questions whether the mission has pushed too far. Character development and thematic reflection.",
+      "tension_level": "breather",
+      "arc_importance": "tangential"
+    },
+    {
+      "episode_number": 8,
+      "arc_beat": "First contact with the Architects\u2014a brief, unsettling encounter. They do not attack but deliver a warning: the Alpha Quadrant has crossed ancient boundaries, and they are watching. The crew realizes they are no longer the most advanced presence in this region.",
+      "tension_level": "rising",
+      "arc_importance": "central"
+    },
+    {
+      "episode_number": 9,
+      "arc_beat": "The Architects demonstrate their power by effortlessly disabling the Enterprise. Captain Okonkwo must negotiate from a position of weakness while the crew debates whether to retreat or stand firm. Stakes reach their peak as the Alliance's limitations are exposed.",
+      "tension_level": "peak",
+      "arc_importance": "central"
+    },
+    {
+      "episode_number": 10,
+      "arc_beat": "The Enterprise makes a case for the Alpha Quadrant's right to explore, invoking the Alliance's hard-won unity as proof of growth. The Architects neither accept nor reject them\u2014instead granting a conditional passage while warning that others are watching. The crew returns toward Alliance space changed, carrying knowledge of something vast awaiting them. A new question is raised: what else lies beyond the Architects' boundaries?",
+      "tension_level": "resolution",
+      "arc_importance": "central"
+    }
+  ],
+  "created_at": 1776567559.4633396
+}

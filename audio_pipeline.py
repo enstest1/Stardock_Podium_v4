@@ -16,15 +16,18 @@ from pathlib import Path
 from typing import Dict, List, Any, Optional, Union, BinaryIO, Tuple
 import concurrent.futures
 import asyncio
+import threading
 from dataclasses import dataclass
 
-# Try to import required libraries
+# ElevenLabs is optional; dialogue uses Kokoro via dialogue_engine.
 try:
-    from elevenlabs import ElevenLabs, VoiceSettings
+    from elevenlabs import ElevenLabs
     from elevenlabs.client import ElevenLabs as ElevenLabsClient
+    _ELEVEN_IMPORT_OK = True
 except ImportError:
-    logging.error("ElevenLabs not found. Please install it with: pip install elevenlabs")
-    raise
+    ElevenLabs = None  # type: ignore
+    ElevenLabsClient = None  # type: ignore
+    _ELEVEN_IMPORT_OK = False
 
 try:
     import ffmpeg
@@ -33,9 +36,15 @@ except ImportError:
     raise
 
 # Local imports
+from dialogue_engine import (
+    get_dialogue_synthesizer,
+    resolve_character_voice_config,
+)
+from needed_audio_report import NeededAudioTracker, default_report_path
 from script_editor import load_episode_script
 from voice_registry import get_voice_registry, get_voice, map_characters_to_voices
 from story_structure import get_episode
+from config.paths import EPISODES_DIR, VOICES_DIR
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -55,14 +64,17 @@ class AudioClip:
 class AudioPipeline:
     """Audio generation and processing pipeline for podcast episodes."""
     
-    def __init__(self, episodes_dir: str = "episodes", assets_dir: str = "assets"):
+    def __init__(self, episodes_dir: Optional[str] = None, assets_dir: str = "assets"):
         """Initialize the audio pipeline.
-        
+
         Args:
-            episodes_dir: Directory for episode data
-            assets_dir: Directory for audio assets
+            episodes_dir: Directory for episode data. When None (the default),
+                resolves via ``config.paths.EPISODES_DIR`` which honors the
+                ``STARDOCK_EPISODES_DIR`` env var for cloud deployments.
+            assets_dir: Directory for audio assets (sound effects / music /
+                ambience). Stays repo-local — these are part of the codebase.
         """
-        self.episodes_dir = Path(episodes_dir)
+        self.episodes_dir = Path(episodes_dir) if episodes_dir else EPISODES_DIR
         self.assets_dir = Path(assets_dir)
         
         # Create asset directories if they don't exist
@@ -75,16 +87,23 @@ class AudioPipeline:
         
         # Initialize voice registry
         self.voice_registry = get_voice_registry()
-        
-        # Initialize ElevenLabs API
-        self.api_key = os.environ.get("ELEVENLABS_API_KEY")
-        if self.api_key:
-            self.elevenlabs = ElevenLabs(api_key=self.api_key)
-            self.client = ElevenLabsClient(api_key=self.api_key)
-        else:
-            logger.warning("ELEVENLABS_API_KEY not found in environment variables")
-            self.elevenlabs = None
-            self.client = None
+
+        # Optional ElevenLabs (legacy / unused by default dialogue path)
+        self.api_key = os.environ.get('ELEVENLABS_API_KEY')
+        self.elevenlabs = None
+        self.client = None
+        if _ELEVEN_IMPORT_OK and self.api_key:
+            try:
+                self.elevenlabs = ElevenLabs(api_key=self.api_key)
+                self.client = ElevenLabsClient(api_key=self.api_key)
+            except Exception as e:
+                logger.warning('ElevenLabs client init failed: %s', e)
+        elif not _ELEVEN_IMPORT_OK:
+            logger.debug('elevenlabs package not installed; using Kokoro only.')
+
+        self._dialogue = get_dialogue_synthesizer()
+        self._needed_tracker: Optional[NeededAudioTracker] = None
+        self._needed_lock = threading.Lock()
         
         # Role to character mapping (using lowercase keys to match voice_config.json)
         self.role_to_character = {
@@ -95,8 +114,8 @@ class AudioPipeline:
             "COMMUNICATIONS SPECIALIST": "sarik"
         }
         
-        # Load voice_config.json for voice IDs
-        self.voice_config_path = Path("voices/voice_config.json")
+        # Load voice_config.json for voice IDs (honors STARDOCK_VOICES_DIR).
+        self.voice_config_path = VOICES_DIR / "voice_config.json"
         self.voice_config = self._load_voice_config()
     
     def _load_voice_config(self) -> Dict[str, Any]:
@@ -138,13 +157,22 @@ class AudioPipeline:
         audio_dir = episode_dir / "audio"
         audio_dir.mkdir(exist_ok=True)
         
-        # Get character voices
+        # Get character voices (registry / ElevenLabs metadata — optional for
+        # Kokoro, which resolves speakers from voices/voice_config.json).
         characters = episode.get('characters', [])
-        character_voices = self.voice_registry.map_characters_to_voices(characters)
-        
+        character_voices = self.voice_registry.map_characters_to_voices(
+            characters)
+        if not character_voices and characters:
+            character_voices = {
+                c.get('name', '').strip(): c.get('name', '').strip()
+                for c in characters
+                if c.get('name')
+            }
+
         if not character_voices:
             return {"error": "No character voices mapped"}
-        
+
+        self._needed_tracker = NeededAudioTracker(episode_id)
         try:
             # Process each scene
             scene_results = []
@@ -209,7 +237,18 @@ class AudioPipeline:
             meta_file = audio_dir / "generation_metadata.json"
             with open(meta_file, 'w') as f:
                 json.dump(generation_meta, f, indent=2)
-            
+
+            try:
+                from story_os.flags import feature_enabled
+                if feature_enabled('USE_AUDIO_QA_BLOCK', default=False):
+                    from audio_qa import run_episode_audio_qa
+                    qa = run_episode_audio_qa(episode_id, audio_dir)
+                    generation_meta['audio_qa'] = qa
+                    with open(meta_file, 'w') as f:
+                        json.dump(generation_meta, f, indent=2)
+            except Exception as qa_e:
+                logger.warning('Audio QA skipped: %s', qa_e)
+
             # Update episode with audio info
             episode['audio'] = {
                 "generated_at": generation_meta["generated_at"],
@@ -219,12 +258,18 @@ class AudioPipeline:
             
             with open(episode_dir / "structure.json", 'w') as f:
                 json.dump(episode, f, indent=2)
-            
+
             return generation_meta
-        
+
         except Exception as e:
             logger.exception(f"Error generating episode audio: {e}")
             return {"error": f"Error generating episode audio: {str(e)}"}
+        finally:
+            if self._needed_tracker and self._needed_tracker.items:
+                report_path = default_report_path(
+                    self.episodes_dir, episode_id)
+                self._needed_tracker.write(report_path)
+            self._needed_tracker = None
     
     def generate_scene_audio(self, scene: Dict[str, Any], scene_index: int,
                            character_voices: Dict[str, str], episode_id: str,
@@ -253,13 +298,18 @@ class AudioPipeline:
         line_clips = []
         
         try:
+            scene_no = scene.get('scene_number', scene_index + 1)
             for i, line in enumerate(scene.get('lines', [])):
-                clip = self._process_line(line, i, scene_dir, temp_dir, character_voices)
+                clip = self._process_line(
+                    line, i, scene_dir, temp_dir, character_voices,
+                    scene_number=scene_no,
+                )
                 if clip:
                     line_clips.append(clip)
             
             # Add scene ambience
-            ambience_clip = self._add_scene_ambience(scene, scene_dir)
+            ambience_clip = self._add_scene_ambience(
+                scene, scene_dir, scene_number=scene_no)
             
             # Mix all clips together
             output_file = scene_dir / "scene_audio.mp3"
@@ -278,9 +328,10 @@ class AudioPipeline:
                 "error": str(e)
             }
     
-    def _process_line(self, line: Dict[str, Any], line_index: int, 
+    def _process_line(self, line: Dict[str, Any], line_index: int,
                      scene_dir: Path, temp_dir: Path,
-                     character_voices: Dict[str, str]) -> Optional[AudioClip]:
+                     character_voices: Dict[str, str],
+                     scene_number: Optional[int] = None) -> Optional[AudioClip]:
         """Process a single line to generate audio.
         
         Args:
@@ -314,7 +365,10 @@ class AudioPipeline:
                 return self._generate_narrator_audio(content, line_index, temp_dir)
             
             elif line_type == 'sound_effect':
-                return self._get_sound_effect(content, line_index, scene_dir)
+                return self._get_sound_effect(
+                    content, line_index, scene_dir,
+                    scene_number=scene_number,
+                )
             
             elif line_type == 'description':
                 # No audio for descriptions unless explicitly requested
@@ -345,106 +399,40 @@ class AudioPipeline:
         """
         # Extract role from character name if it contains extra info (e.g., "CAPTAIN T'LARA" -> "COMMANDING OFFICER")
         # Also handle special cases like "KAI (V.O.)" -> narrator
-        original_character = character
-        if "(V.O.)" in character or "(VO)" in character:
-            # Voice-over characters, use narrator voice
-            character = "narrator"
-        elif "CAPTAIN" in character.upper() or "COMMANDING OFFICER" in character.upper():
-            character = "COMMANDING OFFICER"
-        elif "SCIENCE OFFICER" in character.upper():
-            character = "SCIENCE OFFICER"
-        elif "SECURITY OFFICER" in character.upper():
-            character = "SECURITY OFFICER"
-        elif "COMMUNICATIONS SPECIALIST" in character.upper():
-            character = "COMMUNICATIONS SPECIALIST"
-        elif "CHIEF MEDICAL OFFICER" in character.upper() or "MEDICAL OFFICER" in character.upper():
-            character = "CHIEF MEDICAL OFFICER"
-        elif "KAI" in character.upper():
-            # Kai is a Bajoran religious leader, use narrator voice
-            character = "narrator"
-        
-        # Map role to character name if needed
-        if character in self.role_to_character:
-            character = self.role_to_character[character]
-        elif character == "narrator":
-            # Narrator is already the character name, keep it
-            pass
-        else:
-            # Try the original character name
-            character = original_character
-        
-        # Normalize character name to lowercase for voice_config.json lookup
-        character_key = character.lower().replace(' ', '_').replace("'", "")
-        # Also try with just lowercase
-        character_key_simple = character.lower()
-        
-        # Get voice config from voice_config.json
-        voice_config = None
-        if self.voice_config and 'characters' in self.voice_config:
-            # Try full key first (e.g., "aria_t_vel")
-            if character_key in self.voice_config['characters']:
-                voice_config = self.voice_config['characters'][character_key]
-            # Try simple lowercase (e.g., "aria")
-            elif character_key_simple in self.voice_config['characters']:
-                voice_config = self.voice_config['characters'][character_key_simple]
-            # Try original character name
-            elif character in self.voice_config['characters']:
-                voice_config = self.voice_config['characters'][character]
-        
+        # Delegate the full name-to-voice match (including aliases,
+        # (V.O.)/(CONT'D) suffix stripping, and period/case normalization)
+        # to dialogue_engine.resolve_character_voice_config so this module
+        # and the Kokoro synthesizer never disagree on a speaker.
+        voice_config = resolve_character_voice_config(
+            character, self.voice_config or {})
         if not voice_config:
-            logger.error(f"No voice config found for character: {character} (tried keys: {character_key}, {character_key_simple}, {character})")
+            logger.error(
+                "No voice config found for character: %r (voice_config keys: %s)",
+                character,
+                sorted((self.voice_config or {}).get('characters', {}).keys()),
+            )
             return None
         
         try:
             # Clean text to avoid synthesis issues
             content = content.replace('"', '').replace('...', '…')
-            
-            # Generate audio file name
-            safe_character = ''.join(c for c in character.lower().replace(' ', '_') if c.isalnum() or c == '_')
+
+            safe_character = ''.join(
+                c for c in character.lower().replace(' ', '_')
+                if c.isalnum() or c == '_'
+            )
             audio_file = temp_dir / f"line_{line_index:03d}_{safe_character}.wav"
-            
-            # Use ElevenLabs directly (since we're configured for ElevenLabs only)
-            if not self.client:
-                logger.error("ElevenLabs client not initialized (no API key)")
-                return None
-            
-            eleven_id = voice_config.get('eleven_id')
-            if not eleven_id:
-                logger.error(f"No ElevenLabs ID for character: {character}")
-                return None
-            
-            # Generate speech directly using ElevenLabs API
-            try:
-                from elevenlabs import VoiceSettings
-                
-                # Generate audio using ElevenLabs text_to_speech API
-                audio_chunks = self.client.text_to_speech.convert(
-                    voice_id=eleven_id,
-                    text=content,
-                    model_id="eleven_multilingual_v2",
-                    voice_settings=VoiceSettings(
-                        stability=0.5,
-                        similarity_boost=0.75,
-                        style=0.0,
-                        use_speaker_boost=True
-                    )
-                )
-                
-                # Write audio chunks to file
-                with open(audio_file, 'wb') as f:
-                    for chunk in audio_chunks:
-                        f.write(chunk)
-                
-                logger.info(f"Generated with ElevenLabs: {audio_file}")
-                
-            except Exception as e:
-                logger.error(f"ElevenLabs TTS generation failed: {e}")
-                return None
-            
-            # Get audio duration using ffmpeg
+
+            self._dialogue.synth_for_display_name(
+                text=content,
+                character_display=character,
+                output_path=str(audio_file),
+            )
+            logger.info('Generated dialogue with Kokoro: %s', audio_file)
+
             probe = ffmpeg.probe(str(audio_file))
             duration = float(probe['format']['duration'])
-            
+
             return AudioClip(
                 path=str(audio_file),
                 type='dialogue',
@@ -452,83 +440,41 @@ class AudioPipeline:
                 character=character,
                 line_index=line_index
             )
-        
+
         except Exception as e:
             logger.error(f"Error generating character audio for {character}: {e}")
             return None
     
-    def _generate_narrator_audio(self, content: str, line_index: int, 
+    def _generate_narrator_audio(self, content: str, line_index: int,
                                temp_dir: Path) -> Optional[AudioClip]:
-        """Generate audio for narrator lines.
-        
-        Args:
-            content: Narration content
-            line_index: Index of the line
-            temp_dir: Directory for temporary audio files
-        
-        Returns:
-            AudioClip or None if generation failed
-        """
-        if not self.elevenlabs:
-            logger.error("ElevenLabs client not initialized (no API key)")
-            return None
-        
+        """Generate audio for narrator lines using Kokoro (narrator voice)."""
         try:
-            # Generate audio file name
-            audio_file = temp_dir / f"line_{line_index:03d}_narrator.mp3"
-            
-            # Try to get narrator voice
-            voice_id = None
-            narrator_voices = self.voice_registry.find_voices_by_description("narrator deep authoritative", limit=1)
-            
-            if narrator_voices:
-                voice_id = narrator_voices[0].get('voice_registry_id')
-            else:
-                # Fallback to any available voice
-                voices = self.voice_registry.list_voices()
-                if voices:
-                    voice_id = voices[0].get('voice_registry_id')
-            
-            if not voice_id:
-                logger.error("No voice available for narrator")
-                return None
-            
-            # Generate speech
-            audio_data = self.voice_registry.generate_speech(
+            content = content.replace('"', '').replace('...', '…')
+            audio_file = temp_dir / f"line_{line_index:03d}_narrator.wav"
+            self._dialogue.synth_for_display_name(
                 text=content,
-                voice_identifier=voice_id,
-                output_path=str(audio_file)
+                character_display='narrator',
+                output_path=str(audio_file),
             )
-            
-            # Get audio duration using ffmpeg
             probe = ffmpeg.probe(str(audio_file))
             duration = float(probe['format']['duration'])
-            
             return AudioClip(
                 path=str(audio_file),
                 type='narration',
                 duration=duration,
                 line_index=line_index
             )
-        
         except Exception as e:
             logger.error(f"Error generating narrator audio: {e}")
             return None
     
-    def _get_sound_effect(self, description: str, line_index: int, 
-                        scene_dir: Path) -> Optional[AudioClip]:
-        """Find or generate a sound effect based on description.
-        
-        First checks for existing files in assets, then generates using ElevenLabs
-        if not found. Generated effects are cached for future use.
-        
-        Args:
-            description: Sound effect description
-            line_index: Index of the line
-            scene_dir: Directory for scene audio
-        
-        Returns:
-            AudioClip or None if generation fails
+    def _get_sound_effect(self, description: str, line_index: int,
+                        scene_dir: Path,
+                        scene_number: Optional[int] = None) -> Optional[AudioClip]:
+        """Resolve a sound effect from assets/sound_effects only.
+
+        If no file matches, records the cue in needed_audio_assets.json
+        (see NeededAudioTracker) and returns None.
         """
         # Clean description to create a search key
         search_key = description.lower().replace(' ', '_').replace('.', '').replace(',', '')
@@ -562,54 +508,17 @@ class AudioPipeline:
                 
                 except Exception as e:
                     logger.error(f"Error processing sound effect: {e}")
-        
-        # No existing file found - generate using ElevenLabs
-        if not self.client:
-            logger.warning("ElevenLabs client not available for sound effect generation")
-            return None
-        
-        try:
-            logger.info(f"Generating sound effect with ElevenLabs: {description}")
-            
-            # Generate sound effect using ElevenLabs API
-            audio_chunks = self.client.text_to_sound_effects.convert(
-                text=description,
-                output_format="mp3_44100_128",
-                duration_seconds=2.0,  # Default 2 seconds for most effects
-                prompt_influence=0.5  # Balance between prompt adherence and variety
+
+        if self._needed_tracker:
+            self._needed_tracker.record_sound_effect(
+                description, line_index, search_key,
+                scene_number=scene_number,
             )
-            
-            # Save to assets directory for reuse (cache)
-            cached_file = self.sound_effects_dir / f"{search_key}.mp3"
-            with open(cached_file, 'wb') as f:
-                for chunk in audio_chunks:
-                    f.write(chunk)
-            
-            logger.info(f"Generated and cached sound effect: {cached_file.name}")
-            
-            # Get audio duration using ffmpeg
-            probe = ffmpeg.probe(str(cached_file))
-            duration = float(probe['format']['duration'])
-            
-            # Copy to scene directory
-            dest_file = scene_dir / f"sfx_{line_index:03d}.mp3"
-            with open(cached_file, 'rb') as src:
-                with open(dest_file, 'wb') as dst:
-                    dst.write(src.read())
-            
-            return AudioClip(
-                path=str(dest_file),
-                type='sound_effect',
-                duration=duration,
-                line_index=line_index,
-                volume=1.2  # Slightly louder than dialogue
-            )
-        
-        except Exception as e:
-            logger.error(f"Error generating sound effect with ElevenLabs: {e}")
-            return None
-    
-    def _add_scene_ambience(self, scene: Dict[str, Any], scene_dir: Path) -> Optional[AudioClip]:
+        logger.warning('Missing sound_effect asset for: %s', description)
+        return None
+
+    def _add_scene_ambience(self, scene: Dict[str, Any], scene_dir: Path,
+                           scene_number: Optional[int] = None) -> Optional[AudioClip]:
         """Add ambient sound for the scene.
         
         Args:
@@ -619,8 +528,8 @@ class AudioPipeline:
         Returns:
             AudioClip or None if no ambience added
         """
-        setting = scene.get('setting', '').lower()
-        atmosphere = scene.get('atmosphere', '').lower()
+        setting = (scene.get('setting') or '').lower()
+        atmosphere = (scene.get('atmosphere') or '').lower()
         
         # Setting-based ambience keywords
         ambience_mapping = {
@@ -686,55 +595,16 @@ class AudioPipeline:
                 
                 except Exception as e:
                     logger.error(f"Error processing ambience: {e}")
-        
-        # No existing file found - generate using ElevenLabs
-        if not self.client:
-            logger.warning("ElevenLabs client not available for ambience generation")
-            return None
-        
-        try:
-            # Create description from keywords for generation
-            ambience_description = f"{', '.join(keywords[:3])}, ambient background"
-            logger.info(f"Generating ambience with ElevenLabs: {ambience_description}")
-            
-            # Generate ambience using ElevenLabs API (longer duration for more natural looping)
-            audio_chunks = self.client.text_to_sound_effects.convert(
-                text=ambience_description,
-                output_format="mp3_44100_128",
-                duration_seconds=20.0,  # 20 seconds for more natural loops (max is 22)
-                prompt_influence=0.4  # Lower influence for more variety in loops
+
+        if self._needed_tracker:
+            self._needed_tracker.record_ambience(
+                keywords=list(keywords),
+                scene_number=scene_number,
             )
-            
-            # Save to assets directory for reuse (cache)
-            cache_key = '_'.join(keywords[:2]) if keywords else 'background'
-            cached_file = self.ambience_dir / f"{cache_key}.mp3"
-            with open(cached_file, 'wb') as f:
-                for chunk in audio_chunks:
-                    f.write(chunk)
-            
-            logger.info(f"Generated and cached ambience: {cached_file.name}")
-            
-            # Get audio duration using ffmpeg
-            probe = ffmpeg.probe(str(cached_file))
-            duration = float(probe['format']['duration'])
-            
-            # Copy to scene directory
-            dest_file = scene_dir / f"ambience.mp3"
-            with open(cached_file, 'rb') as src:
-                with open(dest_file, 'wb') as dst:
-                    dst.write(src.read())
-            
-            return AudioClip(
-                path=str(dest_file),
-                type='ambience',
-                duration=duration,
-                volume=0.3  # Lower volume for background
-            )
-        
-        except Exception as e:
-            logger.error(f"Error generating ambience with ElevenLabs: {e}")
-            return None
-    
+        logger.warning(
+            'Missing ambience assets for scene keywords: %s', keywords)
+        return None
+
     def _mix_scene_audio(self, line_clips: List[AudioClip], 
                         ambience_clip: Optional[AudioClip],
                         output_file: Path) -> float:
@@ -934,43 +804,27 @@ class AudioPipeline:
                 f"Episode number {episode_number}."
             )
             
-            # Get narrator voice ID from voice config
-            narrator_config = self.voice_config.get('characters', {}).get('narrator', {})
-            narrator_voice_id = narrator_config.get('eleven_id')
-            
-            if not narrator_voice_id:
-                logger.error("No narrator voice ID found in voice config")
+            narrator_cfg = self.voice_config.get('characters', {}).get(
+                'narrator', {})
+            if not narrator_cfg.get('speaker_wav'):
+                logger.error(
+                    'No narrator speaker_wav in voice_config for intro')
                 return None
-            
-            # Generate narration audio
-            intro_narration_file = self.assets_dir / "music" / "intro_narration.mp3"
+
+            intro_narration_file = (
+                self.assets_dir / "music" / "intro_narration.wav")
             intro_narration_file.parent.mkdir(exist_ok=True, parents=True)
-            
-            # Generate speech using ElevenLabs
-            if not self.client:
-                logger.error("ElevenLabs client not initialized")
-                return None
-            
+
             try:
-                audio_data = self.client.text_to_speech.convert(
-                    voice_id=narrator_voice_id,
+                self._dialogue.synth_for_display_name(
                     text=narration_text,
-                    model_id="eleven_multilingual_v2"
+                    character_display='narrator',
+                    output_path=str(intro_narration_file),
                 )
-                
-                # Save audio file
-                with open(intro_narration_file, 'wb') as f:
-                    if hasattr(audio_data, '__iter__'):
-                        for chunk in audio_data:
-                            f.write(chunk)
-                    else:
-                        f.write(audio_data)
-                
-                logger.info(f"Generated intro narration: {intro_narration_file}")
+                logger.info('Generated intro narration: %s', intro_narration_file)
                 return intro_narration_file
-                
             except Exception as e:
-                logger.error(f"Error generating intro narration: {e}")
+                logger.error('Error generating intro narration: %s', e)
                 return None
                 
         except Exception as e:
@@ -990,47 +844,34 @@ class AudioPipeline:
                 "The Celestial Temple awaits our next journey through the stars."
             )
             
-            # Get narrator voice ID from voice config
-            narrator_config = self.voice_config.get('characters', {}).get('narrator', {})
-            narrator_voice_id = narrator_config.get('eleven_id')
-            
-            if not narrator_voice_id:
-                logger.error("No narrator voice ID found in voice config")
+            narrator_cfg = self.voice_config.get('characters', {}).get(
+                'narrator', {})
+            if not narrator_cfg.get('speaker_wav'):
+                logger.error(
+                    'No narrator speaker_wav in voice_config for outro')
                 return None
-            
-            # Generate narration audio (only generate once, reuse if exists)
-            outro_narration_file = self.assets_dir / "music" / "outro_narration.mp3"
+
+            outro_narration_file = (
+                self.assets_dir / "music" / "outro_narration.wav")
             if outro_narration_file.exists():
-                logger.info(f"Reusing existing outro narration: {outro_narration_file}")
+                logger.info(
+                    'Reusing existing outro narration: %s',
+                    outro_narration_file)
                 return outro_narration_file
-            
+
             outro_narration_file.parent.mkdir(exist_ok=True, parents=True)
-            
-            # Generate speech using ElevenLabs
-            if not self.client:
-                logger.error("ElevenLabs client not initialized")
-                return None
-            
+
             try:
-                audio_data = self.client.text_to_speech.convert(
-                    voice_id=narrator_voice_id,
+                self._dialogue.synth_for_display_name(
                     text=narration_text,
-                    model_id="eleven_multilingual_v2"
+                    character_display='narrator',
+                    output_path=str(outro_narration_file),
                 )
-                
-                # Save audio file
-                with open(outro_narration_file, 'wb') as f:
-                    if hasattr(audio_data, '__iter__'):
-                        for chunk in audio_data:
-                            f.write(chunk)
-                    else:
-                        f.write(audio_data)
-                
-                logger.info(f"Generated outro narration: {outro_narration_file}")
+                logger.info(
+                    'Generated outro narration: %s', outro_narration_file)
                 return outro_narration_file
-                
             except Exception as e:
-                logger.error(f"Error generating outro narration: {e}")
+                logger.error('Error generating outro narration: %s', e)
                 return None
                 
         except Exception as e:
@@ -1479,44 +1320,27 @@ class AudioPipeline:
             logger.error(f"Error assembling episode audio: {e}")
             return None
     
-    def generate_single_audio(self, text: str, voice_identifier: str, 
+    def generate_single_audio(self, text: str, voice_identifier: str,
                             output_file: Optional[str] = None) -> Tuple[bytes, float]:
-        """Generate audio for a single text passage.
-        
-        Args:
-            text: Text to convert to speech
-            voice_identifier: Voice registry ID or character name
-            output_file: Optional path to save the audio file
-        
-        Returns:
-            Tuple of (audio data, duration)
-        """
-        if not self.elevenlabs:
-            raise RuntimeError("ElevenLabs client not initialized (no API key)")
-        
-        # Generate speech
-        audio_data = self.voice_registry.generate_speech(
-            text=text,
-            voice_identifier=voice_identifier,
-            output_path=output_file
-        )
-        
-        # Get duration
-        if output_file:
-            probe = ffmpeg.probe(output_file)
-            duration = float(probe['format']['duration'])
+        """Generate audio for a single text passage using Kokoro."""
+        if not output_file:
+            fd, output_path = tempfile.mkstemp(suffix='.wav')
+            os.close(fd)
+            cleanup_tmp = True
         else:
-            # Write to a temporary file to get duration
-            with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as tmp:
-                tmp_path = tmp.name
-                tmp.write(audio_data)
-            
-            probe = ffmpeg.probe(tmp_path)
-            duration = float(probe['format']['duration'])
-            
-            # Clean up temporary file
-            os.unlink(tmp_path)
-        
+            output_path = output_file
+            cleanup_tmp = False
+        self._dialogue.synth_for_display_name(
+            text=text,
+            character_display=voice_identifier,
+            output_path=output_path,
+        )
+        with open(output_path, 'rb') as f:
+            audio_data = f.read()
+        probe = ffmpeg.probe(output_path)
+        duration = float(probe['format']['duration'])
+        if cleanup_tmp:
+            os.unlink(output_path)
         return audio_data, duration
 
 # Singleton instance
