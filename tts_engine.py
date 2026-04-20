@@ -42,6 +42,86 @@ logger = logging.getLogger(__name__)
 
 _KOKORO_SAMPLE_RATE = 24000
 
+# ---------------------------------------------------------------------------
+# Kokoro tail-chirp cleanup
+# ---------------------------------------------------------------------------
+# KPipeline frequently emits a short end-of-sequence artifact (a high-freq
+# "chirp" / click) when the model transitions to silence. misaki — the
+# phonemizer — also mis-handles trailing em-dashes and ellipses, producing
+# stray phonemes right before that transition. The two combined make every
+# utterance end in an audible artifact.
+#
+# The cheapest reliable fix is to trim the tail by energy and apply short
+# head/tail fades. All numbers below are conservative so we don't chew into
+# real speech.
+_TAIL_FADE_MS = 25        # linear fade-out at the end of each line
+_HEAD_FADE_MS = 5         # fade-in guard at the start
+_TAIL_KEEP_MS = 40        # natural release kept after last speech sample
+_SILENCE_WIN_MS = 10      # window size for the end-of-speech search
+_SILENCE_DBFS = -45.0     # everything quieter than this is treated as silence
+
+
+def _clean_kokoro_text(text: str) -> str:
+    """Normalize text so misaki doesn't phonemize trailing junk into clicks.
+
+    Strips trailing em/en dashes and ellipses, then ensures the line ends
+    with a terminal punctuation mark so Kokoro's release phase is clean.
+    Intentionally conservative — we only touch trailing characters.
+    """
+    if not text:
+        return text
+    cleaned = text.strip()
+    # Drop trailing dashes / ellipses which misaki tends to turn into chirps.
+    trailing = {'-', '\u2013', '\u2014', '\u2026'}  # - – — …
+    while cleaned and (cleaned[-1] in trailing or cleaned.endswith('...')):
+        if cleaned.endswith('...'):
+            cleaned = cleaned[:-3].rstrip()
+        else:
+            cleaned = cleaned[:-1].rstrip()
+    if cleaned and cleaned[-1] not in '.!?;:"\')]':
+        cleaned += '.'
+    return cleaned or text
+
+
+def _clean_kokoro_audio(audio: np.ndarray, sr: int) -> np.ndarray:
+    """Trim Kokoro end-chirp artifact and apply short head/tail fades."""
+    if audio is None or audio.size == 0:
+        return audio
+
+    x = np.asarray(audio, dtype=np.float32).reshape(-1).copy()
+    n = x.shape[0]
+
+    win = max(1, int(sr * _SILENCE_WIN_MS / 1000))
+    threshold = 10.0 ** (_SILENCE_DBFS / 20.0)
+
+    last_speech = 0
+    i = n
+    while i > 0:
+        j = max(0, i - win)
+        window = x[j:i]
+        rms = float(np.sqrt(np.mean(window * window))) if window.size else 0.0
+        if rms > threshold:
+            last_speech = i
+            break
+        i = j
+
+    if last_speech > 0:
+        keep = int(sr * _TAIL_KEEP_MS / 1000)
+        trim_end = min(n, last_speech + keep)
+        x = x[:trim_end]
+
+    fade_out = min(int(sr * _TAIL_FADE_MS / 1000), x.shape[0])
+    if fade_out > 0:
+        ramp = np.linspace(1.0, 0.0, fade_out, dtype=np.float32)
+        x[-fade_out:] *= ramp
+
+    fade_in = min(int(sr * _HEAD_FADE_MS / 1000), x.shape[0])
+    if fade_in > 0:
+        ramp = np.linspace(0.0, 1.0, fade_in, dtype=np.float32)
+        x[:fade_in] *= ramp
+
+    return x
+
 
 class SynthError(Exception):
     """Exception raised for TTS synthesis errors."""
@@ -153,13 +233,23 @@ class KokoroEngine(TTSEngine):
         """
         try:
             voice = self._resolve_voice(speaker_wav)
+            clean_text = _clean_kokoro_text(text)
             with self._synth_lock:
-                chunks = list(self._pipeline(text, voice=voice, speed=1.0))
+                chunks = list(self._pipeline(clean_text, voice=voice, speed=1.0))
                 if not chunks:
                     raise SynthError(f'Kokoro returned no audio for: {text[:80]}')
-                audio = np.concatenate(
-                    [c.audio for c in chunks if c.audio is not None]
-                )
+                parts: list[np.ndarray] = []
+                for c in chunks:
+                    if c.audio is None:
+                        continue
+                    arr = c.audio
+                    if hasattr(arr, 'cpu'):
+                        arr = arr.cpu().numpy()
+                    parts.append(np.asarray(arr, dtype=np.float32).reshape(-1))
+                if not parts:
+                    raise SynthError(f'Kokoro returned no audio for: {text[:80]}')
+                audio = np.concatenate(parts)
+                audio = _clean_kokoro_audio(audio, _KOKORO_SAMPLE_RATE)
                 sf.write(output_path, audio, _KOKORO_SAMPLE_RATE)
             logger.info('Kokoro TTS synthesis complete: %s', output_path)
         except SynthError:
