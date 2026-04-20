@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="Docs/assets/banner.png" alt="Stardock Podium — The Podcast Generator" width="100%">
+</p>
+
 # Stardock Podium (v4)
 
 AI‑assisted **Star Trek–style** serialized podcast generator: reference

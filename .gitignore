@@ -51,6 +51,8 @@ episodes/*/audio/
 *.jpg
 *.png
 *.webp
+# Allow committed documentation assets (banner, diagrams, etc.)
+!Docs/assets/**
 
 # Temporary files
 *.tmp
