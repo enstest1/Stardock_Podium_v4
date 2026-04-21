@@ -49,6 +49,13 @@ from config.paths import EPISODES_DIR, VOICES_DIR
 # Setup logging
 logger = logging.getLogger(__name__)
 
+# Kokoro line WAVs are 24 kHz mono float/PCM. Interleaving them in ffmpeg's
+# concat demuxer with *different* format segments (e.g. 44.1 kHz stereo MP3
+# silence) forces a resample+re-encode at every line boundary and produces
+# zipper noise, high-frequency hash, and "buzzing" in the final MP3.
+_LINE_SAMPLE_RATE = 24000
+
+
 @dataclass
 class AudioClip:
     """Represents an audio clip with metadata."""
@@ -635,12 +642,25 @@ class AudioPipeline:
         silence_duration = 0.5  # Half-second silence between lines
         
         try:
-            # Create a silence file for padding
-            silence_file = output_file.parent / "silence.mp3"
+            # Silence must match Kokoro line WAV format (24 kHz mono). The old
+            # pipeline used 44.1 kHz stereo MP3 silence between 24 kHz mono WAV
+            # lines — ffmpeg re-encoded every boundary and produced buzzing /
+            # zipper noise in the final MP3.
+            silence_file = output_file.parent / "silence_between_lines.wav"
             (
                 ffmpeg
-                .input('anullsrc=r=44100:cl=stereo', f='lavfi', t=silence_duration)
-                .output(str(silence_file), ar=44100, ac=2, c='mp3', b='128k')
+                .input(
+                    f'anullsrc=r={_LINE_SAMPLE_RATE}:cl=mono',
+                    f='lavfi',
+                    t=silence_duration,
+                )
+                .filter('aformat', sample_fmts='s16', channel_layouts='mono')
+                .output(
+                    str(silence_file),
+                    acodec='pcm_s16le',
+                    ar=_LINE_SAMPLE_RATE,
+                    ac=1,
+                )
                 .overwrite_output()
                 .global_args('-loglevel', 'error')
                 .run()
@@ -690,12 +710,36 @@ class AudioPipeline:
                     f.write(f"file '{abs_path.as_posix()}'\n")
                     f.write(f"file '{os.path.abspath(silence_file)}'\n")
             
-            # Concatenate clips with silence between (re-encode for compatibility)
+            # Decode all segments in one stream, normalize to 24 kHz mono s16 PCM,
+            # then encode to MP3 once. (Do not force SoXR here — many FFmpeg builds
+            # ship without libsoxr; the default resampler is fine.) This avoids
+            # per-line MP3 generation at heterogeneous format boundaries.
+            dialogue_pcm = output_file.parent / "dialogue_mono_24k.wav"
             dialogue_file = output_file.parent / "dialogue.mp3"
             (
                 ffmpeg
                 .input(str(concat_file), format='concat', safe=0)
-                .output(str(dialogue_file), acodec='libmp3lame', ar=44100, b='192k')
+                .filter('aformat', sample_fmts='s16', channel_layouts='mono')
+                .output(
+                    str(dialogue_pcm),
+                    acodec='pcm_s16le',
+                    ar=_LINE_SAMPLE_RATE,
+                    ac=1,
+                )
+                .overwrite_output()
+                .global_args('-loglevel', 'error')
+                .run()
+            )
+            (
+                ffmpeg
+                .input(str(dialogue_pcm))
+                .output(
+                    str(dialogue_file),
+                    acodec='libmp3lame',
+                    ar=44100,
+                    ac=2,
+                    audio_bitrate='256k',
+                )
                 .overwrite_output()
                 .global_args('-loglevel', 'error')
                 .run()
@@ -727,7 +771,10 @@ class AudioPipeline:
                             dialogue_stream,
                             ambience_stream,
                             str(output_file),
-                            filter_complex=f'[0:a]volume=1.0[a0];[1:a]volume={ambience_clip.volume}[a1];[a0][a1]amix=inputs=2:duration=first',
+                            filter_complex=(
+                                f'[0:a]volume=1.0[a0];[1:a]volume={ambience_clip.volume}[a1];'
+                                f'[a0][a1]amix=inputs=2:duration=first:normalize=1'
+                            ),
                             ar=44100
                         )
                         .overwrite_output()
@@ -744,7 +791,10 @@ class AudioPipeline:
                             dialogue_stream,
                             ambience_stream,
                             str(output_file),
-                            filter_complex=f'[0:a]volume=1.0[a0];[1:a]volume={ambience_clip.volume}[a1];[a0][a1]amix=inputs=2:duration=first',
+                            filter_complex=(
+                                f'[0:a]volume=1.0[a0];[1:a]volume={ambience_clip.volume}[a1];'
+                                f'[a0][a1]amix=inputs=2:duration=first:normalize=1'
+                            ),
                             ar=44100
                         )
                         .overwrite_output()
@@ -752,11 +802,17 @@ class AudioPipeline:
                         .run()
                     )
             else:
-                # Just use the dialogue file as output
+                # Dialogue-only scene: re-encode explicitly (avoid ambiguous pass-through).
                 (
                     ffmpeg
                     .input(str(dialogue_file))
-                    .output(str(output_file), ar=44100)
+                    .output(
+                        str(output_file),
+                        acodec='libmp3lame',
+                        ar=44100,
+                        ac=2,
+                        audio_bitrate='256k',
+                    )
                     .overwrite_output()
                     .global_args('-loglevel', 'error')
                     .run()
@@ -1274,12 +1330,18 @@ class AudioPipeline:
                     abs_path = Path(outro_file).resolve()
                     f.write(f"file '{abs_path.as_posix()}'\n")
             
-            # Concatenate all files (re-encode to ensure compatibility)
+            # Re-encode once at a higher bitrate — cheap 192k passes added hash.
             output_file = audio_dir / "full_episode.mp3"
             (
                 ffmpeg
                 .input(str(concat_file), format='concat', safe=0)
-                .output(str(output_file), acodec='libmp3lame', ar=44100, b='192k')
+                .output(
+                    str(output_file),
+                    acodec='libmp3lame',
+                    ar=44100,
+                    ac=2,
+                    audio_bitrate='256k',
+                )
                 .overwrite_output()
                 .global_args('-loglevel', 'error')
                 .run()

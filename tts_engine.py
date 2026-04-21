@@ -89,6 +89,8 @@ def _clean_kokoro_audio(audio: np.ndarray, sr: int) -> np.ndarray:
         return audio
 
     x = np.asarray(audio, dtype=np.float32).reshape(-1).copy()
+    # Remove DC offset so concat / MP3 encode boundaries don't click or buzz.
+    x -= float(np.mean(x))
     n = x.shape[0]
 
     win = max(1, int(sr * _SILENCE_WIN_MS / 1000))
