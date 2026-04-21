@@ -54,6 +54,10 @@ episodes/*/audio/
 # Allow committed documentation assets (banner, diagrams, etc.)
 !Docs/assets/**
 
+# Bundled theme for intro/outro (see audio_pipeline assets/music discovery)
+!assets/music/*.wav
+!assets/music/*.mp3
+
 # Temporary files
 *.tmp
 

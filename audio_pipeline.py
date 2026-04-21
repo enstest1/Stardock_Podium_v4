@@ -55,6 +55,23 @@ logger = logging.getLogger(__name__)
 # zipper noise, high-frequency hash, and "buzzing" in the final MP3.
 _LINE_SAMPLE_RATE = 24000
 
+# Pause between dialogue lines (seconds). The old 0.5s gap sounded like a
+# distinct "clip" of dead air after every line. Override with env, e.g.
+# STARDOCK_LINE_GAP_SEC=0 for back-to-back lines.
+_LINE_GAP_SEC = float(os.environ.get('STARDOCK_LINE_GAP_SEC', '0.09'))
+
+# Glob patterns under assets/music/ — include .wav (themes are often WAV).
+_INTRO_MUSIC_PATTERNS = (
+    '*theme*.mp3', '*theme*.wav',
+    '*intro*.mp3', '*intro*.wav',
+    '*opening*.mp3', '*opening*.wav',
+)
+_OUTRO_MUSIC_PATTERNS = (
+    '*theme*.mp3', '*theme*.wav',
+    '*outro*.mp3', '*outro*.wav',
+    '*closing*.mp3', '*closing*.wav',
+)
+
 
 @dataclass
 class AudioClip:
@@ -138,7 +155,19 @@ class AudioPipeline:
             except Exception as e:
                 logger.error(f"Error loading voice config: {e}")
         return {}
-    
+
+    def _find_music_assets(self, patterns: tuple[str, ...]) -> List[Path]:
+        """Collect unique theme files from ``assets/music`` (mp3 + wav)."""
+        found: List[Path] = []
+        seen: set[str] = set()
+        for pat in patterns:
+            for p in sorted(self.music_dir.glob(pat)):
+                key = str(p.resolve())
+                if key not in seen:
+                    seen.add(key)
+                    found.append(p)
+        return found
+
     def generate_episode_audio(self, episode_id: str, options: Dict[str, Any]) -> Dict[str, Any]:
         """Generate audio for a complete episode.
         
@@ -638,33 +667,36 @@ class AudioPipeline:
         # Calculate total duration based on line clips
         total_duration = sum(clip.duration for clip in line_clips) + 1.0  # Add 1 second padding
         
-        # Add silence between clips
-        silence_duration = 0.5  # Half-second silence between lines
-        
+        # Short gap between lines (not sound effects). Half a second of silence
+        # after every line sounded like a distinct "clip" / dead-air hit; use a
+        # brief breath (~90 ms) by default, or STARDOCK_LINE_GAP_SEC=0 for none.
+        silence_duration = max(0.0, _LINE_GAP_SEC)
+
         try:
             # Silence must match Kokoro line WAV format (24 kHz mono). The old
             # pipeline used 44.1 kHz stereo MP3 silence between 24 kHz mono WAV
             # lines — ffmpeg re-encoded every boundary and produced buzzing /
             # zipper noise in the final MP3.
             silence_file = output_file.parent / "silence_between_lines.wav"
-            (
-                ffmpeg
-                .input(
-                    f'anullsrc=r={_LINE_SAMPLE_RATE}:cl=mono',
-                    f='lavfi',
-                    t=silence_duration,
+            if silence_duration > 0:
+                (
+                    ffmpeg
+                    .input(
+                        f'anullsrc=r={_LINE_SAMPLE_RATE}:cl=mono',
+                        f='lavfi',
+                        t=silence_duration,
+                    )
+                    .filter('aformat', sample_fmts='s16', channel_layouts='mono')
+                    .output(
+                        str(silence_file),
+                        acodec='pcm_s16le',
+                        ar=_LINE_SAMPLE_RATE,
+                        ac=1,
+                    )
+                    .overwrite_output()
+                    .global_args('-loglevel', 'error')
+                    .run()
                 )
-                .filter('aformat', sample_fmts='s16', channel_layouts='mono')
-                .output(
-                    str(silence_file),
-                    acodec='pcm_s16le',
-                    ar=_LINE_SAMPLE_RATE,
-                    ac=1,
-                )
-                .overwrite_output()
-                .global_args('-loglevel', 'error')
-                .run()
-            )
             
             # Process clips with fade effects (especially for sound effects)
             processed_clips = []
@@ -713,11 +745,14 @@ class AudioPipeline:
             # Build concatenation file list with processed clips
             concat_file = output_file.parent / "concat.txt"
             with open(concat_file, 'w', encoding='utf-8') as f:
-                # Add each processed clip followed by silence
-                for clip_path in processed_clips:
+                n = len(processed_clips)
+                for i, clip_path in enumerate(processed_clips):
                     abs_path = Path(clip_path).resolve()
                     f.write(f"file '{abs_path.as_posix()}'\n")
-                    f.write(f"file '{os.path.abspath(silence_file)}'\n")
+                    # Gap between lines only — not after the last line (avoids a
+                    # trailing "clip" of silence before scene mix / ambience).
+                    if silence_duration > 0 and i < n - 1:
+                        f.write(f"file '{os.path.abspath(silence_file)}'\n")
             
             # Decode all segments in one stream, normalize to 24 kHz mono s16 PCM,
             # then encode to MP3 once. (Do not force SoXR here — many FFmpeg builds
@@ -972,15 +1007,19 @@ class AudioPipeline:
                 logger.warning("Could not generate intro narration")
                 narration_file = None
             
-            # Look for theme music
+            # Look for theme music (mp3 or wav under assets/music)
             theme_music = None
-            music_matches = list(self.music_dir.glob("*theme*.mp3")) + \
-                          list(self.music_dir.glob("*intro*.mp3")) + \
-                          list(self.music_dir.glob("*opening*.mp3"))
-            
+            music_matches = self._find_music_assets(_INTRO_MUSIC_PATTERNS)
+
             if music_matches:
                 theme_music = music_matches[0]
-                logger.info(f"Using theme music: {theme_music}")
+                logger.info('Using theme music: %s', theme_music)
+            else:
+                logger.warning(
+                    'No intro theme in %s — place *theme* / *intro* / *opening* '
+                    '.mp3 or .wav here (e.g. Cosmic_Odyssey_Main_Theme.wav).',
+                    self.music_dir,
+                )
             
             # If we have both music and narration, use TNG style: narration first, then music
             if theme_music and narration_file:
@@ -1116,15 +1155,13 @@ class AudioPipeline:
                 logger.warning("Could not generate outro narration")
                 narration_file = None
             
-            # Look for theme music
+            # Look for theme music (mp3 or wav under assets/music)
             theme_music = None
-            music_matches = list(self.music_dir.glob("*theme*.mp3")) + \
-                          list(self.music_dir.glob("*outro*.mp3")) + \
-                          list(self.music_dir.glob("*closing*.mp3"))
-            
+            music_matches = self._find_music_assets(_OUTRO_MUSIC_PATTERNS)
+
             if music_matches:
                 theme_music = music_matches[0]
-                logger.info(f"Using theme music: {theme_music}")
+                logger.info('Using theme music: %s', theme_music)
             
             # If we have both music and narration, mix them
             if theme_music and narration_file:
@@ -1222,9 +1259,11 @@ class AudioPipeline:
         Returns:
             Path to the intro music file or None if failed
         """
-        # Look for sci-fi intro music
-        intro_matches = list(self.music_dir.glob("*intro*.mp3")) + list(self.music_dir.glob("*opening*.mp3"))
-        
+        # Look for sci-fi intro music (mp3 or wav)
+        intro_matches = self._find_music_assets(
+            ('*intro*.mp3', '*intro*.wav', '*opening*.mp3', '*opening*.wav')
+        )
+
         if not intro_matches:
             logger.warning("No intro music found")
             return None
@@ -1278,9 +1317,11 @@ class AudioPipeline:
         Returns:
             Path to the outro music file or None if failed
         """
-        # Look for sci-fi outro music
-        outro_matches = list(self.music_dir.glob("*outro*.mp3")) + list(self.music_dir.glob("*closing*.mp3"))
-        
+        # Look for sci-fi outro music (mp3 or wav)
+        outro_matches = self._find_music_assets(
+            ('*outro*.mp3', '*outro*.wav', '*closing*.mp3', '*closing*.wav')
+        )
+
         if not outro_matches:
             logger.warning("No outro music found")
             return None
