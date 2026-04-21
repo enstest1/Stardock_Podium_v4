@@ -673,7 +673,10 @@ class AudioPipeline:
             
             for i, clip in enumerate(line_clips):
                 clip_path = Path(clip.path)
-                processed_path = temp_dir / f"processed_{i:03d}.mp3"
+                # Sound effects must land in the same format as dialogue (24 kHz mono
+                # PCM). The old path wrote 44.1 kHz stereo MP3 here, so every SFX line
+                # reintroduced concat-boundary buzzing next to Kokoro WAVs.
+                processed_path = temp_dir / f"processed_{i:03d}.wav"
                 
                 # Add fade in/out for sound effects to prevent abrupt cuts
                 if clip.type == 'sound_effect':
@@ -685,13 +688,19 @@ class AudioPipeline:
                     if clip_duration <= fade_out:
                         fade_out = clip_duration * 0.3  # Use 30% of duration if too short
                     
-                    # Apply fade in/out to sound effects
+                    # Apply fade in/out, then match dialogue lines (24 kHz mono s16).
                     (
                         ffmpeg
                         .input(str(clip_path))
                         .filter('afade', t='in', st=0, d=fade_in)
                         .filter('afade', t='out', st=max(0, clip_duration - fade_out), d=fade_out)
-                        .output(str(processed_path), acodec='libmp3lame', ar=44100, b='192k')
+                        .filter('aformat', sample_fmts='s16', channel_layouts='mono')
+                        .output(
+                            str(processed_path),
+                            acodec='pcm_s16le',
+                            ar=_LINE_SAMPLE_RATE,
+                            ac=1,
+                        )
                         .overwrite_output()
                         .global_args('-loglevel', 'error')
                         .run()
@@ -757,7 +766,13 @@ class AudioPipeline:
                         ffmpeg
                         .input(str(ambience_path))
                         .filter('aloop', loop=-1, size=2e+09)  # Loop infinitely until cut by duration
-                        .output(str(looped_ambience), t=str(total_duration), acodec='libmp3lame', ar=44100, b='128k')
+                        .output(
+                            str(looped_ambience),
+                            t=str(total_duration),
+                            acodec='libmp3lame',
+                            ar=44100,
+                            audio_bitrate='192k',
+                        )
                         .overwrite_output()
                         .global_args('-loglevel', 'error')
                         .run()
@@ -1000,24 +1015,48 @@ class AudioPipeline:
                     .global_args('-loglevel', 'error')
                     .run()
                 )
-                
-                # Add music to concat file
-                with open(concat_file, 'a', encoding='utf-8') as f:
-                    f.write(f"file '{music_trimmed.resolve().as_posix()}'\n")
-                
-                # Concatenate narration + music
+                # Re-match Kokoro narration (24 kHz mono PCM). Concatenating WAV + MP3
+                # here caused the same boundary buzz as dialogue + MP3 silence.
+                music_wav_24k = temp_dir / "intro_music_24k.wav"
                 (
                     ffmpeg
-                    .input(str(concat_file), format='concat', safe=0)
-                    .output(str(intro_file), acodec='libmp3lame', ar=44100, b='192k')
+                    .input(str(music_trimmed))
+                    .filter('aformat', sample_fmts='s16', channel_layouts='mono')
+                    .output(
+                        str(music_wav_24k),
+                        acodec='pcm_s16le',
+                        ar=_LINE_SAMPLE_RATE,
+                        ac=1,
+                    )
                     .overwrite_output()
                     .global_args('-loglevel', 'error')
                     .run()
                 )
-                
+
+                # Add music to concat file
+                with open(concat_file, 'a', encoding='utf-8') as f:
+                    f.write(f"file '{music_wav_24k.resolve().as_posix()}'\n")
+
+                # Concatenate narration + music (uniform format end-to-end)
+                (
+                    ffmpeg
+                    .input(str(concat_file), format='concat', safe=0)
+                    .output(
+                        str(intro_file),
+                        acodec='libmp3lame',
+                        ar=44100,
+                        ac=2,
+                        audio_bitrate='256k',
+                    )
+                    .overwrite_output()
+                    .global_args('-loglevel', 'error')
+                    .run()
+                )
+
                 # Cleanup
-                if music_trimmed.exists():
-                    music_trimmed.unlink()
+                for p in (music_trimmed, music_wav_24k):
+                    if p.exists():
+                        p.unlink()
                 if concat_file.exists():
                     concat_file.unlink()
                 
@@ -1120,7 +1159,10 @@ class AudioPipeline:
                         narration_stream,
                         music_stream,
                         str(outro_file),
-                        filter_complex='[0:a]volume=1.0[a0];[1:a]volume=0.3[a1];[a0][a1]amix=inputs=2:duration=first',
+                        filter_complex=(
+                            '[0:a]volume=1.0[a0];[1:a]volume=0.3[a1];'
+                            '[a0][a1]amix=inputs=2:duration=first:normalize=1'
+                        ),
                         acodec='libmp3lame',
                         ar=44100,
                         b='192k'
