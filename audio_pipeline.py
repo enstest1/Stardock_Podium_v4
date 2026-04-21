@@ -61,13 +61,15 @@ _LINE_SAMPLE_RATE = 24000
 _LINE_GAP_SEC = float(os.environ.get('STARDOCK_LINE_GAP_SEC', '0.09'))
 
 # Glob patterns under assets/music/ — include .wav (themes are often WAV).
+# Include *Theme* — Linux globs are case-sensitive, so *theme*.wav misses
+# Cosmic_Odyssey_Main_Theme.wav. Never treat *narration* as theme music.
 _INTRO_MUSIC_PATTERNS = (
-    '*theme*.mp3', '*theme*.wav',
+    '*theme*.mp3', '*theme*.wav', '*Theme*.mp3', '*Theme*.wav',
     '*intro*.mp3', '*intro*.wav',
     '*opening*.mp3', '*opening*.wav',
 )
 _OUTRO_MUSIC_PATTERNS = (
-    '*theme*.mp3', '*theme*.wav',
+    '*theme*.mp3', '*theme*.wav', '*Theme*.mp3', '*Theme*.wav',
     '*outro*.mp3', '*outro*.wav',
     '*closing*.mp3', '*closing*.wav',
 )
@@ -167,6 +169,15 @@ class AudioPipeline:
                     seen.add(key)
                     found.append(p)
         return found
+
+    def _find_theme_music(self, patterns: tuple[str, ...]) -> List[Path]:
+        """Like :meth:`_find_music_assets` but drop Kokoro narration exports."""
+        out: List[Path] = []
+        for p in self._find_music_assets(patterns):
+            if 'narration' in p.name.lower():
+                continue
+            out.append(p)
+        return out
 
     def generate_episode_audio(self, episode_id: str, options: Dict[str, Any]) -> Dict[str, Any]:
         """Generate audio for a complete episode.
@@ -1009,7 +1020,7 @@ class AudioPipeline:
             
             # Look for theme music (mp3 or wav under assets/music)
             theme_music = None
-            music_matches = self._find_music_assets(_INTRO_MUSIC_PATTERNS)
+            music_matches = self._find_theme_music(_INTRO_MUSIC_PATTERNS)
 
             if music_matches:
                 theme_music = music_matches[0]
@@ -1157,7 +1168,7 @@ class AudioPipeline:
             
             # Look for theme music (mp3 or wav under assets/music)
             theme_music = None
-            music_matches = self._find_music_assets(_OUTRO_MUSIC_PATTERNS)
+            music_matches = self._find_theme_music(_OUTRO_MUSIC_PATTERNS)
 
             if music_matches:
                 theme_music = music_matches[0]
