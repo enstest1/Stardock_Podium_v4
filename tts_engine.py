@@ -54,11 +54,26 @@ _KOKORO_SAMPLE_RATE = 24000
 # The cheapest reliable fix is to trim the tail by energy and apply short
 # head/tail fades. All numbers below are conservative so we don't chew into
 # real speech.
-_TAIL_FADE_MS = 25        # linear fade-out at the end of each line
-_HEAD_FADE_MS = 5         # fade-in guard at the start
-_TAIL_KEEP_MS = 40        # natural release kept after last speech sample
-_SILENCE_WIN_MS = 10      # window size for the end-of-speech search
-_SILENCE_DBFS = -45.0     # everything quieter than this is treated as silence
+#
+# Override via env on noisy material (e.g. RunPod): KOKORO_TAIL_FADE_MS=55
+# KOKORO_EXTRA_TAIL_TRIM_MS=12 nibbles a few ms after energy trim.
+def _env_float(name: str, default: float) -> float:
+    raw = os.environ.get(name)
+    if raw is None or not str(raw).strip():
+        return default
+    try:
+        return float(raw)
+    except ValueError:
+        logger.warning('Invalid %s=%r — using default %s', name, raw, default)
+        return default
+
+
+_TAIL_FADE_MS = _env_float('KOKORO_TAIL_FADE_MS', 45.0)  # linear fade-out (was 25; longer kills HF chirp)
+_HEAD_FADE_MS = _env_float('KOKORO_HEAD_FADE_MS', 5.0)
+_TAIL_KEEP_MS = _env_float('KOKORO_TAIL_KEEP_MS', 32.0)   # release after last speech (was 40)
+_SILENCE_WIN_MS = _env_float('KOKORO_SILENCE_WIN_MS', 10.0)
+_SILENCE_DBFS = _env_float('KOKORO_SILENCE_DBFS', -45.0)
+_EXTRA_TAIL_TRIM_MS = _env_float('KOKORO_EXTRA_TAIL_TRIM_MS', 0.0)  # optional hard nibble from tail
 
 
 def _clean_kokoro_text(text: str) -> str:
@@ -111,6 +126,10 @@ def _clean_kokoro_audio(audio: np.ndarray, sr: int) -> np.ndarray:
         keep = int(sr * _TAIL_KEEP_MS / 1000)
         trim_end = min(n, last_speech + keep)
         x = x[:trim_end]
+
+    extra = int(sr * _EXTRA_TAIL_TRIM_MS / 1000)
+    if extra > 0 and x.shape[0] > extra + int(0.01 * sr):
+        x = x[:-extra]
 
     fade_out = min(int(sr * _TAIL_FADE_MS / 1000), x.shape[0])
     if fade_out > 0:
