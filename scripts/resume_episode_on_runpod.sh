@@ -4,8 +4,14 @@
 #
 #   bash scripts/resume_episode_on_runpod.sh HOST PORT [episode_id]
 #
-# Get HOST and TCP PORT from the RunPod pod "Connect" SSH line.
+# Direct TCP (root@IP): get IP and PORT from RunPod Connect → SSH.
+#
+# RunPod proxy (user@ssh.runpod.io): use HOST=ssh.runpod.io PORT=22 and set
+#   export RUNPOD_SSH_USER='aavugmxhgx4i01-64411b6a'
+# (copy the username from your Connect line before @ssh.runpod.io)
+#
 # Default key: ~/.ssh/id_ed25519 — override: RUNPOD_KEY=/path/to/key
+# Optional: RUNPOD_ENV_FILE=/c/Users/you/project/.env to upload a specific file
 #
 # Remote path: /workspace/stardock_podium_04 (clone repo there if missing).
 #
@@ -18,20 +24,23 @@ HOST="${1:?usage: HOST PORT [episode_id]}"
 PORT="${2:?usage: HOST PORT [episode_id]}"
 EP="${3:-ep_7ba65dfe}"
 KEY="${RUNPOD_KEY:-$HOME/.ssh/id_ed25519}"
+SSH_USER="${RUNPOD_SSH_USER:-root}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 REPO="/workspace/stardock_podium_04"
+# Optional: which local .env to upload (default: $ROOT/.env)
+ENV_LOCAL="${RUNPOD_ENV_FILE:-$ROOT/.env}"
 
-if [[ ! -f "$ROOT/.env" ]]; then
-  echo "Missing $ROOT/.env — add API keys first."
+if [[ ! -f "$ENV_LOCAL" ]]; then
+  echo "Missing $ENV_LOCAL — create it or set RUNPOD_ENV_FILE=/path/to/.env"
   exit 1
 fi
 
-echo ">> Uploading .env ..."
+echo ">> Uploading .env from $ENV_LOCAL ... ($SSH_USER@${HOST})"
 scp -o BatchMode=yes -o ConnectTimeout=30 -i "$KEY" -P "$PORT" \
-  "$ROOT/.env" "root@${HOST}:${REPO}/.env"
+  "$ENV_LOCAL" "${SSH_USER}@${HOST}:${REPO}/.env"
 
 echo ">> Remote: pull, venv, start render for ${EP} ..."
-ssh -o BatchMode=yes -o ConnectTimeout=30 -i "$KEY" -p "$PORT" "root@${HOST}" \
+ssh -o BatchMode=yes -o ConnectTimeout=30 -i "$KEY" -p "$PORT" "${SSH_USER}@${HOST}" \
   "EP='${EP}' REPO='${REPO}' bash -s" <<'REMOTE'
 set -euo pipefail
 cd "$REPO" || { echo "No $REPO — on pod run: cd /workspace && git clone https://github.com/enstest1/Stardock_Podium_v4.git stardock_podium_04"; exit 1; }
