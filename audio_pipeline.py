@@ -10,6 +10,7 @@ import os
 import re
 import json
 import logging
+import subprocess
 import time
 import uuid
 import tempfile
@@ -1260,37 +1261,30 @@ class AudioPipeline:
                 )
 
                 # Kokoro narration: 24 kHz mono; theme: 44.1 kHz stereo — align then amix.
+                # Call ffmpeg directly: ffmpeg-python mangles ``pan=stereo|c0=c0`` escaping.
                 outro_file.parent.mkdir(parents=True, exist_ok=True)
-                narr_in = ffmpeg.input(str(narration_file))
-                mus_in = ffmpeg.input(str(music_trimmed))
-                narr_a = (
-                    narr_in.audio
-                    .filter('aresample', 44100)
-                    .filter('pan', 'stereo|c0=c0|c1=c0')
+                fc = (
+                    '[0:a]aresample=44100,pan=stereo|c0=c0|c1=c0[a0];'
+                    '[1:a]aresample=44100[a1];'
+                    '[a0]volume=1.0[a0v];[a1]volume=0.3[a1v];'
+                    '[a0v][a1v]amix=inputs=2:duration=first:normalize=1[out]'
                 )
-                mus_a = mus_in.audio.filter('aresample', 44100)
-                narr_v = narr_a.filter('volume', 1.0)
-                mus_v = mus_a.filter('volume', 0.3)
-                mixed = ffmpeg.filter(
-                    [narr_v, mus_v],
-                    'amix',
-                    inputs=2,
-                    duration='first',
-                    normalize=1,
-                )
-                (
-                    ffmpeg.output(
-                        mixed,
-                        str(outro_file),
-                        acodec='libmp3lame',
-                        ac=2,
-                        ar=44100,
-                        audio_bitrate='192k',
-                    )
-                    .overwrite_output()
-                    .global_args('-loglevel', 'error')
-                    .run()
-                )
+                cmd = [
+                    'ffmpeg', '-nostdin', '-y',
+                    '-i', str(narration_file),
+                    '-i', str(music_trimmed),
+                    '-filter_complex', fc,
+                    '-map', '[out]',
+                    '-c:a', 'libmp3lame', '-b:a', '192k',
+                    '-ar', '44100', '-ac', '2',
+                    str(outro_file),
+                ]
+                proc = subprocess.run(
+                    cmd, capture_output=True, text=True, check=False)
+                if proc.returncode != 0:
+                    err = (proc.stderr or proc.stdout or '').strip()
+                    logger.error('Outro mix ffmpeg failed: %s', err)
+                    raise RuntimeError('ffmpeg outro mix failed')
 
                 if music_trimmed.exists():
                     music_trimmed.unlink()
