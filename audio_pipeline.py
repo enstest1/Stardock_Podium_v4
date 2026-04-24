@@ -1260,7 +1260,7 @@ class AudioPipeline:
                 )
 
                 # Kokoro narration: 24 kHz mono; theme: 44.1 kHz stereo — align then amix.
-                outro_file.parent.mkdir(parents=True, parents=True)
+                outro_file.parent.mkdir(parents=True, exist_ok=True)
                 narr_in = ffmpeg.input(str(narration_file))
                 mus_in = ffmpeg.input(str(music_trimmed))
                 narr_a = (
