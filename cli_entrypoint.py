@@ -555,6 +555,32 @@ def cmd_generate_audio(args):
     
     return generate_episode_audio(args.episode_id, options)
 
+
+@register_command(
+    name="reassemble-audio",
+    help_text=(
+        'Rebuild full_episode.mp3 from existing scene_audio.mp3 files and a '
+        'fresh outro (no dialogue re-synthesis)'
+    ),
+    arguments=[
+        {'name': 'episode_id', **STR_ARG, 'help': 'ID of the episode'},
+    ],
+)
+def cmd_reassemble_audio(args):
+    """Stitch intro + scenes + outro without re-running Kokoro on lines."""
+    from main import require_audio_stack
+    if not require_audio_stack():
+        return False
+    from audio_pipeline import reassemble_episode_audio
+
+    out = reassemble_episode_audio(args.episode_id)
+    if out.get('error'):
+        logger.error('%s', out['error'])
+        return False
+    logger.info('Reassemble OK → %s', out.get('full_episode_file'))
+    return True
+
+
 @register_command(
     name="check-quality",
     help_text="Check the quality of an episode",

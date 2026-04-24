@@ -1546,7 +1546,68 @@ class AudioPipeline:
         except Exception as e:
             logger.error(f"Error assembling episode audio: {e}")
             return None
-    
+
+    def reassemble_episode_audio(self, episode_id: str) -> Dict[str, Any]:
+        """Rebuild outro and ``full_episode.mp3`` from existing scene MP3s only.
+
+        Does not re-run Kokoro on dialogue lines. Use after a failed outro mux or
+        when intro/scene audio already exists.
+        """
+        script = load_episode_script(episode_id)
+        if not script or not script.get('scenes'):
+            return {'error': f'No script or scenes for {episode_id}'}
+
+        episode_dir = self.episodes_dir / episode_id
+        audio_dir = episode_dir / 'audio'
+        if not audio_dir.is_dir():
+            return {'error': f'No audio directory: {audio_dir}'}
+
+        scenes = script['scenes']
+        scene_results: List[Dict[str, Any]] = []
+        for i, _scene in enumerate(scenes):
+            mp3 = audio_dir / f'scene_{i:02d}' / 'scene_audio.mp3'
+            if not mp3.exists():
+                return {
+                    'error': (
+                        f'Missing {mp3} — run full generate-audio for this episode.'
+                    ),
+                }
+            probe = ffmpeg.probe(str(mp3))
+            scene_results.append({
+                'success': True,
+                'scene_index': i,
+                'audio_file': str(mp3.resolve()),
+                'duration': float(probe['format']['duration']),
+            })
+
+        intro_path: Optional[Path] = audio_dir / 'intro_complete.mp3'
+        if not intro_path.exists():
+            intro_path = None
+            logger.warning(
+                'No intro_complete.mp3 — assembling without intro segment')
+
+        outro_cached = self.assets_dir / 'music' / 'outro_complete.mp3'
+        if outro_cached.exists():
+            outro_cached.unlink()
+            logger.info('Removed cached outro_complete.mp3 for fresh outro mux')
+
+        outro_file = self._create_outro_segment()
+        if not outro_file:
+            logger.warning('Outro segment missing — full episode will omit outro')
+
+        episode_file = self._assemble_episode(
+            episode_id, scene_results, intro_path, outro_file, audio_dir)
+
+        if not episode_file:
+            return {'error': 'Episode assembly failed (see logs)'}
+
+        logger.info('Reassembled full episode: %s', episode_file)
+        return {
+            'success': True,
+            'full_episode_file': str(episode_file),
+            'outro_file': str(outro_file) if outro_file else None,
+        }
+
     def generate_single_audio(self, text: str, voice_identifier: str,
                             output_file: Optional[str] = None) -> Tuple[bytes, float]:
         """Generate audio for a single text passage using Kokoro."""
@@ -1581,6 +1642,12 @@ def get_audio_pipeline() -> AudioPipeline:
         _audio_pipeline = AudioPipeline()
     
     return _audio_pipeline
+
+def reassemble_episode_audio(episode_id: str) -> Dict[str, Any]:
+    """Module wrapper for :meth:`AudioPipeline.reassemble_episode_audio`."""
+    pipeline = get_audio_pipeline()
+    return pipeline.reassemble_episode_audio(episode_id)
+
 
 def generate_episode_audio(episode_id: str, options: Dict[str, Any] = None) -> Dict[str, Any]:
     """Generate audio for a complete episode.
