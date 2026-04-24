@@ -7,6 +7,7 @@ episodes, including voice synthesis, sound effects, and mixing.
 """
 
 import os
+import re
 import json
 import logging
 import time
@@ -73,6 +74,14 @@ _OUTRO_MUSIC_PATTERNS = (
     '*outro*.mp3', '*outro*.wav',
     '*closing*.mp3', '*closing*.wav',
 )
+
+# Preferred theme filenames (place under assets/music/). Env overrides below.
+_INTRO_THEME_FILE = 'Cosmic_Odyssey_Main_Theme_2025-12-25T222447.wav'
+_OUTRO_THEME_FILE = 'Cosmic_Odyssey_Main_Theme_2025-12-27T064552.wav'
+_INTRO_MUSIC_DURATION_SEC = float(
+    os.environ.get('STARDOCK_INTRO_MUSIC_SEC', '60'))
+_INTRO_NARRATION_DELAY_SEC = float(
+    os.environ.get('STARDOCK_INTRO_NARRATION_START_SEC', '45'))
 
 
 @dataclass
@@ -178,6 +187,51 @@ class AudioPipeline:
                 continue
             out.append(p)
         return out
+
+    def _resolve_theme_path(self, role: str) -> Optional[Path]:
+        """Pick intro/outro theme: env override, preferred filename, then glob."""
+        env_key = (
+            'STARDOCK_INTRO_MUSIC' if role == 'intro' else 'STARDOCK_OUTRO_MUSIC')
+        override = os.environ.get(env_key, '').strip()
+        if override:
+            p = Path(override)
+            if p.is_file():
+                return p
+            p2 = self.music_dir / override
+            if p2.is_file():
+                return p2
+        preferred = (
+            _INTRO_THEME_FILE if role == 'intro' else _OUTRO_THEME_FILE)
+        cand = self.music_dir / preferred
+        if cand.is_file():
+            return cand
+        patterns = (
+            _INTRO_MUSIC_PATTERNS if role == 'intro' else _OUTRO_MUSIC_PATTERNS)
+        found = self._find_theme_music(patterns)
+        return found[0] if found else None
+
+    def _extract_stardate_for_intro(
+            self, episode_id: str, episode: Dict[str, Any]) -> str:
+        """Return a numeric stardate string for intro TTS (expanded later)."""
+        raw = episode.get('stardate')
+        if isinstance(raw, str) and raw.strip():
+            return raw.replace(',', '').replace(' ', '').strip()
+        if isinstance(raw, (int, float)):
+            return str(raw)
+        script = load_episode_script(episode_id)
+        if script:
+            for scene in script.get('scenes') or []:
+                for line in scene.get('lines') or []:
+                    c = line.get('content')
+                    if not isinstance(c, str):
+                        continue
+                    m = re.search(
+                        r'\b[Ss]tardate\s*:?\s*([\d\s,.]+)', c)
+                    if m:
+                        return re.sub(
+                            r'[\s,]', '', m.group(1)).strip()
+        n = episode.get('episode_number', 1) or 1
+        return f'52{n:03d}.1'
 
     def generate_episode_audio(self, episode_id: str, options: Dict[str, Any]) -> Dict[str, Any]:
         """Generate audio for a complete episode.
@@ -907,25 +961,24 @@ class AudioPipeline:
             
             # Extract episode information
             episode_number = episode.get('episode_number', 1)
-            created_at = episode.get('created_at', time.time())
-            
-            # Format date from timestamp
-            from datetime import datetime
-            date_str = datetime.fromtimestamp(created_at).strftime("%B %d, %Y")
-            
-            # Create narration text (TNG style)
+            stardate_raw = self._extract_stardate_for_intro(episode_id, episode)
+
+            # Spoken form is applied in tts_engine via normalize_trek_tts_text
+            # (digit-by-digit stardate, Trek lexicon).
             narration_text = (
                 f"This is the logs of the Celestial Temple. "
                 f"Journeys through the Gamma Quadrant. "
-                f"Star date: {date_str}. "
+                f"Stardate {stardate_raw}. "
                 f"Episode number {episode_number}."
             )
-            
+
             narrator_cfg = self.voice_config.get('characters', {}).get(
                 'narrator', {})
-            if not narrator_cfg.get('speaker_wav'):
+            if not (narrator_cfg.get('kokoro_voice')
+                    or narrator_cfg.get('speaker_wav')):
                 logger.error(
-                    'No narrator speaker_wav in voice_config for intro')
+                    'No narrator kokoro_voice or speaker_wav in voice_config '
+                    'for intro')
                 return None
 
             intro_narration_file = (
@@ -963,9 +1016,11 @@ class AudioPipeline:
             
             narrator_cfg = self.voice_config.get('characters', {}).get(
                 'narrator', {})
-            if not narrator_cfg.get('speaker_wav'):
+            if not (narrator_cfg.get('kokoro_voice')
+                    or narrator_cfg.get('speaker_wav')):
                 logger.error(
-                    'No narrator speaker_wav in voice_config for outro')
+                    'No narrator kokoro_voice or speaker_wav in voice_config '
+                    'for outro')
                 return None
 
             outro_narration_file = (
@@ -1018,79 +1073,86 @@ class AudioPipeline:
                 logger.warning("Could not generate intro narration")
                 narration_file = None
             
-            # Look for theme music (mp3 or wav under assets/music)
-            theme_music = None
-            music_matches = self._find_theme_music(_INTRO_MUSIC_PATTERNS)
-
-            if music_matches:
-                theme_music = music_matches[0]
+            theme_music = self._resolve_theme_path('intro')
+            if theme_music:
                 logger.info('Using theme music: %s', theme_music)
             else:
                 logger.warning(
-                    'No intro theme in %s — place *theme* / *intro* / *opening* '
-                    '.mp3 or .wav here (e.g. Cosmic_Odyssey_Main_Theme.wav).',
+                    'No intro theme in %s — add %s or any *theme* / *intro* '
+                    '.wav / .mp3.',
                     self.music_dir,
+                    _INTRO_THEME_FILE,
                 )
-            
-            # If we have both music and narration, use TNG style: narration first, then music
+
+            # Classic-style intro: theme (~1 min) with narrator over the tail.
             if theme_music and narration_file:
                 intro_file.parent.mkdir(exist_ok=True, parents=True)
-                
-                # Get narration duration
+
                 narration_probe = ffmpeg.probe(str(narration_file))
-                narration_duration = float(narration_probe['format']['duration'])
-                
-                # Create music segment (15-20 seconds with fade in/out)
-                music_duration = 18.0  # 18 seconds of music
-                music_stream = (
-                    ffmpeg
-                    .input(str(theme_music))
-                    .filter('afade', t='in', st=0, d=2)  # 2 second fade in
-                    .filter('afade', t='out', st=music_duration - 2, d=2)  # 2 second fade out
+                narration_duration = float(
+                    narration_probe['format']['duration'])
+                music_sec = _INTRO_MUSIC_DURATION_SEC
+                narr_delay = min(
+                    _INTRO_NARRATION_DELAY_SEC,
+                    max(0.0, music_sec - 5.0),
                 )
-                
-                # Concatenate: narration first, then music (TNG style)
-                concat_file = intro_file.parent / "intro_concat.txt"
-                with open(concat_file, 'w', encoding='utf-8') as f:
-                    f.write(f"file '{Path(narration_file).resolve().as_posix()}'\n")
-                
-                # Create temporary music file for concatenation
+                fade_tail = max(1.0, music_sec - narr_delay)
+                mix_end = max(
+                    music_sec,
+                    narr_delay + narration_duration + 0.5,
+                )
+                delay_ms = int(round(narr_delay * 1000))
+
                 temp_dir = self.assets_dir / "music" / "temp"
                 temp_dir.mkdir(exist_ok=True, parents=True)
-                music_trimmed = temp_dir / "intro_music.mp3"
-                (
-                    music_stream
-                    .output(str(music_trimmed), t=str(music_duration), acodec='libmp3lame', ar=44100, b='192k')
-                    .overwrite_output()
-                    .global_args('-loglevel', 'error')
-                    .run()
+                mixed_wav = temp_dir / "intro_mix_24k.wav"
+
+                m_in = ffmpeg.input(str(theme_music))
+                n_in = ffmpeg.input(str(narration_file))
+                m_chain = (
+                    m_in.audio.filter('atrim', start=0, duration=music_sec)
+                    .filter('asetpts', 'PTS-STARTPTS')
+                    .filter('afade', t='in', st=0, d=2)
+                    .filter('afade', t='out', st=narr_delay, d=fade_tail)
+                    .filter(
+                        'aformat',
+                        sample_fmts='s16',
+                        channel_layouts='mono',
+                    )
+                    .filter('aresample', _LINE_SAMPLE_RATE)
+                    .filter('apad', whole_dur=mix_end)
                 )
-                # Re-match Kokoro narration (24 kHz mono PCM). Concatenating WAV + MP3
-                # here caused the same boundary buzz as dialogue + MP3 silence.
-                music_wav_24k = temp_dir / "intro_music_24k.wav"
+                n_chain = (
+                    n_in.audio.filter('afade', t='in', st=0, d=0.4)
+                    .filter(
+                        'aformat',
+                        sample_fmts='s16',
+                        channel_layouts='mono',
+                    )
+                    .filter('aresample', _LINE_SAMPLE_RATE)
+                    .filter('adelay', str(delay_ms))
+                )
+                mixed = ffmpeg.filter(
+                    [m_chain, n_chain],
+                    'amix',
+                    inputs=2,
+                    duration='longest',
+                    normalize=0,
+                )
                 (
-                    ffmpeg
-                    .input(str(music_trimmed))
-                    .filter('aformat', sample_fmts='s16', channel_layouts='mono')
-                    .output(
-                        str(music_wav_24k),
+                    ffmpeg.output(
+                        mixed,
+                        str(mixed_wav),
                         acodec='pcm_s16le',
-                        ar=_LINE_SAMPLE_RATE,
                         ac=1,
+                        ar=_LINE_SAMPLE_RATE,
                     )
                     .overwrite_output()
                     .global_args('-loglevel', 'error')
                     .run()
                 )
-
-                # Add music to concat file
-                with open(concat_file, 'a', encoding='utf-8') as f:
-                    f.write(f"file '{music_wav_24k.resolve().as_posix()}'\n")
-
-                # Concatenate narration + music (uniform format end-to-end)
                 (
-                    ffmpeg
-                    .input(str(concat_file), format='concat', safe=0)
+                    ffmpeg.input(str(mixed_wav))
                     .output(
                         str(intro_file),
                         acodec='libmp3lame',
@@ -1102,14 +1164,9 @@ class AudioPipeline:
                     .global_args('-loglevel', 'error')
                     .run()
                 )
+                if mixed_wav.exists():
+                    mixed_wav.unlink()
 
-                # Cleanup
-                for p in (music_trimmed, music_wav_24k):
-                    if p.exists():
-                        p.unlink()
-                if concat_file.exists():
-                    concat_file.unlink()
-                
             elif narration_file:
                 # Just use narration if no music
                 intro_file.parent.mkdir(exist_ok=True, parents=True)
@@ -1166,14 +1223,10 @@ class AudioPipeline:
                 logger.warning("Could not generate outro narration")
                 narration_file = None
             
-            # Look for theme music (mp3 or wav under assets/music)
-            theme_music = None
-            music_matches = self._find_theme_music(_OUTRO_MUSIC_PATTERNS)
-
-            if music_matches:
-                theme_music = music_matches[0]
+            theme_music = self._resolve_theme_path('outro')
+            if theme_music:
                 logger.info('Using theme music: %s', theme_music)
-            
+
             # If we have both music and narration, mix them
             if theme_music and narration_file:
                 # Create temp directory

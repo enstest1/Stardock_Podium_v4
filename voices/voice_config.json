@@ -45,7 +45,7 @@
         },
         "lieutenant_zhanil_thkethris": {
             "kokoro_voice": "bf_alice",
-            "speaker_wav": "voices/samples/Star_Trek_Horizon/lt_zhanil_thkethris.wav",
+            "speaker_wav": "voices/samples/Star_Trek_Horizon/lt_zhanil_thkethris_1.wav",
             "language": "en",
             "notes": "British distinctive — alien-science specialist feel."
         },
@@ -59,7 +59,7 @@
             "kokoro_voice": "bm_george",
             "speaker_wav": "voices/samples/Star_Trek_Horizon/narrator.wav",
             "language": "en",
-            "notes": "Main narrator — British gravitas, Picard/Stewart-adjacent."
+            "notes": "Kokoro uses kokoro_voice only; narrator.wav is the casting reference until a clone-capable engine is wired."
         }
     },
     "aliases": {

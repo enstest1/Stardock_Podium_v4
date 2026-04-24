@@ -15,6 +15,8 @@ import typing as t
 import warnings
 from pathlib import Path
 
+from tts_pronunciation import normalize_trek_tts_text
+
 import torch
 import numpy as np
 
@@ -254,7 +256,7 @@ class KokoroEngine(TTSEngine):
         """
         try:
             voice = self._resolve_voice(speaker_wav)
-            clean_text = _clean_kokoro_text(text)
+            clean_text = _clean_kokoro_text(normalize_trek_tts_text(text))
             with self._synth_lock:
                 chunks = list(self._pipeline(clean_text, voice=voice, speed=1.0))
                 if not chunks:
