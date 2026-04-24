@@ -21,6 +21,11 @@ Session notes: what shipped, how to operate it, and what is still open.
 - `lieutenant_zhanil_thkethris` → `lt_zhanil_thkethris_1.wav` (sample path; Kokoro timbre still from `kokoro_voice`).
 - Narrator entry notes that **`narrator.wav` is casting reference only** until a clone-capable engine is wired.
 
+### Voice samples vs what you hear (read this)
+- Files under **`voices/samples/Star_Trek_Horizon/*.wav`** (captain, Tevan, narrator, etc.) are **not** fed into Kokoro as cloning references in the current code.
+- **Every** role (including narrator) speaks with the **`kokoro_voice`** preset in `voice_config.json`. Cast sounds *different from each other* because **presets differ** (`af_bella`, `am_michael`, `bm_george`, …), not because the engine copies each WAV.
+- **`speaker_wav`** is for documentation, validation, and a **future** clone-capable path (XTTS / F5 / API). Treat samples as **casting targets**, not drivers of Kokoro output.
+
 ### RunPod / SSH
 - `scripts/gitbash_run_all_runpod.sh`: requires **TCP SSH** (`root@IP -p PORT`); RunPod **`ssh.runpod.io` proxy** does not support `scp` or `ssh host "cmd"`. Uses `StrictHostKeyChecking=accept-new` for first connect.
 - `scripts/fetch_full_episode_from_runpod.sh`: pulls `full_episode.mp3` down after render.
@@ -33,17 +38,38 @@ Session notes: what shipped, how to operate it, and what is still open.
 - `outro_file.parent.mkdir(..., exist_ok=True)` (removed duplicate `parents=` kwarg).
 - Outro mux: resample / layout alignment + direct ffmpeg for final mix.
 
+### Known bug — intro: music plays, narrator not audible over tail
+- **Symptom:** Theme plays, but the narrator does **not** clearly come in over the **last portion** (expected: voiceover on top of fading theme, OG Trek style).
+- **Where:** `_create_intro_segment` in `audio_pipeline.py` — `amix` of delayed narration + ducked music (ffmpeg-python: `adelay`, `afade`, `normalize=0`).
+- **Likely directions to fix:**
+  - Verify **`adelay`** for mono on FFmpeg 6 (ffmpeg-python may pass ms incorrectly; compare with a **direct `ffmpeg` CLI** mix, same as outro `pan` fix).
+  - **Levels:** with `normalize=0`, music may drown voice; raise narration gain or duck music further under the overlap.
+  - **Theme length vs `STARDOCK_INTRO_MUSIC_SEC`:** short assets (e.g. 30 s) vs 60 s target can make `atrim` / pad / mix behave oddly; align duration or pad explicitly.
+  - **Delay:** tune `STARDOCK_INTRO_NARRATION_START_SEC` so the overlap window is long enough.
+- **Quick check:** narration-only intro (no theme) should sound fine — if so, the bug is the **mix**, not the TTS line.
+
 ---
 
-## Needs to do / follow-ups
+## Needs to do / follow-ups (priority order)
 
-### To hear “all fixes” in the episode body
+### 1) Fix intro voiceover-over-music (bug above)
+- Reproduce with theme WAV + `intro_narration.wav`; iterate until narrator is clearly audible over the tail.
+- If `adelay` / filter graph stays flaky, build intro mix with **`ffmpeg` subprocess** (mirror outro fix).
+
+### 2) Fix speech issues in the episode body
+- Run **full** `generate-audio` on the episode once `main` and assets are stable so every line uses `normalize_trek_tts_text` (stardates, species lexicon).
+- Add / tune **`tts_pronunciation.py`** entries after listening passes.
+- **Zhanil:** ensure **`lt_zhanil_thkethris_1.wav`** on the render host; spoken timbre is still **`kokoro_voice`** until cloning exists.
+
+### 3) Optional — match `voices/samples/Star_Trek_Horizon` (real reference voices)
+- Plan a **second TTS path** (XTTS / F5 / API) that uses **`speaker_wav`**; route narrator first or full cast as budget allows.
+
+### Narrator vs `narrator.wav` (same rule as all cast WAVs)
+- **Kokoro does not clone from WAV** for narrator or anyone else. **`narrator.wav`** does not drive output today. To match it: **different `kokoro_voice`**, or **cloning pipeline** (priority 3).
+
+### To hear “all fixes” in the episode body (reminder)
 - **`reassemble-audio` does not re-speak dialogue.** Scene MP3s are whatever was rendered the last time **`generate-audio`** ran.
-- After pod has latest `main`, correct **`assets/music`**, and **`lt_zhanil_thkethris_1.wav`**, run a **full** `python main.py generate-audio ep_7ba65dfe` (or equivalent) so **every line** goes through the new normalization and Zhanil sample path.
-- Then **`scp`** / `fetch_full_episode_from_runpod.sh` the new `full_episode.mp3`.
-
-### Narrator vs `narrator.wav`
-- **Kokoro does not clone from WAV.** Synthesis uses **`kokoro_voice`** (e.g. `bm_george`). To match `narrator.wav` you need either a **different Kokoro preset**, or **voice-cloning TTS** (XTTS / F5 / etc.) with a new code path, or a **hosted API** that accepts a reference clip.
+- After pod has latest `main`, correct **`assets/music`**, and **`lt_zhanil_thkethris_1.wav`**, run **full** `python main.py generate-audio ep_7ba65dfe` (or your episode id), then **`fetch_full_episode_from_runpod.sh`** (or `scp`).
 
 ### RunPod hygiene
 - Ensure **named theme WAVs** (or env paths) exist under **`assets/music/`** on the pod if you do not want the generic `Cosmic_Odyssey_Main_Theme.wav` fallback.
@@ -76,4 +102,4 @@ bash scripts/fetch_full_episode_from_runpod.sh <ip> <port> ep_7ba65dfe
 
 ---
 
-*Last updated: 2026-04-24.*
+*Last updated: 2026-04-24 (intro bug + samples vs Kokoro + next priorities).*
