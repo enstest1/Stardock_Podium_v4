@@ -55,11 +55,13 @@ EOF
 fi
 
 echo ">> Uploading .env to ${SSH_USER}@${TCP_HOST}:${TCP_PORT}:${REPO}/.env ..."
-scp -o BatchMode=yes -o ConnectTimeout=30 -i "$KEY" -P "$TCP_PORT" \
+# First-time pods: add host key without prompting (reject if key changes later).
+SSH_OPTS=(-o BatchMode=yes -o ConnectTimeout=30 -o StrictHostKeyChecking=accept-new)
+scp "${SSH_OPTS[@]}" -i "$KEY" -P "$TCP_PORT" \
   "$ENV_LOCAL" "${SSH_USER}@${TCP_HOST}:${REPO}/.env"
 
 echo ">> Remote: pull, venv, start generate-audio for ${EP} ..."
-ssh -o BatchMode=yes -o ConnectTimeout=30 -i "$KEY" -p "$TCP_PORT" \
+ssh "${SSH_OPTS[@]}" -i "$KEY" -p "$TCP_PORT" \
   "${SSH_USER}@${TCP_HOST}" \
   "EP='${EP}' REPO='${REPO}' bash -s" <<'REMOTE'
 set -euo pipefail
