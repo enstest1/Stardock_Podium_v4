@@ -1103,70 +1103,39 @@ class AudioPipeline:
                     narr_delay + narration_duration + 0.5,
                 )
                 delay_ms = int(round(narr_delay * 1000))
-
-                temp_dir = self.assets_dir / "music" / "temp"
-                temp_dir.mkdir(exist_ok=True, parents=True)
-                mixed_wav = temp_dir / "intro_mix_24k.wav"
-
-                m_in = ffmpeg.input(str(theme_music))
-                n_in = ffmpeg.input(str(narration_file))
-                m_chain = (
-                    m_in.audio.filter('atrim', start=0, duration=music_sec)
-                    .filter('asetpts', 'PTS-STARTPTS')
-                    .filter('afade', t='in', st=0, d=2)
-                    .filter('afade', t='out', st=narr_delay, d=fade_tail)
-                    .filter(
-                        'aformat',
-                        sample_fmts='s16',
-                        channel_layouts='mono',
-                    )
-                    .filter('aresample', _LINE_SAMPLE_RATE)
-                    .filter('apad', whole_dur=mix_end)
+                # Subprocess filter_complex: ffmpeg-python amix/adelay for mono was
+                # unreliable (narration missing over the theme tail). Mirror outro: CLI
+                # ffmpeg, stereo-upmix narration, explicit adelay per channel, duck music.
+                ms = f'{music_sec:.3f}'
+                nd = f'{narr_delay:.3f}'
+                ft = f'{fade_tail:.3f}'
+                me = f'{mix_end:.3f}'
+                fc = (
+                    f'[0:a]atrim=start=0:duration={ms},asetpts=PTS-STARTPTS,'
+                    f'afade=t=in:st=0:d=2,afade=t=out:st={nd}:d={ft},'
+                    f'aresample=44100,apad=whole_dur={me}[m];'
+                    f'[1:a]aresample=44100,pan=stereo|c0=c0|c1=c0,'
+                    f'afade=t=in:st=0:d=0.4[n0];'
+                    f'[n0]adelay=delays={delay_ms}|{delay_ms},volume=1.4[n];'
+                    f'[m]volume=0.30[mv];'
+                    f'[mv][n]amix=inputs=2:duration=longest:normalize=1[out]'
                 )
-                n_chain = (
-                    n_in.audio.filter('afade', t='in', st=0, d=0.4)
-                    .filter(
-                        'aformat',
-                        sample_fmts='s16',
-                        channel_layouts='mono',
-                    )
-                    .filter('aresample', _LINE_SAMPLE_RATE)
-                    .filter('adelay', str(delay_ms))
-                )
-                mixed = ffmpeg.filter(
-                    [m_chain, n_chain],
-                    'amix',
-                    inputs=2,
-                    duration='longest',
-                    normalize=0,
-                )
-                (
-                    ffmpeg.output(
-                        mixed,
-                        str(mixed_wav),
-                        acodec='pcm_s16le',
-                        ac=1,
-                        ar=_LINE_SAMPLE_RATE,
-                    )
-                    .overwrite_output()
-                    .global_args('-loglevel', 'error')
-                    .run()
-                )
-                (
-                    ffmpeg.input(str(mixed_wav))
-                    .output(
-                        str(intro_file),
-                        acodec='libmp3lame',
-                        ar=44100,
-                        ac=2,
-                        audio_bitrate='256k',
-                    )
-                    .overwrite_output()
-                    .global_args('-loglevel', 'error')
-                    .run()
-                )
-                if mixed_wav.exists():
-                    mixed_wav.unlink()
+                cmd = [
+                    'ffmpeg', '-nostdin', '-y',
+                    '-i', str(theme_music),
+                    '-i', str(narration_file),
+                    '-filter_complex', fc,
+                    '-map', '[out]',
+                    '-c:a', 'libmp3lame', '-b:a', '256k',
+                    '-ar', '44100', '-ac', '2',
+                    str(intro_file),
+                ]
+                proc = subprocess.run(
+                    cmd, capture_output=True, text=True, check=False)
+                if proc.returncode != 0:
+                    err = (proc.stderr or proc.stdout or '').strip()
+                    logger.error('Intro mix ffmpeg failed: %s', err)
+                    raise RuntimeError('ffmpeg intro mix failed')
 
             elif narration_file:
                 # Just use narration if no music

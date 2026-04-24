@@ -38,23 +38,17 @@ Session notes: what shipped, how to operate it, and what is still open.
 - `outro_file.parent.mkdir(..., exist_ok=True)` (removed duplicate `parents=` kwarg).
 - Outro mux: resample / layout alignment + direct ffmpeg for final mix.
 
-### Known bug — intro: music plays, narrator not audible over tail
-- **Symptom:** Theme plays, but the narrator does **not** clearly come in over the **last portion** (expected: voiceover on top of fading theme, OG Trek style).
-- **Where:** `_create_intro_segment` in `audio_pipeline.py` — `amix` of delayed narration + ducked music (ffmpeg-python: `adelay`, `afade`, `normalize=0`).
-- **Likely directions to fix:**
-  - Verify **`adelay`** for mono on FFmpeg 6 (ffmpeg-python may pass ms incorrectly; compare with a **direct `ffmpeg` CLI** mix, same as outro `pan` fix).
-  - **Levels:** with `normalize=0`, music may drown voice; raise narration gain or duck music further under the overlap.
-  - **Theme length vs `STARDOCK_INTRO_MUSIC_SEC`:** short assets (e.g. 30 s) vs 60 s target can make `atrim` / pad / mix behave oddly; align duration or pad explicitly.
-  - **Delay:** tune `STARDOCK_INTRO_NARRATION_START_SEC` so the overlap window is long enough.
-- **Quick check:** narration-only intro (no theme) should sound fine — if so, the bug is the **mix**, not the TTS line.
+### Intro mix fix (was: music plays, narrator not over tail)
+- **Cause:** ffmpeg-python graph for mono `adelay` + `amix` (`normalize=0`) often dropped or buried narration over the theme tail.
+- **Change:** `_create_intro_segment` now builds the intro with a **`ffmpeg` subprocess** `filter_complex` (same idea as outro): theme `atrim` / fades / `apad`, narration `pan` to stereo, **`adelay=delays=MS|MS`**, ducked music (`volume=0.30`) + boosted voice (`volume=1.4`), **`amix=normalize=1`**, 44.1 kHz stereo MP3.
+- **Verify on pod:** `reassemble-audio <id> --refresh-intro` and audition `intro_complete.mp3` (narrator must sit clearly on the fading theme).
 
 ---
 
 ## Needs to do / follow-ups (priority order)
 
-### 1) Fix intro voiceover-over-music (bug above)
-- Reproduce with theme WAV + `intro_narration.wav`; iterate until narrator is clearly audible over the tail.
-- If `adelay` / filter graph stays flaky, build intro mix with **`ffmpeg` subprocess** (mirror outro fix).
+### 1) Confirm intro in a real render
+- After pull, run **`reassemble-audio … --refresh-intro`** (or full `generate-audio`); tweak `STARDOCK_INTRO_NARRATION_START_SEC` / theme length if overlap timing feels wrong.
 
 ### 2) Fix speech issues in the episode body
 - Run **full** `generate-audio` on the episode once `main` and assets are stable so every line uses `normalize_trek_tts_text` (stardates, species lexicon).
@@ -102,4 +96,4 @@ bash scripts/fetch_full_episode_from_runpod.sh <ip> <port> ep_7ba65dfe
 
 ---
 
-*Last updated: 2026-04-24 (intro bug + samples vs Kokoro + next priorities).*
+*Last updated: 2026-04-24 (intro subprocess mix fix; speech body = full generate-audio + lexicon).*
