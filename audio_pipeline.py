@@ -1233,47 +1233,65 @@ class AudioPipeline:
                 temp_dir = self.assets_dir / "music" / "temp"
                 temp_dir.mkdir(exist_ok=True, parents=True)
                 
-                # Get durations
                 narration_probe = ffmpeg.probe(str(narration_file))
                 narration_duration = float(narration_probe['format']['duration'])
-                
-                # Trim music to match narration + fade in/out
-                music_trimmed = temp_dir / "music_trimmed.mp3"
-                target_duration = narration_duration + 2.0  # Add 2 seconds for fade
+
+                # Trim theme to narration + pad; PCM intermediate (MP3 here broke amix→MP3).
+                music_trimmed = temp_dir / "music_trimmed.wav"
+                target_duration = max(0.5, narration_duration + 2.0)
+                fade_in_d = min(1.0, target_duration / 4.0)
+                fade_out_d = min(1.0, max(0.1, target_duration / 4.0))
+                fade_out_start = max(0.0, target_duration - fade_out_d)
                 (
                     ffmpeg
                     .input(str(theme_music))
-                    .filter('afade', t='in', st=0, d=1)
-                    .filter('afade', t='out', st=target_duration - 1, d=1)
-                    .output(str(music_trimmed), t=str(target_duration), acodec='libmp3lame', b='128k')
-                    .overwrite_output()
-                    .global_args('-loglevel', 'error')
-                    .run()
-                )
-                
-                # Mix narration and music (narration louder)
-                outro_file.parent.mkdir(exist_ok=True, parents=True)
-                narration_stream = ffmpeg.input(str(narration_file))
-                music_stream = ffmpeg.input(str(music_trimmed))
-                (
-                    ffmpeg.output(
-                        narration_stream,
-                        music_stream,
-                        str(outro_file),
-                        filter_complex=(
-                            '[0:a]volume=1.0[a0];[1:a]volume=0.3[a1];'
-                            '[a0][a1]amix=inputs=2:duration=first:normalize=1'
-                        ),
-                        acodec='libmp3lame',
+                    .filter('afade', t='in', st=0, d=fade_in_d)
+                    .filter('afade', t='out', st=fade_out_start, d=fade_out_d)
+                    .output(
+                        str(music_trimmed),
+                        t=str(target_duration),
+                        acodec='pcm_s16le',
                         ar=44100,
-                        b='192k'
+                        ac=2,
                     )
                     .overwrite_output()
                     .global_args('-loglevel', 'error')
                     .run()
                 )
-                
-                # Cleanup
+
+                # Kokoro narration: 24 kHz mono; theme: 44.1 kHz stereo — align then amix.
+                outro_file.parent.mkdir(parents=True, parents=True)
+                narr_in = ffmpeg.input(str(narration_file))
+                mus_in = ffmpeg.input(str(music_trimmed))
+                narr_a = (
+                    narr_in.audio
+                    .filter('aresample', 44100)
+                    .filter('pan', 'stereo|c0=c0|c1=c0')
+                )
+                mus_a = mus_in.audio.filter('aresample', 44100)
+                narr_v = narr_a.filter('volume', 1.0)
+                mus_v = mus_a.filter('volume', 0.3)
+                mixed = ffmpeg.filter(
+                    [narr_v, mus_v],
+                    'amix',
+                    inputs=2,
+                    duration='first',
+                    normalize=1,
+                )
+                (
+                    ffmpeg.output(
+                        mixed,
+                        str(outro_file),
+                        acodec='libmp3lame',
+                        ac=2,
+                        ar=44100,
+                        audio_bitrate='192k',
+                    )
+                    .overwrite_output()
+                    .global_args('-loglevel', 'error')
+                    .run()
+                )
+
                 if music_trimmed.exists():
                     music_trimmed.unlink()
                 
