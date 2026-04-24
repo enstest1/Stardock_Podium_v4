@@ -564,6 +564,9 @@ def cmd_generate_audio(args):
     ),
     arguments=[
         {'name': 'episode_id', **STR_ARG, 'help': 'ID of the episode'},
+        {'name': '--refresh-intro', **BOOL_ARG,
+         'help': 'Regenerate intro (narration + theme) from current code; '
+                 'scene dialogue unchanged'},
     ],
 )
 def cmd_reassemble_audio(args):
@@ -573,7 +576,8 @@ def cmd_reassemble_audio(args):
         return False
     from audio_pipeline import reassemble_episode_audio
 
-    out = reassemble_episode_audio(args.episode_id)
+    out = reassemble_episode_audio(
+        args.episode_id, refresh_intro=args.refresh_intro)
     if out.get('error'):
         logger.error('%s', out['error'])
         return False

@@ -1541,11 +1541,23 @@ class AudioPipeline:
             logger.error(f"Error assembling episode audio: {e}")
             return None
 
-    def reassemble_episode_audio(self, episode_id: str) -> Dict[str, Any]:
+    def reassemble_episode_audio(
+            self,
+            episode_id: str,
+            *,
+            refresh_intro: bool = False,
+    ) -> Dict[str, Any]:
         """Rebuild outro and ``full_episode.mp3`` from existing scene MP3s only.
 
         Does not re-run Kokoro on dialogue lines. Use after a failed outro mux or
         when intro/scene audio already exists.
+
+        Args:
+            episode_id: Episode folder id.
+            refresh_intro: If True, drop ``intro_complete.mp3`` and run
+                :meth:`_create_intro_segment` so intro narration + theme match
+                current code and ``assets/music`` (still Kokoro ``kokoro_voice``,
+                not ``narrator.wav``).
         """
         script = load_episode_script(episode_id)
         if not script or not script.get('scenes'):
@@ -1575,10 +1587,16 @@ class AudioPipeline:
             })
 
         intro_path: Optional[Path] = audio_dir / 'intro_complete.mp3'
-        if not intro_path.exists():
-            intro_path = None
-            logger.warning(
-                'No intro_complete.mp3 — assembling without intro segment')
+        if refresh_intro and intro_path.exists():
+            intro_path.unlink()
+            logger.info('Removed intro_complete.mp3 (--refresh-intro)')
+            intro_path = audio_dir / 'intro_complete.mp3'
+        if refresh_intro or not intro_path.exists():
+            built = self._create_intro_segment(episode_id)
+            intro_path = built if built else None
+            if not intro_path:
+                logger.warning(
+                    'Intro rebuild failed or skipped — assembling without intro')
 
         outro_cached = self.assets_dir / 'music' / 'outro_complete.mp3'
         if outro_cached.exists():
@@ -1637,10 +1655,15 @@ def get_audio_pipeline() -> AudioPipeline:
     
     return _audio_pipeline
 
-def reassemble_episode_audio(episode_id: str) -> Dict[str, Any]:
+def reassemble_episode_audio(
+        episode_id: str,
+        *,
+        refresh_intro: bool = False,
+) -> Dict[str, Any]:
     """Module wrapper for :meth:`AudioPipeline.reassemble_episode_audio`."""
     pipeline = get_audio_pipeline()
-    return pipeline.reassemble_episode_audio(episode_id)
+    return pipeline.reassemble_episode_audio(
+        episode_id, refresh_intro=refresh_intro)
 
 
 def generate_episode_audio(episode_id: str, options: Dict[str, Any] = None) -> Dict[str, Any]:
