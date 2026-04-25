@@ -90,6 +90,9 @@ if [[ ! -f "episodes/${EP}/script.json" ]]; then
 fi
 rm -f assets/music/outro_narration.wav
 grep -q KOKORO_EXTRA_TAIL_TRIM_MS .env 2>/dev/null || echo "KOKORO_EXTRA_TAIL_TRIM_MS=10" >> .env
+export NVIDIA_DRIVER_CAPABILITIES="${NVIDIA_DRIVER_CAPABILITIES:-all}"
+export NVIDIA_VISIBLE_DEVICES="${NVIDIA_VISIBLE_DEVICES:-all}"
+if [[ -z "${CUDA_VISIBLE_DEVICES:-}" ]]; then unset CUDA_VISIBLE_DEVICES || true; fi
 pkill -f "main.py generate-audio" 2>/dev/null || true
 : > /tmp/stardock_gen_ep.log
 nohup "$PY" main.py generate-audio "$EP" >> /tmp/stardock_gen_ep.log 2>&1 &
