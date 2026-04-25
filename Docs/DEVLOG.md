@@ -42,6 +42,7 @@ Session notes: what shipped, how to operate it, and what is still open.
 ### Coqui XTTS (clone voices) on headless / RunPod
 - **CPML license prompt** reads **stdin**; under **`nohup`** you get **EOF** and XTTS never loads, then the pipeline falls back to **Kokoro**. Fix: set **`COQUI_TOS_AGREED=1`** (see `scripts/pod_generate_audio.sh` and `tts_engine.py` `XTTSEngine.__init__` before `CoquiTTS(...)`). You must still comply with [Coqui CPML](https://coqui.ai/cpml) (non-commercial) or a commercial license.
 - **`engine_order`**: `["xtts", "kokoro"]` in `voices/voice_config.json`; venv: **`.venv-xtts`** (Python 3.11 + Coqui). **`scripts/pod_generate_audio.sh`** points `main.py generate-audio` at that venv and exports NVIDIA/Coqui env.
+- **`transformers` vs TTS 0.22:** if the log shows **`XTTS failed … cannot import name 'BeamSearchScorer'`**, a **too-new** `transformers` is installed. Pin **`transformers==4.46.2`** (see `requirements-voice-clone.txt`), or on an existing venv: **`bash scripts/fix_xtts_transformers.sh`**, then run **`generate-audio` again** for real clones (not Kokoro fallback).
 
 ### Bugfixes
 - `outro_file.parent.mkdir(..., exist_ok=True)` (removed duplicate `parents=` kwarg).
@@ -106,4 +107,4 @@ bash scripts/fetch_full_episode_from_runpod.sh <ip> <port> ep_7ba65dfe
 
 ---
 
-*Last updated: 2026-04-25 (Mem0/StoryStructure/ScriptEditor optional without keys; `COQUI_TOS_AGREED` for XTTS on nohup; pkill+SSH gotcha).*
+*Last updated: 2026-04-25 (transformers 4.46.2 pin for Coqui XTTS; `fix_xtts_transformers.sh`).*

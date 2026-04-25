@@ -5,4 +5,8 @@
 #
 # If versions conflict with Kokoro's torch, prefer installing TTS in a separate
 # venv or align torch builds per Coqui's docs.
-TTS>=0.22.0
+TTS==0.22.0
+# TTS 0.22 is incompatible with transformers>=4.48 (BeamSearchScorer import).
+# Pin first; re-run ``pip install -r requirements-voice-clone.txt`` or
+# ``pip install "transformers==4.46.2" --force-reinstall`` after TTS on existing venvs.
+transformers==4.46.2
