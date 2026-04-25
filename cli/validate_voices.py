@@ -2,15 +2,18 @@
 """
 Voice Configuration Validator for Stardock Podium.
 
-Validates ``voice_config.json`` and the referenced speaker WAVs for
-Kokoro TTS. The ElevenLabs ``eleven_id`` requirement has been removed —
-Kokoro is the sole supported engine.
+Validates ``voice_config.json`` and the referenced speaker WAVs.
+``engine_order`` may list ``xtts`` and ``kokoro``; cloning uses the same
+WAVs. Kokoro still needs ``kokoro_voice`` for fallback.
 
-WAV requirements (Kokoro):
+WAV requirements (reference samples):
     * Mono (1 channel)
     * 16 kHz sample rate
     * Duration between 4 and 20 seconds
       (6–15 s recommended — outside that range we warn but don't fail)
+
+MP3 references (e.g. for XTTS):
+    * Duration 4–20 s after decode; channel layout is normalized by librosa.
 """
 
 import os
@@ -19,6 +22,13 @@ import json
 import logging
 import argparse
 import soundfile as sf
+
+try:
+    import librosa
+    _LIBROSA_OK = True
+except ImportError:
+    librosa = None
+    _LIBROSA_OK = False
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -34,21 +44,51 @@ RECOMMENDED_MIN_S = 6.0
 RECOMMENDED_MAX_S = 15.0
 
 
-def validate_audio_file(file_path: str) -> bool:
-    """Validate one speaker reference WAV.
+def _duration_warnings(duration: float, file_path: str) -> None:
+    if (duration < RECOMMENDED_MIN_S or duration > RECOMMENDED_MAX_S):
+        logger.warning(
+            f"Duration {duration:.1f}s is outside the recommended "
+            f"{RECOMMENDED_MIN_S:.0f}-{RECOMMENDED_MAX_S:.0f}s "
+            f"window (clone quality may vary): {file_path}"
+        )
 
-    Args:
-        file_path: Path to audio file.
+
+def validate_audio_file(file_path: str) -> bool:
+    """Validate one speaker reference (WAV or MP3).
 
     Returns:
-        True if hard requirements pass (existence, mono, 16 kHz, 4–20 s).
-        Emits a warning — but returns True — for durations outside the
-        recommended 6–15 s window.
+        True if hard requirements pass (existence, layout/rate rules, 4–20 s).
     """
     try:
         if not os.path.exists(file_path):
             logger.error(f"Audio file not found: {file_path}")
             return False
+
+        ext = os.path.splitext(file_path)[1].lower()
+
+        if ext == '.mp3':
+            if not _LIBROSA_OK:
+                logger.error(
+                    "librosa is required to validate MP3 references "
+                    "(pip install librosa): %s",
+                    file_path,
+                )
+                return False
+            y, sr = librosa.load(file_path, sr=None, mono=True)
+            duration = float(len(y)) / float(sr)
+            if duration < MIN_DURATION_S or duration > MAX_DURATION_S:
+                logger.error(
+                    f"Audio file must be {MIN_DURATION_S:.0f}-"
+                    f"{MAX_DURATION_S:.0f} seconds (got {duration:.1f}s): "
+                    f"{file_path}"
+                )
+                return False
+            _duration_warnings(duration, file_path)
+            logger.info(
+                "MP3 reference OK (%.1fs, native_sr=%d): %s",
+                duration, sr, file_path,
+            )
+            return True
 
         data, samplerate = sf.read(file_path)
 
@@ -70,13 +110,7 @@ def validate_audio_file(file_path: str) -> bool:
             )
             return False
 
-        if (duration < RECOMMENDED_MIN_S
-                or duration > RECOMMENDED_MAX_S):
-            logger.warning(
-                f"Duration {duration:.1f}s is outside the recommended "
-                f"{RECOMMENDED_MIN_S:.0f}-{RECOMMENDED_MAX_S:.0f}s "
-                f"window (Kokoro quality may vary): {file_path}"
-            )
+        _duration_warnings(duration, file_path)
 
         return True
     except Exception as e:
@@ -107,15 +141,33 @@ def validate_voice_config(config_path: str) -> bool:
 
         if 'kokoro' not in engine_order:
             logger.error(
-                "engine_order must contain 'kokoro' (the only supported "
-                "engine). Got: %s", engine_order)
+                "engine_order must contain 'kokoro' as a fallback. Got: %s",
+                engine_order,
+            )
             return False
 
-        deprecated = [e for e in engine_order if e != 'kokoro']
-        if deprecated:
+        unknown = [
+            e for e in engine_order
+            if e not in ('kokoro', 'xtts', 'eleven')
+        ]
+        if unknown:
+            logger.error(
+                "engine_order has unknown engines %s — use kokoro and/or xtts.",
+                unknown,
+            )
+            return False
+
+        if 'xtts' in engine_order:
+            logger.info(
+                "engine_order includes 'xtts' - install: "
+                "pip install -r requirements-voice-clone.txt (GPU recommended).",
+            )
+
+        legacy = [e for e in engine_order if e == 'eleven']
+        if legacy:
             logger.warning(
-                "engine_order contains deprecated engines %s — these will "
-                "be ignored at runtime.", deprecated)
+                "engine_order still lists 'eleven' — ignored; use kokoro/xtts.",
+            )
 
         if (not isinstance(config['characters'], dict)
                 or len(config['characters']) < 1):

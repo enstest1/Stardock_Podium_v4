@@ -21,7 +21,7 @@ import asyncio
 import threading
 from dataclasses import dataclass
 
-# ElevenLabs is optional; dialogue uses Kokoro via dialogue_engine.
+# ElevenLabs is optional; dialogue uses dialogue_engine (Kokoro + optional XTTS).
 try:
     from elevenlabs import ElevenLabs
     from elevenlabs.client import ElevenLabs as ElevenLabsClient
@@ -77,12 +77,26 @@ _OUTRO_MUSIC_PATTERNS = (
 )
 
 # Preferred theme filenames (place under assets/music/). Env overrides below.
+# ``theme_intro`` / ``theme_outro`` are checked first (Trek-style stems).
 _INTRO_THEME_FILE = 'Cosmic_Odyssey_Main_Theme_2025-12-25T222447.wav'
 _OUTRO_THEME_FILE = 'Cosmic_Odyssey_Main_Theme_2025-12-27T064552.wav'
 _INTRO_MUSIC_DURATION_SEC = float(
     os.environ.get('STARDOCK_INTRO_MUSIC_SEC', '60'))
 _INTRO_NARRATION_DELAY_SEC = float(
     os.environ.get('STARDOCK_INTRO_NARRATION_START_SEC', '45'))
+
+# Optional ffmpeg audio filters on intro narration only (after resample, before
+# stereo pan). Default: light high-pass + presence for a "log recorder" feel.
+# Disable with STARDOCK_INTRO_NARRATOR_FILTERS=off
+_raw_intro_narr_fx = os.environ.get('STARDOCK_INTRO_NARRATOR_FILTERS')
+if _raw_intro_narr_fx is None:
+    _INTRO_NARRATOR_AF = (
+        'highpass=f=100,equalizer=f=3000:width_type=h:width=700:g=1.8'
+    )
+elif str(_raw_intro_narr_fx).strip().lower() in ('', 'off', 'none'):
+    _INTRO_NARRATOR_AF = ''
+else:
+    _INTRO_NARRATOR_AF = str(_raw_intro_narr_fx).strip()
 
 
 @dataclass
@@ -201,6 +215,15 @@ class AudioPipeline:
             p2 = self.music_dir / override
             if p2.is_file():
                 return p2
+        for stem in (
+            ('theme_intro.mp3', 'theme_intro.wav')
+            if role == 'intro'
+            else ('theme_outro.mp3', 'theme_outro.wav')
+        ):
+            p = self.music_dir / stem
+            if p.is_file():
+                return p
+
         preferred = (
             _INTRO_THEME_FILE if role == 'intro' else _OUTRO_THEME_FILE)
         cand = self.music_dir / preferred
@@ -530,7 +553,7 @@ class AudioPipeline:
                 character_display=character,
                 output_path=str(audio_file),
             )
-            logger.info('Generated dialogue with Kokoro: %s', audio_file)
+            logger.info('Generated dialogue line audio: %s', audio_file)
 
             probe = ffmpeg.probe(str(audio_file))
             duration = float(probe['format']['duration'])
@@ -549,7 +572,7 @@ class AudioPipeline:
     
     def _generate_narrator_audio(self, content: str, line_index: int,
                                temp_dir: Path) -> Optional[AudioClip]:
-        """Generate audio for narrator lines using Kokoro (narrator voice)."""
+        """Generate audio for narrator lines (narrator voice from voice_config)."""
         try:
             content = content.replace('"', '').replace('...', '…')
             audio_file = temp_dir / f"line_{line_index:03d}_narrator.wav"
@@ -967,10 +990,10 @@ class AudioPipeline:
             # Spoken form is applied in tts_engine via normalize_trek_tts_text
             # (digit-by-digit stardate, Trek lexicon).
             narration_text = (
-                f"This is the logs of the Celestial Temple. "
-                f"Journeys through the Gamma Quadrant. "
+                f"Captain's log, Starship Celestial Temple. "
                 f"Stardate {stardate_raw}. "
-                f"Episode number {episode_number}."
+                f"We continue our mission in the Gamma Quadrant. "
+                f"This is episode {episode_number}."
             )
 
             narrator_cfg = self.voice_config.get('characters', {}).get(
@@ -1110,12 +1133,18 @@ class AudioPipeline:
                 nd = f'{narr_delay:.3f}'
                 ft = f'{fade_tail:.3f}'
                 me = f'{mix_end:.3f}'
+                narr_chain = 'aresample=44100'
+                if _INTRO_NARRATOR_AF:
+                    narr_chain = f'{narr_chain},{_INTRO_NARRATOR_AF}'
+                narr_chain = (
+                    f'{narr_chain},pan=stereo|c0=c0|c1=c0,'
+                    f'afade=t=in:st=0:d=0.4'
+                )
                 fc = (
                     f'[0:a]atrim=start=0:duration={ms},asetpts=PTS-STARTPTS,'
                     f'afade=t=in:st=0:d=2,afade=t=out:st={nd}:d={ft},'
                     f'aresample=44100,apad=whole_dur={me}[m];'
-                    f'[1:a]aresample=44100,pan=stereo|c0=c0|c1=c0,'
-                    f'afade=t=in:st=0:d=0.4[n0];'
+                    f'[1:a]{narr_chain}[n0];'
                     f'[n0]adelay=delays={delay_ms}|{delay_ms},volume=1.4[n];'
                     f'[m]volume=0.30[mv];'
                     f'[mv][n]amix=inputs=2:duration=longest:normalize=1[out]'

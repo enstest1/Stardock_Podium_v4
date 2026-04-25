@@ -41,11 +41,12 @@ class TTSGenerator:
         self.kokoro_engine = None
 
         engine_order = self.config.get('engine_order', ['kokoro'])
-        if any(e not in ('kokoro',) for e in engine_order):
+        extra = [e for e in engine_order if e not in ('kokoro',)]
+        if extra:
             logger.warning(
-                "engine_order contains non‑kokoro entries %s — these are "
-                "deprecated and will be skipped.",
-                [e for e in engine_order if e != 'kokoro'],
+                "This CLI uses Kokoro only; engine_order also lists %s — "
+                "use main.py generate-audio for full xtts+kokoro routing.",
+                extra,
             )
 
     def _load_config(self, config_path: str) -> dict:

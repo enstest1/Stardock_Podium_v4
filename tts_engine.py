@@ -11,6 +11,7 @@ import os
 import logging
 import abc
 import threading
+import tempfile
 import typing as t
 import warnings
 from pathlib import Path
@@ -31,6 +32,13 @@ try:
 except ImportError:
     KPipeline = None
     KOKORO_AVAILABLE = False
+
+try:
+    from TTS.api import TTS as CoquiTTS  # type: ignore
+    XTTS_AVAILABLE = True
+except ImportError:
+    CoquiTTS = None
+    XTTS_AVAILABLE = False
 
 try:
     from elevenlabs import ElevenLabs, VoiceSettings
@@ -316,6 +324,109 @@ class KokoroEngine(TTSEngine):
         return speaker_wav or 'af_heart'
 
 
+_XTTS_MODEL = os.environ.get(
+    'STARDOCK_XTTS_MODEL',
+    'tts_models/multilingual/multi-dataset/xtts_v2',
+)
+
+
+class XTTSEngine(TTSEngine):
+    """Coqui XTTS v2 — clones timbre from a reference ``speaker_wav`` file.
+
+    Install optional deps: ``pip install -r requirements-voice-clone.txt``.
+    First run downloads model weights (large). Use a GPU on RunPod when
+    possible — CPU is very slow.
+    """
+
+    def __init__(self) -> None:
+        if not XTTS_AVAILABLE or CoquiTTS is None:
+            raise ImportError(
+                'Coqui TTS (XTTS) is not installed. '
+                'Use: pip install -r requirements-voice-clone.txt'
+            )
+
+        use_gpu = torch.cuda.is_available()
+        self._device = 'cuda' if use_gpu else 'cpu'
+        if not use_gpu:
+            logger.warning(
+                'CUDA not available — XTTS on CPU is extremely slow.',
+            )
+        try:
+            self._tts = CoquiTTS(
+                model_name=_XTTS_MODEL,
+                progress_bar=False,
+                gpu=use_gpu,
+            )
+        except TypeError:
+            # Older Coqui API
+            self._tts = CoquiTTS(_XTTS_MODEL, gpu=use_gpu)
+
+        self._synth_lock = threading.Lock()
+        logger.info(
+            'XTTS engine loaded (model=%s, device=%s).',
+            _XTTS_MODEL,
+            self._device,
+        )
+
+    def synth(
+        self,
+        text: str,
+        speaker_wav: str,
+        language: str,
+        output_path: str,
+    ) -> None:
+        """Synthesize with a reference WAV path (not a Kokoro voice id)."""
+        ref = Path(speaker_wav)
+        if not ref.is_file():
+            raise SynthError(f'XTTS reference WAV not found: {speaker_wav}')
+
+        lang = (language or 'en').strip().lower()
+        if len(lang) > 2:
+            lang = lang[:2]
+        clean_text = _clean_kokoro_text(normalize_trek_tts_text(text))
+        if not clean_text:
+            raise SynthError('Empty text after normalization')
+
+        ref_path = str(ref.resolve())
+        tmp_spk: t.Optional[str] = None
+        if ref.suffix.lower() == '.mp3':
+            try:
+                import librosa
+            except ImportError as e:
+                raise SynthError(
+                    'MP3 speaker reference requires librosa '
+                    '(pip install librosa).'
+                ) from e
+            if sf is None:
+                raise SynthError('soundfile required to stage MP3 for XTTS.')
+            y, _sr = librosa.load(str(ref), sr=24000, mono=True)
+            fd, tmp_spk = tempfile.mkstemp(suffix='.wav', prefix='xtts_spk_')
+            os.close(fd)
+            sf.write(tmp_spk, y, 24000)
+            ref_path = tmp_spk
+
+        try:
+            with self._synth_lock:
+                self._tts.tts_to_file(  # type: ignore[union-attr]
+                    text=clean_text,
+                    file_path=output_path,
+                    speaker_wav=ref_path,
+                    language=lang,
+                )
+            logger.info('XTTS synthesis complete: %s', output_path)
+        except SynthError:
+            raise
+        except Exception as e:
+            logger.error('XTTS synthesis failed: %s', e)
+            raise SynthError(str(e)) from e
+        finally:
+            if tmp_spk and os.path.isfile(tmp_spk):
+                try:
+                    os.unlink(tmp_spk)
+                except OSError:
+                    pass
+
+
 class ElevenLabsEngine(TTSEngine):
     """ElevenLabs TTS engine implementation (deprecated)."""
 
@@ -372,6 +483,7 @@ class ElevenLabsEngine(TTSEngine):
 
 # Singleton instances
 _kokoro_engine: t.Optional[KokoroEngine] = None
+_xtts_engine: t.Optional[XTTSEngine] = None
 _elevenlabs_engine: t.Optional[ElevenLabsEngine] = None
 
 
@@ -386,6 +498,14 @@ def get_kokoro_engine() -> KokoroEngine:
             )
         _kokoro_engine = KokoroEngine()
     return _kokoro_engine
+
+
+def get_xtts_engine() -> XTTSEngine:
+    """Get the XTTSEngine singleton (lazy; loads weights on first use)."""
+    global _xtts_engine
+    if _xtts_engine is None:
+        _xtts_engine = XTTSEngine()
+    return _xtts_engine
 
 
 def get_elevenlabs_engine() -> ElevenLabsEngine:

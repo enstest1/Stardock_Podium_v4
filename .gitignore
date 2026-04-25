@@ -58,6 +58,10 @@ episodes/*/audio/
 !assets/music/*.wav
 !assets/music/*.mp3
 
+# Casting / XTTS reference samples (tracked intentionally)
+!voices/samples/**/*.wav
+!voices/samples/**/*.mp3
+
 # Temporary files
 *.tmp
 

@@ -1,10 +1,10 @@
 {
-    "engine_order": ["kokoro"],
+    "engine_order": ["xtts", "kokoro"],
     "_voice_assignment_notes": [
-        "kokoro_voice picks a built-in Kokoro v0.9+ voice embedding and is the",
-        "preferred field. speaker_wav is retained for documentation / future",
-        "WAV-based engines (XTTS, F5-TTS). Kokoro v0.9+ cannot clone raw WAVs —",
-        "pointing it at a .wav silently falls back to af_heart."
+        "engine_order: try xtts first (voice clone from speaker_wav), then kokoro.",
+        "Install Coqui XTTS on the render host: pip install -r requirements-voice-clone.txt",
+        "STARDOCK_DISABLE_XTTS=1 forces Kokoro only. Per-character override: tts_engine.",
+        "kokoro_voice = Kokoro preset; speaker_wav = casting sample + XTTS reference (WAV 16 kHz mono preferred; MP3 ok)."
     ],
     "characters": {
         "captain_amara_okonkwo": {
@@ -45,7 +45,7 @@
         },
         "lieutenant_zhanil_thkethris": {
             "kokoro_voice": "bf_alice",
-            "speaker_wav": "voices/samples/Star_Trek_Horizon/lt_zhanil_thkethris_1.wav",
+            "speaker_wav": "voices/samples/Star_Trek_Horizon/lt_zhanil_thkethris_1.mp3",
             "language": "en",
             "notes": "British distinctive — alien-science specialist feel."
         },
