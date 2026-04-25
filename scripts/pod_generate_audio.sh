@@ -10,6 +10,8 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 export NVIDIA_DRIVER_CAPABILITIES="${NVIDIA_DRIVER_CAPABILITIES:-all}"
 export NVIDIA_VISIBLE_DEVICES="${NVIDIA_VISIBLE_DEVICES:-all}"
+# Coqui XTTS CPML — avoid interactive stdin on RunPod (see tts_engine XTTSEngine).
+export COQUI_TOS_AGREED="${COQUI_TOS_AGREED:-1}"
 if [[ -z "${CUDA_VISIBLE_DEVICES:-}" ]]; then
   unset CUDA_VISIBLE_DEVICES || true
 fi

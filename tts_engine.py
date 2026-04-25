@@ -344,6 +344,9 @@ class XTTSEngine(TTSEngine):
                 'Coqui TTS (XTTS) is not installed. '
                 'Use: pip install -r requirements-voice-clone.txt'
             )
+        # Coqui reads CPML terms from stdin; nohup/SSH get EOF and XTTS never loads.
+        if not (os.environ.get('COQUI_TOS_AGREED') or '').strip():
+            os.environ['COQUI_TOS_AGREED'] = '1'
 
         use_gpu = torch.cuda.is_available()
         self._device = 'cuda' if use_gpu else 'cpu'
