@@ -12,3 +12,6 @@ TTS==0.22.0
 transformers==4.46.2
 # gruut (TTS) requires numpy<2; keep in sync with fix script.
 numpy>=1.22.0,<2.0
+# torchaudio / PyTorch 2.6+ may require this for ``load_with_torchcodec`` inside Coqui paths.
+# If ``pip install`` fails on your platform, see Docs/DEVLOG.md (XTTS section).
+torchcodec

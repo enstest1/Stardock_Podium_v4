@@ -21,6 +21,9 @@ fi
 .venv-xtts/bin/pip install -r requirements-voice-clone.txt
 # TTS may have pulled a newer transformers; keep XTTS import path working.
 .venv-xtts/bin/pip install "transformers==4.46.2" "numpy>=1.22.0,<2.0" --force-reinstall
+.venv-xtts/bin/pip install "torchcodec" || {
+  echo "Warning: torchcodec install failed — XTTS may fall back to Kokoro until resolved." >&2
+}
 echo "---"
 .venv-xtts/bin/python -c "import TTS, torch; print('TTS', TTS.__version__); print('torch', torch.__version__); print('cuda_available', torch.cuda.is_available())"
 echo "Use: .venv-xtts/bin/python main.py generate-audio <episode_id>"

@@ -44,7 +44,13 @@ Session notes: what shipped, how to operate it, and what is still open.
 - **`engine_order`**: `["xtts", "kokoro"]` in `voices/voice_config.json`; venv: **`.venv-xtts`** (Python 3.11 + Coqui). **`scripts/pod_generate_audio.sh`** points `main.py generate-audio` at that venv and exports NVIDIA/Coqui env.
 - **`transformers` vs TTS 0.22:** if the log shows **`XTTS failed … cannot import name 'BeamSearchScorer'`**, a **too-new** `transformers` is installed. Pin **`transformers==4.46.2`** (see `requirements-voice-clone.txt`), or on an existing venv: **`bash scripts/fix_xtts_transformers.sh`**, then run **`generate-audio` again** for real clones (not Kokoro fallback). After that install, use **`numpy>=1.22,<2.0`** (see `fix_xtts_transformers.sh`) so **gruut** stays happy.
 - **PyTorch 2.6+** defaults **`torch.load(..., weights_only=True)`**, which breaks Coqui checkpoints (“Weights only load failed”). `tts_engine.XTTSEngine` patches `torch.load` to pass **`weights_only=False`** for trusted Coqui/HF caches before loading XTTS.
-- **“TorchCodec is required for load_with_torchcodec”** on speaker refs: stage **every** reference clip through **librosa + soundfile** to a temp 24kHz mono WAV (not only MP3) so the stack does not hit **torchcodec** for `speaker_wav`.
+- **“TorchCodec is required for load_with_torchcodec”**: install **`torchcodec`** in **`.venv-xtts`** (included in `requirements-voice-clone.txt`; **`fix_xtts_transformers.sh`** and **`setup_xtts_venv.sh`** try to install it). We also stage **every** `speaker_wav` through **librosa + soundfile** so your sample files are not read via torchcodec.
+
+### RunPod: “Your Pod’s GPUs are no longer available”
+- In the RunPod dialog, use **Automatically migrate your Pod data (Recommended)** so you get **GPU** again (same class if offered). **Do not** rely on “Start using CPUs” for a full episode with **XTTS** (far too slow).
+- After the new pod is **Running**, open **Connect** and copy the **new** `ssh … -p …` (IP/port change after migration).
+- On the pod: `cd` to your repo (often `/workspace/stardock_podium_04`), `git pull`, then **`bash scripts/runpod_full_clone_render.sh ep_7ba65dfe`** (or the same steps by hand: `fix_xtts_transformers.sh`, then `nohup bash scripts/pod_generate_audio.sh …`).
+- When the log shows **`Synthesized dialogue (xtts)`** and not constant **`XTTS failed`**, you have **clones** in the mix. Then on your PC: **`fetch_full_episode_from_runpod.sh`** with the **new** host/port.
 
 ### Bugfixes
 - `outro_file.parent.mkdir(..., exist_ok=True)` (removed duplicate `parents=` kwarg).
@@ -103,10 +109,14 @@ cd /workspace/stardock_podium_04
 git pull origin main
 .venv/bin/python main.py reassemble-audio ep_7ba65dfe --refresh-intro
 
+# On pod: full episode with XTTS clone path (after migrate + git pull)
+cd /workspace/stardock_podium_04
+bash scripts/runpod_full_clone_render.sh ep_7ba65dfe
+
 # Download finished MP3 to PC
 bash scripts/fetch_full_episode_from_runpod.sh <ip> <port> ep_7ba65dfe
 ```
 
 ---
 
-*Last updated: 2026-04-25 (transformers 4.46.2 pin for Coqui XTTS; `fix_xtts_transformers.sh`).*
+*Last updated: 2026-04-25 (RunPod migrate note; `torchcodec` + `runpod_full_clone_render.sh` for clone episode).*
