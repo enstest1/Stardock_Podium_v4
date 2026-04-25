@@ -10,7 +10,7 @@ import os
 import json
 import logging
 import time
-from typing import Dict, List, Any, Optional, Union
+from typing import Dict, List, Any, Optional, Union, cast
 from pathlib import Path
 import uuid
 
@@ -521,14 +521,148 @@ class Mem0Client:
         
         return results
 
+
+def _env_disables_mem0() -> bool:
+    v = (os.environ.get("STARDOCK_DISABLE_MEM0") or "").strip().lower()
+    return v in ("1", "true", "yes", "on")
+
+
+class _Mem0Disabled:
+    """No-op when Mem0 cannot start (e.g. missing OPENAI_API_KEY for local Qdrant path).
+
+    Lets ``generate-audio`` and other flows run on hosts that only have TTS keys.
+    """
+
+    REFERENCE_MATERIAL = Mem0Client.REFERENCE_MATERIAL
+    EPISODE_MEMORY = Mem0Client.EPISODE_MEMORY
+    CHARACTER_INFO = Mem0Client.CHARACTER_INFO
+    VOICE_METADATA = Mem0Client.VOICE_METADATA
+    STORY_STRUCTURE = Mem0Client.STORY_STRUCTURE
+
+    def add_memory(
+        self,
+        content: str,
+        user_id: str,
+        memory_type: str,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        return {"status": "disabled", "memory_type": memory_type}
+
+    def search_memory(
+        self,
+        query: str,
+        user_id: str,
+        memory_type: Optional[str] = None,
+        limit: int = 5,
+    ) -> List[Dict[str, Any]]:
+        return []
+
+    def get_all_memories(
+        self, user_id: str, memory_type: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        return []
+
+    def add_reference_material(
+        self,
+        content: str,
+        source: str,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        return self.add_memory(
+            content, "reference_materials", self.REFERENCE_MATERIAL, metadata
+        )
+
+    def add_episode_memory(
+        self,
+        content: str,
+        episode_id: str,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        return self.add_memory(
+            content, "episodes", self.EPISODE_MEMORY, metadata
+        )
+
+    def add_character_info(
+        self,
+        character_name: str,
+        info: str,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        return self.add_memory(
+            info, "characters", self.CHARACTER_INFO, metadata
+        )
+
+    def search_reference_materials(
+        self, query: str, limit: int = 5
+    ) -> List[Dict[str, Any]]:
+        return []
+
+    def search_episode_memories(
+        self,
+        query: str,
+        episode_id: Optional[str] = None,
+        limit: int = 5,
+    ) -> List[Dict[str, Any]]:
+        return []
+
+    def search_character_info(
+        self,
+        query: str,
+        character_name: Optional[str] = None,
+        limit: int = 5,
+    ) -> List[Dict[str, Any]]:
+        return []
+
+    def get_character_info(
+        self, character_name: str
+    ) -> Optional[Dict[str, Any]]:
+        return None
+
+    def delete_memory(self, memory_id: str) -> bool:
+        return False
+
+    def add_story_structure(
+        self,
+        structure_data: Dict[str, Any],
+        episode_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        return {"status": "disabled"}
+
+    def get_story_structure(self, episode_id: str) -> Optional[Dict[str, Any]]:
+        return None
+
+    def batch_add_memories(
+        self, memories: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        return []
+
+
 # Singleton instance
-_mem0_client = None
+_mem0_client: Optional[Union[Mem0Client, _Mem0Disabled]] = None
+
 
 def get_mem0_client() -> Mem0Client:
-    """Get the Mem0Client singleton instance."""
+    """Return the Mem0Client singleton, or a no-op stub if Mem0 cannot start.
+
+    Stub is used when ``STARDOCK_DISABLE_MEM0`` is set, or when :class:`Mem0Client`
+    initialization fails (e.g. no ``OPENAI_API_KEY`` for the default embedder).
+    """
     global _mem0_client
-    
-    if _mem0_client is None:
+
+    if _mem0_client is not None:
+        return cast(Mem0Client, _mem0_client)
+
+    if _env_disables_mem0():
+        logger.info("Mem0 disabled (STARDOCK_DISABLE_MEM0).")
+        _mem0_client = _Mem0Disabled()
+        return cast(Mem0Client, _mem0_client)
+
+    try:
         _mem0_client = Mem0Client()
-    
-    return _mem0_client
+    except Exception as e:
+        logger.warning(
+            "Mem0 init failed; continuing without vector memory: %s", e
+        )
+        _mem0_client = _Mem0Disabled()
+
+    return cast(Mem0Client, _mem0_client)
