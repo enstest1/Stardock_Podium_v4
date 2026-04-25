@@ -1,4 +1,5 @@
 # Optional: Coqui TTS XTTS v2 for cloning from voices/*/speaker_wav samples.
+# Requires Python 3.9–3.11 (not 3.12). On RunPod use: bash scripts/setup_xtts_venv.sh
 # Large first-time model download; use a CUDA torch wheel on GPU hosts (RunPod).
 # Install after base requirements: pip install -r requirements.txt -r requirements-voice-clone.txt
 #

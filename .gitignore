@@ -2,6 +2,7 @@
 .env
 # Allow example environment file to be versioned
 # Python
+.venv-xtts/
 __pycache__/
 *.py[cod]
 *$py.class

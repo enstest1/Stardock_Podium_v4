@@ -45,10 +45,10 @@ Or pass host and port as 2nd and 3rd arguments.
 
 Web-terminal fallback (paste on the pod):
 
-  cd ${REPO} && git pull origin main && source .venv/bin/activate && pip install -q -r requirements.txt
+  cd ${REPO} && git pull origin main
   rm -f assets/music/outro_narration.wav
   pkill -f "main.py generate-audio" 2>/dev/null || true
-  nohup .venv/bin/python main.py generate-audio ${EP} >> /tmp/stardock_gen_ep.log 2>&1 &
+  nohup bash scripts/pod_generate_audio.sh ${EP} >> /tmp/stardock_gen_ep.log 2>&1 &
   tail -f /tmp/stardock_gen_ep.log
 EOF
   exit 1
@@ -67,12 +67,23 @@ ssh "${SSH_OPTS[@]}" -i "$KEY" -p "$TCP_PORT" \
 set -euo pipefail
 cd "$REPO" || { echo "No $REPO — on pod: cd /workspace && git clone https://github.com/enstest1/Stardock_Podium_v4.git stardock_podium_04"; exit 1; }
 git pull origin main
-if [[ ! -x .venv/bin/python ]]; then
+if [[ -x .venv-xtts/bin/python ]]; then
+  PY=".venv-xtts/bin/python"
+elif [[ -x .venv/bin/python ]]; then
+  PY=".venv/bin/python"
+else
   python3 -m venv .venv
+  PY=".venv/bin/python"
 fi
-# shellcheck source=/dev/null
-source .venv/bin/activate
-pip install -q -r requirements.txt
+if [[ "$PY" == ".venv/bin/python" ]]; then
+  # shellcheck source=/dev/null
+  source .venv/bin/activate
+  pip install -q -r requirements.txt
+fi
+if [[ "$PY" == ".venv-xtts/bin/python" ]] && ! "$PY" -c "import TTS" 2>/dev/null; then
+  echo " .venv-xtts exists but TTS missing — run on pod: bash scripts/setup_xtts_venv.sh"
+  exit 1
+fi
 if [[ ! -f "episodes/${EP}/script.json" ]]; then
   echo "Missing episodes/${EP}/script.json on pod — copy the episode, then re-run."
   exit 1
@@ -81,7 +92,7 @@ rm -f assets/music/outro_narration.wav
 grep -q KOKORO_EXTRA_TAIL_TRIM_MS .env 2>/dev/null || echo "KOKORO_EXTRA_TAIL_TRIM_MS=10" >> .env
 pkill -f "main.py generate-audio" 2>/dev/null || true
 : > /tmp/stardock_gen_ep.log
-nohup .venv/bin/python main.py generate-audio "$EP" >> /tmp/stardock_gen_ep.log 2>&1 &
+nohup "$PY" main.py generate-audio "$EP" >> /tmp/stardock_gen_ep.log 2>&1 &
 echo "Background job started. Log: /tmp/stardock_gen_ep.log"
 sleep 5
 tail -n 50 /tmp/stardock_gen_ep.log
