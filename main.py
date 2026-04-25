@@ -218,12 +218,12 @@ def init_modules():
     """Initialize required modules and verify they're working."""
     try:
         # Import and initialize modules
-        from mem0_client import Mem0Client
+        from mem0_client import get_mem0_client
         from epub_processor import EPUBProcessor
         from voice_registry import VoiceRegistry
-        
-        # Test mem0 connection
-        mem0 = Mem0Client()
+
+        # Mem0 (or no-op stub if OPENAI / Mem0 unavailable — see get_mem0_client)
+        get_mem0_client()
         
         # Initialize voice registry
         voice_registry = VoiceRegistry()
