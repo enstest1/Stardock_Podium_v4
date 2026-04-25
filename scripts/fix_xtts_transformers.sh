@@ -10,5 +10,6 @@ if [[ ! -x "$V" ]]; then
   echo "Need .venv-xtts (run: bash scripts/setup_xtts_venv.sh)" >&2
   exit 1
 fi
-"$V" install "transformers==4.46.2" --force-reinstall
+# transformers 4.46.x may pull numpy 2.x; gruut (TTS) requires numpy<2.
+"$V" install "transformers==4.46.2" "numpy>=1.22.0,<2.0" --force-reinstall
 "$ROOT/.venv-xtts/bin/python" -c "import transformers as t; import TTS; print('transformers', t.__version__, '| TTS', TTS.__version__)"

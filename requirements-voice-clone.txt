@@ -8,5 +8,7 @@
 TTS==0.22.0
 # TTS 0.22 is incompatible with transformers>=4.48 (BeamSearchScorer import).
 # Pin first; re-run ``pip install -r requirements-voice-clone.txt`` or
-# ``pip install "transformers==4.46.2" --force-reinstall`` after TTS on existing venvs.
+# ``bash scripts/fix_xtts_transformers.sh`` on existing venvs.
 transformers==4.46.2
+# gruut (TTS) requires numpy<2; keep in sync with fix script.
+numpy>=1.22.0,<2.0

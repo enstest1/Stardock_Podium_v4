@@ -8,6 +8,7 @@ as a deprecated legacy path.
 """
 
 import os
+import inspect
 import logging
 import abc
 import threading
@@ -329,6 +330,31 @@ _XTTS_MODEL = os.environ.get(
     'tts_models/multilingual/multi-dataset/xtts_v2',
 )
 
+# PyTorch 2.6+ defaults ``torch.load(..., weights_only=True)``; Coqui XTTS
+# checkpoints need full unpickling. Patch once for the Coqui TTS import path.
+_torch_load_patched = False
+
+
+def _patch_torch_load_for_coqui() -> None:
+    global _torch_load_patched
+    if _torch_load_patched:
+        return
+    _torch_load_patched = True
+    _orig = torch.load
+
+    def _load(*args: t.Any, **kwargs: t.Any) -> t.Any:
+        try:
+            if (
+                "weights_only" in inspect.signature(_orig).parameters
+                and "weights_only" not in kwargs
+            ):
+                kwargs["weights_only"] = False
+        except (TypeError, ValueError):
+            pass
+        return _orig(*args, **kwargs)
+
+    torch.load = _load  # type: ignore[assignment]
+
 
 class XTTSEngine(TTSEngine):
     """Coqui XTTS v2 — clones timbre from a reference ``speaker_wav`` file.
@@ -347,6 +373,8 @@ class XTTSEngine(TTSEngine):
         # Coqui reads CPML terms from stdin; nohup/SSH get EOF and XTTS never loads.
         if not (os.environ.get('COQUI_TOS_AGREED') or '').strip():
             os.environ['COQUI_TOS_AGREED'] = '1'
+
+        _patch_torch_load_for_coqui()
 
         use_gpu = torch.cuda.is_available()
         self._device = 'cuda' if use_gpu else 'cpu'
