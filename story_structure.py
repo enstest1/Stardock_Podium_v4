@@ -143,13 +143,16 @@ class StoryStructure:
         # Get mem0 client
         self.mem0_client = get_mem0_client()
         
-        # Initialize OpenAI client
+        # OpenAI (optional — ``get_episode`` / file paths work without a key; LLM
+        # generation requires OPENAI_API_KEY or OPENROUTER_API_KEY).
         api_key = os.environ.get("OPENAI_API_KEY")
         if not api_key:
             logger.warning("OPENAI_API_KEY not found in environment variables")
-        
-        self.client = OpenAI(api_key=api_key)
-        self.async_client = AsyncOpenAI(api_key=api_key)
+            self.client = None
+            self.async_client = None
+        else:
+            self.client = OpenAI(api_key=api_key)
+            self.async_client = AsyncOpenAI(api_key=api_key)
         
         # Initialize OpenRouter client (fallback)
         openrouter_key = os.environ.get("OPENROUTER_API_KEY")
@@ -194,6 +197,11 @@ class StoryStructure:
                     max_tokens=min(max_tokens, 4096),
                 )
             else:
+                if self.client is None:
+                    logger.error(
+                        "complete_text: set OPENAI_API_KEY or OPENROUTER_API_KEY"
+                    )
+                    return ""
                 response = self.client.chat.completions.create(
                     model="gpt-4o",
                     messages=[
@@ -372,6 +380,8 @@ class StoryStructure:
                     max_tokens=50
                 )
             else:
+                if self.client is None:
+                    raise RuntimeError("no OpenAI / OpenRouter client")
                 response = self.client.chat.completions.create(
                     model="gpt-4o",
                     messages=[
@@ -553,6 +563,8 @@ Format each character as a detailed profile.
                     max_tokens=2000
                 )
             else:
+                if self.client is None:
+                    raise RuntimeError("no OpenAI / OpenRouter client")
                 response = self.client.chat.completions.create(
                     model="gpt-4o",
                     messages=[
@@ -1039,6 +1051,9 @@ Format each character as a detailed profile.
                     max_tokens=1000
                 )
             else:
+                if self.async_client is None:
+                    logger.error("Scene outline: set OPENAI_API_KEY or OPENROUTER_API_KEY")
+                    return {}
                 response = await self.async_client.chat.completions.create(
                     model="gpt-4o",
                     messages=[
@@ -1358,6 +1373,14 @@ Format each character as a detailed profile.
                     max_tokens=2000
                 )
             else:
+                if self.client is None:
+                    logger.error("Scene script: set OPENAI_API_KEY or OPENROUTER_API_KEY")
+                    return {
+                        "scene_number": scene.get("scene_number"),
+                        "beat": scene.get("beat"),
+                        "setting": scene.get("setting"),
+                        "lines": scene.get("lines", []),
+                    }
                 response = self.client.chat.completions.create(
                     model="gpt-4o",
                     messages=[
