@@ -34,6 +34,15 @@ Session notes: what shipped, how to operate it, and what is still open.
 - **`reassemble-audio <episode_id>`**: rebuilds **outro** + **`full_episode.mp3`** from existing `scene_XX/scene_audio.mp3` (no scene dialogue re-synth).
 - **`reassemble-audio <episode_id> --refresh-intro`**: also deletes and rebuilds **`intro_complete.mp3`** (new intro narration + theme mux with current code).
 
+### No API keys (RunPod TTS-only / `generate-audio` without OpenAI)
+- **`mem0_client.get_mem0_client()`** — if `STARDOCK_DISABLE_MEM0` is set, or `Mem0Client()` init fails (e.g. local Mem0 stack needs `OPENAI_API_KEY` for embeddings), the singleton falls back to **`_Mem0Disabled`** (no-op search/add). **Do not** construct `Mem0Client()` in startup paths that must run without keys; **`main.py` `init_modules`** now calls `get_mem0_client()` only.
+- **`story_structure.StoryStructure`** — `self.client` / `self.async_client` are **optional** when `OPENAI_API_KEY` is unset; **`get_episode()`** and file I/O work. LLM helpers guard before `self.client` / `self.async_client` use.
+- **`script_editor.ScriptEditor`** — `self.client` optional for **loading** `script.json`; **scene regeneration** still requires a key.
+
+### Coqui XTTS (clone voices) on headless / RunPod
+- **CPML license prompt** reads **stdin**; under **`nohup`** you get **EOF** and XTTS never loads, then the pipeline falls back to **Kokoro**. Fix: set **`COQUI_TOS_AGREED=1`** (see `scripts/pod_generate_audio.sh` and `tts_engine.py` `XTTSEngine.__init__` before `CoquiTTS(...)`). You must still comply with [Coqui CPML](https://coqui.ai/cpml) (non-commercial) or a commercial license.
+- **`engine_order`**: `["xtts", "kokoro"]` in `voices/voice_config.json`; venv: **`.venv-xtts`** (Python 3.11 + Coqui). **`scripts/pod_generate_audio.sh`** points `main.py generate-audio` at that venv and exports NVIDIA/Coqui env.
+
 ### Bugfixes
 - `outro_file.parent.mkdir(..., exist_ok=True)` (removed duplicate `parents=` kwarg).
 - Outro mux: resample / layout alignment + direct ffmpeg for final mix.
@@ -69,6 +78,7 @@ Session notes: what shipped, how to operate it, and what is still open.
 - Ensure **named theme WAVs** (or env paths) exist under **`assets/music/`** on the pod if you do not want the generic `Cosmic_Odyssey_Main_Theme.wav` fallback.
 - **`HF_TOKEN`** on the pod avoids Hugging Face rate-limit warnings when Kokoro pulls weights/voices.
 - **GPU / CUDA**: logs showed CPU fallback on at least one run; worth checking pod GPU visibility if renders are slow.
+- **Do not** use `pkill -f "main.py generate-audio"` inside the same `ssh` one-liner as the pkill string: the **remote** `bash -c` command line can **include that text**, and **pkill can kill the SSH shell** (exit 255). Stop renders with **`ps aux | grep` pod path + `kill <pid>`** from an interactive pod shell, or match only the **`.venv-xtts/.../python ... main.py`** line.
 
 ### Operations checklist (short)
 1. `git pull origin main` on pod.
@@ -96,4 +106,4 @@ bash scripts/fetch_full_episode_from_runpod.sh <ip> <port> ep_7ba65dfe
 
 ---
 
-*Last updated: 2026-04-24 (intro subprocess mix fix; speech body = full generate-audio + lexicon).*
+*Last updated: 2026-04-25 (Mem0/StoryStructure/ScriptEditor optional without keys; `COQUI_TOS_AGREED` for XTTS on nohup; pkill+SSH gotcha).*
