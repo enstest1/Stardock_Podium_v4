@@ -44,6 +44,7 @@ Session notes: what shipped, how to operate it, and what is still open.
 - **`engine_order`**: `["xtts", "kokoro"]` in `voices/voice_config.json`; venv: **`.venv-xtts`** (Python 3.11 + Coqui). **`scripts/pod_generate_audio.sh`** points `main.py generate-audio` at that venv and exports NVIDIA/Coqui env.
 - **`transformers` vs TTS 0.22:** if the log shows **`XTTS failed … cannot import name 'BeamSearchScorer'`**, a **too-new** `transformers` is installed. Pin **`transformers==4.46.2`** (see `requirements-voice-clone.txt`), or on an existing venv: **`bash scripts/fix_xtts_transformers.sh`**, then run **`generate-audio` again** for real clones (not Kokoro fallback). After that install, use **`numpy>=1.22,<2.0`** (see `fix_xtts_transformers.sh`) so **gruut** stays happy.
 - **PyTorch 2.6+** defaults **`torch.load(..., weights_only=True)`**, which breaks Coqui checkpoints (“Weights only load failed”). `tts_engine.XTTSEngine` patches `torch.load` to pass **`weights_only=False`** for trusted Coqui/HF caches before loading XTTS.
+- **“TorchCodec is required for load_with_torchcodec”** on speaker refs: stage **every** reference clip through **librosa + soundfile** to a temp 24kHz mono WAV (not only MP3) so the stack does not hit **torchcodec** for `speaker_wav`.
 
 ### Bugfixes
 - `outro_file.parent.mkdir(..., exist_ok=True)` (removed duplicate `parents=` kwarg).

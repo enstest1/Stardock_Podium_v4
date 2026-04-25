@@ -418,23 +418,31 @@ class XTTSEngine(TTSEngine):
         if not clean_text:
             raise SynthError('Empty text after normalization')
 
-        ref_path = str(ref.resolve())
-        tmp_spk: t.Optional[str] = None
-        if ref.suffix.lower() == '.mp3':
-            try:
-                import librosa
-            except ImportError as e:
-                raise SynthError(
-                    'MP3 speaker reference requires librosa '
-                    '(pip install librosa).'
-                ) from e
-            if sf is None:
-                raise SynthError('soundfile required to stage MP3 for XTTS.')
+        # Always stage refs through librosa → mono 24kHz WAV. Newer torchaudio may
+        # call ``load_with_torchcodec`` for raw paths (needs ``torchcodec``);
+        # librosa/soundfile avoids that path.
+        if sf is None:
+            raise SynthError('soundfile is required to stage reference audio for XTTS.')
+        try:
+            import librosa
+        except ImportError as e:
+            raise SynthError('librosa required for XTTS reference audio (pip install librosa).') from e
+        try:
             y, _sr = librosa.load(str(ref), sr=24000, mono=True)
-            fd, tmp_spk = tempfile.mkstemp(suffix='.wav', prefix='xtts_spk_')
-            os.close(fd)
+        except Exception as e:
+            raise SynthError(f'Cannot load reference for XTTS: {ref} ({e})') from e
+        fd, tmp_spk = tempfile.mkstemp(suffix='.wav', prefix='xtts_spk_')
+        os.close(fd)
+        try:
             sf.write(tmp_spk, y, 24000)
-            ref_path = tmp_spk
+        except Exception as e:
+            if os.path.isfile(tmp_spk):
+                try:
+                    os.unlink(tmp_spk)
+                except OSError:
+                    pass
+            raise SynthError(f'Failed to write staged XTTS ref WAV: {e}') from e
+        ref_path = tmp_spk
 
         try:
             with self._synth_lock:
