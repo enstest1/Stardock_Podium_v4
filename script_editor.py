@@ -44,12 +44,13 @@ class ScriptEditor:
         """
         self.episodes_dir = Path(episodes_dir)
         
-        # Initialize OpenAI client for regeneration
+        # OpenAI (optional — loading ``script.json`` does not need a key; regeneration does).
         api_key = os.environ.get("OPENAI_API_KEY")
         if not api_key:
             logger.warning("OPENAI_API_KEY not found in environment variables")
-        
-        self.client = OpenAI(api_key=api_key)
+            self.client = None
+        else:
+            self.client = OpenAI(api_key=api_key)
         
         # Initialize story structure
         self.story_structure = get_story_structure()
@@ -342,6 +343,9 @@ class ScriptEditor:
         """
         
         try:
+            if self.client is None:
+                logger.error("Scene regeneration requires OPENAI_API_KEY")
+                return script
             # Generate new scene content
             response = self.client.chat.completions.create(
                 model="gpt-4o",
