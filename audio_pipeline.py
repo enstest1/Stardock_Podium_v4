@@ -39,6 +39,7 @@ except ImportError:
 
 # Local imports
 from dialogue_engine import (
+    KokoroDialogueSynthesizer,
     get_dialogue_synthesizer,
     resolve_character_voice_config,
 )
@@ -156,6 +157,8 @@ class AudioPipeline:
             logger.debug('elevenlabs package not installed; using Kokoro only.')
 
         self._dialogue = get_dialogue_synthesizer()
+        # Set only while rendering a project episode (GEN-001).
+        self._project_ctx: Optional[Dict[str, Any]] = None
         self._needed_tracker: Optional[NeededAudioTracker] = None
         self._needed_lock = threading.Lock()
         
@@ -262,6 +265,29 @@ class AudioPipeline:
         return f'52{n:03d}.1'
 
     def generate_episode_audio(self, episode_id: str, options: Dict[str, Any]) -> Dict[str, Any]:
+        """Generate audio; project episodes use their own voices and templates."""
+        episode = get_episode(episode_id)
+        pid = (episode or {}).get('project_id')
+        if not pid:
+            return self._generate_episode_audio_impl(episode_id, options)
+        from story_os import projects
+        vpath = projects.voices_path(pid)
+        saved = (self.voice_config, self._dialogue, self._project_ctx)
+        try:
+            with open(vpath, 'r', encoding='utf-8') as f:
+                self.voice_config = json.load(f)
+            self._dialogue = KokoroDialogueSynthesizer(config_path=vpath)
+            self._project_ctx = {
+                'project': projects.load_project(pid),
+                'format': projects.load_format(pid),
+                'episode': episode,
+            }
+            logger.info('Rendering project %s with voices from %s', pid, vpath)
+            return self._generate_episode_audio_impl(episode_id, options)
+        finally:
+            self.voice_config, self._dialogue, self._project_ctx = saved
+
+    def _generate_episode_audio_impl(self, episode_id: str, options: Dict[str, Any]) -> Dict[str, Any]:
         """Generate audio for a complete episode.
         
         Args:
@@ -341,7 +367,7 @@ class AudioPipeline:
             
             # Create intro and outro segments (with narration and music)
             intro_file = self._create_intro_segment(episode_id)
-            outro_file = self._create_outro_segment()
+            outro_file = self._create_outro_segment(audio_dir=audio_dir)
             
             # Assemble full episode
             episode_file = self._assemble_episode(
@@ -534,6 +560,14 @@ class AudioPipeline:
         # and the Kokoro synthesizer never disagree on a speaker.
         voice_config = resolve_character_voice_config(
             character, self.voice_config or {})
+        synth_name = character
+        if not voice_config and self._project_ctx is not None:
+            from story_os.projects import EXTRA_SPEAKER_KEY
+            voice_config = (self.voice_config or {}).get(
+                'characters', {}).get(EXTRA_SPEAKER_KEY)
+            synth_name = EXTRA_SPEAKER_KEY
+            logger.warning('Speaker %r not in project cast; using the extra voice.',
+                           character)
         if not voice_config:
             logger.error(
                 "No voice config found for character: %r (voice_config keys: %s)",
@@ -554,7 +588,7 @@ class AudioPipeline:
 
             self._dialogue.synth_for_display_name(
                 text=content,
-                character_display=character,
+                character_display=synth_name,
                 output_path=str(audio_file),
             )
             logger.info('Generated dialogue line audio: %s', audio_file)
@@ -992,6 +1026,13 @@ class AudioPipeline:
             custom = episode.get('intro_spoken')
             if isinstance(custom, str) and custom.strip():
                 narration_text = custom.strip()
+            elif self._project_ctx is not None:
+                fmt = self._project_ctx['format']
+                narration_text = fmt.render(
+                    fmt.intro_template,
+                    show_name=self._project_ctx['project'].title,
+                    episode=episode_number, season='',
+                    title=(episode.get('title') or '').strip())
             else:
                 series = (episode.get('series') or 'Star Trek Horizon').strip()
                 title = (episode.get('title') or 'this episode').strip()
@@ -1024,6 +1065,9 @@ class AudioPipeline:
 
             intro_narration_file = (
                 self.assets_dir / "music" / "intro_narration.wav")
+            if self._project_ctx is not None:
+                intro_narration_file = (
+                    self.episodes_dir / episode_id / "audio" / "intro_narration.wav")
             intro_narration_file.parent.mkdir(exist_ok=True, parents=True)
 
             try:
@@ -1042,7 +1086,7 @@ class AudioPipeline:
             logger.error(f"Error generating intro narration: {e}")
             return None
     
-    def _generate_outro_narration(self) -> Optional[Path]:
+    def _generate_outro_narration(self, audio_dir: Optional[Path] = None) -> Optional[Path]:
         """Generate outro narration.
         
         Returns:
@@ -1054,6 +1098,11 @@ class AudioPipeline:
                 "End of transmission. "
                 "The Celestial Temple awaits our next journey through the stars."
             )
+            if self._project_ctx is not None:
+                fmt = self._project_ctx['format']
+                narration_text = fmt.render(
+                    fmt.outro_template,
+                    show_name=self._project_ctx['project'].title)
             
             narrator_cfg = self.voice_config.get('characters', {}).get(
                 'narrator', {})
@@ -1066,7 +1115,9 @@ class AudioPipeline:
 
             outro_narration_file = (
                 self.assets_dir / "music" / "outro_narration.wav")
-            if outro_narration_file.exists():
+            if self._project_ctx is not None and audio_dir is not None:
+                outro_narration_file = Path(audio_dir) / "outro_narration.wav"
+            elif outro_narration_file.exists():
                 logger.info(
                     'Reusing existing outro narration: %s',
                     outro_narration_file)
@@ -1115,6 +1166,9 @@ class AudioPipeline:
                 narration_file = None
             
             theme_music = self._resolve_theme_path('intro')
+            if (self._project_ctx is not None
+                    and not self._project_ctx['format'].use_theme_music):
+                theme_music = None
             if theme_music:
                 logger.info('Using theme music: %s', theme_music)
             else:
@@ -1213,27 +1267,34 @@ class AudioPipeline:
             logger.error(f"Error creating intro segment: {e}")
             return None
     
-    def _create_outro_segment(self) -> Optional[Path]:
+    def _create_outro_segment(self, audio_dir: Optional[Path] = None) -> Optional[Path]:
         """Create complete outro segment with music and narration.
         
         Returns:
             Path to the complete outro segment or None if failed
         """
         outro_file = self.assets_dir / "music" / "outro_complete.mp3"
+        project_outro = self._project_ctx is not None and audio_dir is not None
+        if project_outro:
+            outro_file = Path(audio_dir) / "outro_complete.mp3"
         
         # Check if outro already exists (reuse it)
-        if outro_file.exists():
+        if not project_outro and outro_file.exists():
             logger.info(f"Reusing existing outro: {outro_file}")
             return outro_file
         
         try:
             # Generate narration
-            narration_file = self._generate_outro_narration()
+            narration_file = self._generate_outro_narration(
+                audio_dir if project_outro else None)
             if not narration_file:
                 logger.warning("Could not generate outro narration")
                 narration_file = None
             
             theme_music = self._resolve_theme_path('outro')
+            if (self._project_ctx is not None
+                    and not self._project_ctx['format'].use_theme_music):
+                theme_music = None
             if theme_music:
                 logger.info('Using theme music: %s', theme_music)
 

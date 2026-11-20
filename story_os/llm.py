@@ -47,6 +47,7 @@ _test_backend: Optional[TestBackend] = None
 _clients: Dict[str, Any] = {}
 _config_cache: Dict[str, Any] = {}
 last_usage: Dict[str, Any] = {}
+usage_totals: Dict[str, Dict[str, int]] = {}   # model -> calls/tokens this process
 
 
 def config_path() -> Path:
@@ -170,6 +171,11 @@ def complete(role: str, system: str, user: str, *, json: bool = False,
                 'completion_tokens': getattr(usage, 'completion_tokens', None),
                 'seconds': round(time.time() - started, 2),
             })
+            tot = usage_totals.setdefault(spec['model'], {
+                'calls': 0, 'prompt_tokens': 0, 'completion_tokens': 0})
+            tot['calls'] += 1
+            tot['prompt_tokens'] += last_usage['prompt_tokens'] or 0
+            tot['completion_tokens'] += last_usage['completion_tokens'] or 0
             _trace(role, last_usage)
             return text
         except Exception as e:  # network / rate limit / provider error

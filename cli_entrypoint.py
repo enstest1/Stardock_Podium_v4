@@ -1007,6 +1007,87 @@ def cmd_get_continuity(args):
     
     return True
 
+# ------------------------------------------------- projects (GEN-001) ----
+
+_MODE_CHOICES = ['serialized_fiction', 'episodic_fiction', 'anthology',
+                 'standalone_drama', 'documentary', 'educational',
+                 'conversational']
+
+
+@register_command(
+    name="create-podcast",
+    help_text='Create an original podcast project from one sentence '
+              '(optionally produce episode 1 with --produce)',
+    arguments=[
+        {'name': 'idea', **STR_ARG, 'help': 'One-sentence idea'},
+        {'name': '--mode', **STR_ARG, 'required': False,
+         'choices': _MODE_CHOICES, 'help': 'Override the proposed mode'},
+        {'name': '--title', **STR_ARG, 'required': False, 'help': 'Show title'},
+        {'name': '--minutes', **INT_ARG, 'required': False,
+         'help': 'Episode length in minutes'},
+        {'name': '--produce', **BOOL_ARG,
+         'help': 'Also produce episode 1 (script + audio)'},
+        {'name': '--no-audio', **BOOL_ARG, 'help': 'With --produce: script only'},
+        {'name': '--overwrite', **BOOL_ARG,
+         'help': 'Replace a project with the same id'},
+    ]
+)
+def cmd_create_podcast(args):
+    from story_os.produce import create_podcast, produce_episode
+    config, identity, pdir = create_podcast(
+        args.idea, mode=args.mode, title=args.title, minutes=args.minutes,
+        overwrite=args.overwrite)
+    print(f"\nProject: {config.title}  (id: {config.project_id})")
+    print(f"Mode: {config.mode} [{config.mode_source}] - {config.mode_rationale}")
+    print(f"Genre: {config.genre}   Minutes/episode: {config.episode_minutes}")
+    print(f"Logline: {identity.logline}")
+    print("Cast:")
+    for m in identity.cast:
+        print(f"  - {m.name} ({m.role}) voice={m.kokoro_voice}")
+    print(f"Files: {pdir}")
+    if not args.produce:
+        print(f"\nNext: python main.py produce-episode {config.project_id}")
+        return True
+    report = produce_episode(config.project_id, audio=not args.no_audio)
+    print(json.dumps(report, indent=2))
+    return True
+
+
+@register_command(
+    name="produce-episode",
+    help_text='Produce the next episode of a project: cards, script, audio',
+    arguments=[
+        {'name': 'project_id', **STR_ARG, 'help': 'Project id'},
+        {'name': '--theme', **STR_ARG, 'required': False,
+         'help': "This episode's premise (default: the project idea)"},
+        {'name': '--minutes', **INT_ARG, 'required': False,
+         'help': 'Override episode length'},
+        {'name': '--no-audio', **BOOL_ARG, 'help': 'Script only'},
+    ]
+)
+def cmd_produce_episode(args):
+    from story_os.produce import produce_episode
+    report = produce_episode(args.project_id, theme=args.theme,
+                             minutes=args.minutes, audio=not args.no_audio)
+    print(json.dumps(report, indent=2))
+    return True
+
+
+@register_command(
+    name="list-projects",
+    help_text='List podcast projects created with create-podcast',
+    arguments=[]
+)
+def cmd_list_projects(args):
+    from story_os.projects import list_projects
+    items = list_projects()
+    if not items:
+        print('No projects yet. Try: python main.py create-podcast "<idea>"')
+    for p in items:
+        print(f"{p.project_id:32} {p.mode:20} {p.episode_minutes:>3} min  {p.title}")
+    return True
+
+
 def main():
     """Main entry point for the CLI."""
     # Create required directories

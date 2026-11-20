@@ -215,9 +215,12 @@ class StoryStructure:
         Returns:
             Dictionary with complete episode structure
         """
+        if episode_data.get("project_id"):
+            return self._generate_project_episode_structure(episode_data)
+
         # Generate or use episode ID
         episode_id = episode_data.get("episode_id", f"ep_{uuid.uuid4().hex[:8]}")
-        
+
         # Get episode number
         episode_number = episode_data.get("episode_number")
         if episode_number is None:
@@ -292,6 +295,82 @@ class StoryStructure:
         
         return episode
     
+    # ----------------------------------------------------- projects (GEN-001)
+
+    def _project_context(self, episode: Dict[str, Any]):
+        """(project, format, identity) for a project episode, else None."""
+        pid = episode.get('project_id')
+        if not pid:
+            return None
+        from story_os import projects
+        project = projects.load_project(pid)
+        fmt = projects.load_format(pid)
+        try:
+            identity = projects.load_identity(pid)
+        except Exception:
+            identity = None
+        return project, fmt, identity
+
+    def _generate_project_episode_structure(
+            self, episode_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Episode skeleton for a project: no global bible, no Mem0 writes."""
+        from story_os import projects
+        pid = episode_data['project_id']
+        project = projects.load_project(pid)
+        fmt = projects.load_format(pid)
+        try:
+            identity = projects.load_identity(pid)
+        except Exception:
+            identity = None
+        episode_id = episode_data.get("episode_id") or f"ep_{uuid.uuid4().hex[:8]}"
+        number = episode_data.get("episode_number")
+        if number is None:
+            existing = [e for e in self.list_episodes()
+                        if e.get('project_id') == pid]
+            number = max([e.get('episode_number', 0) for e in existing],
+                         default=0) + 1
+        minutes = episode_data.get("target_duration") or project.episode_minutes
+        theme = episode_data.get("theme") or project.idea
+        brief = projects.format_brief(project, fmt, identity)
+        title = episode_data.get("title") or self._generate_project_title(
+            fmt, brief, theme, number)
+        episode = {
+            "episode_id": episode_id,
+            "project_id": pid,
+            "mode": project.mode,
+            "title": title,
+            "series": project.title,
+            "episode_number": number,
+            "theme": theme,
+            "format_brief": brief,
+            "created_at": time.time(),
+            "target_duration_minutes": minutes,
+            "status": "draft",
+            "beats": self._calculate_beat_durations(minutes),
+            "characters": [],
+            "scenes": [],
+            "script": None,
+            "audio": None,
+            "metadata": {},
+        }
+        self._save_episode(episode)
+        return episode
+
+    def _generate_project_title(self, fmt, brief: str, theme: str,
+                                number: int) -> str:
+        prompt = (f"Generate an {fmt.title_prompt_noun}.\n{brief}\n"
+                  f"Episode {number} premise: {theme}\n"
+                  "Reply with the title only: two to six words, original, "
+                  "no quotation marks.")
+        try:
+            title = self._llm('planner', f"You are {fmt.writer_persona}.",
+                              prompt, max_tokens=30, temperature=0.8)
+            title = title.strip().strip('"').strip("'").splitlines()[0].strip()
+            return title[:80] or f"Episode {number}"
+        except Exception as e:
+            logger.error("Error generating project title: %s", e)
+            return f"Episode {number}"
+
     def _calculate_beat_durations(self, target_duration: int) -> List[Dict[str, Any]]:
         """Calculate durations for each beat based on target episode length.
         
@@ -449,6 +528,14 @@ class StoryStructure:
         if not episode:
             logger.error(f"Episode not found: {episode_id}")
             return []
+
+        if episode.get('project_id'):
+            from story_os import projects
+            characters = projects.cast_as_characters(
+                projects.load_identity(episode['project_id']))
+            episode['characters'] = characters
+            self._save_episode(episode)
+            return characters
 
         bible_cast = self._load_bible_cast(episode)
         if bible_cast:
@@ -824,7 +911,17 @@ Format each character as a detailed profile.
                 card_scenes = self._generate_scenes_from_cards(episode)
                 if card_scenes:
                     return card_scenes
+                if episode.get('project_id'):
+                    # The legacy outline path carries franchise prompts.
+                    logger.error('Scene cards failed twice for project episode.')
+                    return []
                 logger.warning('Scene cards failed twice; using legacy outline path.')
+            elif episode.get('project_id'):
+                logger.error(
+                    "Mode %r uses %r outlines, which are not implemented yet "
+                    "(GEN-002). Use a fiction mode.", episode.get('mode'),
+                    self._project_context(episode)[0].capability('outline'))
+                return []
 
             # Calculate number of scenes based on beats and target duration
             target_seconds = episode.get("target_duration_minutes", 30) * 60
@@ -923,7 +1020,10 @@ Format each character as a detailed profile.
             return []
     
     def _use_scene_cards(self, episode: Dict[str, Any]) -> bool:
-        """NARRATIVE-001 card path: flag on."""
+        """NARRATIVE-001 card path: project capability, else the flag."""
+        ctx = self._project_context(episode)
+        if ctx is not None:
+            return ctx[0].capability('outline') == 'scene_cards'
         from story_os.flags import feature_enabled
         return feature_enabled('USE_SCENE_CARDS', default=False)
 
@@ -1179,6 +1279,12 @@ Format each character as a detailed profile.
             logger.info("Saving script to file...")
             self._save_script(episode_id, script)
             
+            if episode.get('project_id'):
+                # Legacy extraction writes global Mem0 namespaces; projects
+                # stay isolated until GEN-003 / CANON-002.
+                logger.info(f"Script generation completed for episode: {episode.get('title')}")
+                return script
+
             # Auto-extract memories for continuity (optional - only if episode has script)
             try:
                 logger.info("Extracting memories from episode for continuity...")
@@ -1224,8 +1330,15 @@ Format each character as a detailed profile.
         Returns:
             Dictionary with scene script
         """
+        ctx = self._project_context(episode)
+        if ctx is not None:
+            return self._generate_project_scene_script(
+                episode, scene, ctx, extra_preamble=extra_preamble,
+                previous_scene_script=previous_scene_script,
+                next_scene=next_scene)
+
         logger.info(f"Preparing to generate script for scene: {scene.get('beat', 'Unknown beat')}")
-        
+
         # Get character information
         character_info = ""
         character_contexts = []
@@ -1363,6 +1476,78 @@ Format each character as a detailed profile.
                 "lines": []
             }
     
+    def _generate_project_scene_script(
+        self,
+        episode: Dict[str, Any],
+        scene: Dict[str, Any],
+        ctx,
+        extra_preamble: str = '',
+        previous_scene_script: Optional[Dict[str, Any]] = None,
+        next_scene: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """Scene script for a project episode: format-driven, no global bible/RAG."""
+        project, fmt, identity = ctx
+        from story_os.scene_cards import render_card_block
+        cast_lines = []
+        for c in episode.get('characters') or []:
+            bits = [b for b in (c.get('role'), c.get('personality'),
+                                c.get('voice_description')) if b]
+            cast_lines.append(f"- {c.get('name')}: " + '; '.join(bits))
+        total = len(episode.get('scenes') or []) or 1
+        words = int((scene.get('duration_seconds') or 0) * 2.4)
+        parts = []
+        if (extra_preamble or '').strip():
+            parts.append(extra_preamble.strip())
+        if scene.get('card'):
+            parts.append(render_card_block(scene, previous_scene_script, next_scene))
+        else:
+            parts.append(f"Scene plan: {scene.get('plot', '')}")
+        parts.append(
+            f"Show: {episode.get('format_brief', '')}\n"
+            f"Episode {episode.get('episode_number')}: {episode.get('title')}\n"
+            f"Premise: {episode.get('theme', '')}\n"
+            f"This is scene {scene.get('scene_number')} of {total}. "
+            f"Setting: {scene.get('setting', '')}\n\n"
+            "Cast:\n" + '\n'.join(cast_lines))
+        if scene.get('scene_number') == 1:
+            parts.append('This is the opening scene: orient the listener fast, '
+                         'by sound and dialogue, and hook them in the first '
+                         'lines.')
+        if next_scene is None and total > 1:
+            parts.append('This is the final scene: land the ending clearly.')
+        parts.append(
+            'FORMAT (strict, this is parsed by a program):\n'
+            '- Spoken lines as: NAME: line   (NAME in capitals, one paragraph each)\n'
+            '- NARRATOR: line   only for brief audio-only orientation, at most '
+            'two narrator lines per scene\n'
+            '- Sound cues on their own line in parentheses, e.g. (rain on a tin roof)\n'
+            '- No headings, no markdown, no camera or visual directions, no '
+            'acting notes inside lines.\n'
+            '- Only cast members speak.'
+            + (f'\nLength: about {words} spoken words.' if words > 0 else ''))
+        prompt = (f"Write the {fmt.script_noun} below for {fmt.genre_phrase}.\n\n"
+                  + '\n\n'.join(p for p in parts if p))
+        system = f"You are {fmt.writer_persona}."
+        if identity is not None and identity.dialogue_rules:
+            system += ' House dialogue rules: ' + ' '.join(
+                f'({i}) {r}' for i, r in enumerate(identity.dialogue_rules, 1))
+        scene_script = {
+            "scene_number": scene.get('scene_number'),
+            "beat": scene.get('beat'),
+            "setting": scene.get('setting'),
+            "lines": [],
+        }
+        try:
+            content = self._llm('writer', system, prompt,
+                                max_tokens=max(600, min(4000, words * 3)),
+                                temperature=0.8)
+            scene_script["lines"] = self._parse_script_lines(content)
+        except Exception as e:
+            logger.error("Error generating project scene script: %s", e)
+        if scene.get('card'):
+            scene_script['card'] = scene['card']
+        return scene_script
+
     def _parse_script_lines(self, script_content: str) -> List[Dict[str, Any]]:
         """Parse script content into structured lines.
 
