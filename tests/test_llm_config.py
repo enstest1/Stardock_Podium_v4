@@ -69,3 +69,20 @@ def test_call_site_temperature_kept_unless_config_sets_one(tmp_path):
     assert kw['temperature'] == 0.65
     assert kw['model'] == 'anthropic/claude-opus-4.5'
     assert kw['max_tokens'] == 10
+
+
+def test_fails_over_to_fallback_on_billing_error(tmp_path):
+    class Billing(Exception):
+        status_code = 402
+    primary, backup = MagicMock(), MagicMock()
+    primary.chat.completions.create.side_effect = Billing('no credits')
+    backup.chat.completions.create.return_value.choices = [
+        MagicMock(message=MagicMock(content='from backup'))]
+    with patch.dict(os.environ, {'OPENROUTER_API_KEY': 'k',
+                                 'OPENAI_API_KEY': 'k'}, clear=True), \
+            patch.object(llm, 'config_path', return_value=tmp_path / 'x.json'):
+        out = llm.complete('writer', 's', 'u', clients={
+            'openrouter': primary, 'openai': backup})
+    assert out == 'from backup'
+    assert primary.chat.completions.create.call_count == 1  # no retry on 402
+    assert backup.chat.completions.create.call_args.kwargs['model'] == 'gpt-4o'

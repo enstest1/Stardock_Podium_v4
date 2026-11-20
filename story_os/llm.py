@@ -140,6 +140,34 @@ def complete(role: str, system: str, user: str, *, json: bool = False,
         return _test_backend(role, system, user, json=json,
                              max_tokens=max_tokens, temperature=temperature)
     spec = resolve(role)
+    try:
+        return _call(role, spec, system, user, json=json,
+                     max_tokens=max_tokens, temperature=temperature,
+                     clients=clients, retries=retries)
+    except RuntimeError as primary_err:
+        fb = dict(load_config()['fallback'])
+        same = (fb.get('provider'), fb.get('model')) == (
+            spec.get('provider'), spec.get('model'))
+        if same or not _has_key(fb.get('provider', '')):
+            raise
+        logger.warning('LLM %s: %s/%s failed (%s); failing over to %s/%s',
+                       role, spec.get('provider'), spec.get('model'),
+                       primary_err, fb.get('provider'), fb.get('model'))
+        return _call(role, fb, system, user, json=json,
+                     max_tokens=max_tokens, temperature=temperature,
+                     clients=clients, retries=retries)
+
+
+def _is_permanent(err: BaseException) -> bool:
+    """Auth / billing / bad-request errors: retrying the same call is pointless."""
+    status = getattr(err, 'status_code', None)
+    return status in (400, 401, 402, 403, 404)
+
+
+def _call(role: str, spec: Dict[str, Any], system: str, user: str, *,
+          json: bool, max_tokens: Optional[int],
+          temperature: Optional[float], clients: Optional[Dict[str, Any]],
+          retries: int) -> str:
     provider = spec.get('provider', 'openrouter')
     client = (clients or {}).get(provider) or _client_for(provider)
     temp = spec.get('temperature', temperature if temperature is not None
@@ -180,12 +208,14 @@ def complete(role: str, system: str, user: str, *, json: bool = False,
             return text
         except Exception as e:  # network / rate limit / provider error
             last_err = e
+            if _is_permanent(e):
+                break
             if attempt < retries:
                 logger.warning('LLM %s attempt %s failed (%s); retrying in '
                                '%.0fs', role, attempt, e, delay)
                 time.sleep(delay)
                 delay *= 2
-    raise RuntimeError(f'LLM role {role!r} failed after {retries} attempts: '
+    raise RuntimeError(f'LLM role {role!r} failed ({provider}/{spec["model"]}): '
                        f'{last_err}') from last_err
 
 
