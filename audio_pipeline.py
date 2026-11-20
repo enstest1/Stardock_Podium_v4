@@ -82,8 +82,12 @@ _INTRO_THEME_FILE = 'Cosmic_Odyssey_Main_Theme_2025-12-25T222447.wav'
 _OUTRO_THEME_FILE = 'Cosmic_Odyssey_Main_Theme_2025-12-27T064552.wav'
 _INTRO_MUSIC_DURATION_SEC = float(
     os.environ.get('STARDOCK_INTRO_MUSIC_SEC', '60'))
-_INTRO_NARRATION_DELAY_SEC = float(
-    os.environ.get('STARDOCK_INTRO_NARRATION_START_SEC', '45'))
+# Narration runs before theme (sequential intro). ``STARDOCK_INTRO_MUSIC_SEC``
+# still caps theme length after the VO.
+_INTRO_THEME_FADE_IN_SEC = float(
+    os.environ.get('STARDOCK_INTRO_THEME_FADE_IN_SEC', '0.12'))
+_INTRO_THEME_FADE_OUT_SEC = float(
+    os.environ.get('STARDOCK_INTRO_THEME_FADE_OUT_SEC', '0.9'))
 
 # Optional ffmpeg audio filters on intro narration only (after resample, before
 # stereo pan). Default: light high-pass + presence for a "log recorder" feel.
@@ -985,16 +989,29 @@ class AudioPipeline:
             
             # Extract episode information
             episode_number = episode.get('episode_number', 1)
-            stardate_raw = self._extract_stardate_for_intro(episode_id, episode)
-
-            # Spoken form is applied in tts_engine via normalize_trek_tts_text
-            # (digit-by-digit stardate, Trek lexicon).
-            narration_text = (
-                f"Captain's log, Starship Celestial Temple. "
-                f"Stardate {stardate_raw}. "
-                f"We continue our mission in the Gamma Quadrant. "
-                f"This is episode {episode_number}."
-            )
+            custom = episode.get('intro_spoken')
+            if isinstance(custom, str) and custom.strip():
+                narration_text = custom.strip()
+            else:
+                series = (episode.get('series') or 'Star Trek Horizon').strip()
+                title = (episode.get('title') or 'this episode').strip()
+                theme = (episode.get('theme') or '').strip()
+                hook = ''
+                if theme:
+                    # First sentence only — remainder is often production notes.
+                    parts = theme.split('. ')
+                    hook = parts[0].strip()
+                    if hook and not hook.endswith('.'):
+                        hook += '.'
+                narration_text = f"Tonight, on {series}: {title}. "
+                if hook:
+                    narration_text += hook
+                else:
+                    stardate_raw = self._extract_stardate_for_intro(
+                        episode_id, episode)
+                    narration_text += (
+                        f"Stardate {stardate_raw}. Episode {episode_number}."
+                    )
 
             narrator_cfg = self.voice_config.get('characters', {}).get(
                 'narrator', {})
@@ -1108,51 +1125,45 @@ class AudioPipeline:
                     _INTRO_THEME_FILE,
                 )
 
-            # Classic-style intro: theme (~1 min) with narrator over the tail.
+            # Sequential intro: spoken story teaser first, then theme music (no
+            # duck / overlap). Episode body follows in concat order.
             if theme_music and narration_file:
-                intro_file.parent.mkdir(exist_ok=True, parents=True)
+                intro_file.parent.mkdir(parents=True, exist_ok=True)
 
-                narration_probe = ffmpeg.probe(str(narration_file))
-                narration_duration = float(
-                    narration_probe['format']['duration'])
-                music_sec = _INTRO_MUSIC_DURATION_SEC
-                narr_delay = min(
-                    _INTRO_NARRATION_DELAY_SEC,
-                    max(0.0, music_sec - 5.0),
-                )
-                fade_tail = max(1.0, music_sec - narr_delay)
-                mix_end = max(
-                    music_sec,
-                    narr_delay + narration_duration + 0.5,
-                )
-                delay_ms = int(round(narr_delay * 1000))
-                # Subprocess filter_complex: ffmpeg-python amix/adelay for mono was
-                # unreliable (narration missing over the theme tail). Mirror outro: CLI
-                # ffmpeg, stereo-upmix narration, explicit adelay per channel, duck music.
-                ms = f'{music_sec:.3f}'
-                nd = f'{narr_delay:.3f}'
-                ft = f'{fade_tail:.3f}'
-                me = f'{mix_end:.3f}'
+                music_probe = ffmpeg.probe(str(theme_music))
+                music_full = float(music_probe['format']['duration'])
+                music_sec = min(music_full, _INTRO_MUSIC_DURATION_SEC)
+                fade_in = max(0.0, _INTRO_THEME_FADE_IN_SEC)
+                fade_out = max(0.05, _INTRO_THEME_FADE_OUT_SEC)
+                fade_out_start = max(0.0, music_sec - fade_out)
+                # Tight VO → music → show: trim TTS padding; no narr fade-out
+                # (that + a long theme fade-in read as a dead gap). Theme fades
+                # in fast so the cue lands right after the last word.
                 narr_chain = 'aresample=44100'
                 if _INTRO_NARRATOR_AF:
                     narr_chain = f'{narr_chain},{_INTRO_NARRATOR_AF}'
                 narr_chain = (
                     f'{narr_chain},pan=stereo|c0=c0|c1=c0,'
-                    f'afade=t=in:st=0:d=0.4'
+                    # Drop leading / trailing silence from Kokoro/XTTS WAV only.
+                    'silenceremove=start_periods=1:start_duration=0.12:'
+                    'start_threshold=-55dB:detection=peak,'
+                    'areverse,silenceremove=start_periods=1:start_duration=0.15:'
+                    'start_threshold=-50dB:detection=peak,areverse,'
+                    'afade=t=in:st=0:d=0.08'
                 )
                 fc = (
-                    f'[0:a]atrim=start=0:duration={ms},asetpts=PTS-STARTPTS,'
-                    f'afade=t=in:st=0:d=2,afade=t=out:st={nd}:d={ft},'
-                    f'aresample=44100,apad=whole_dur={me}[m];'
-                    f'[1:a]{narr_chain}[n0];'
-                    f'[n0]adelay=delays={delay_ms}|{delay_ms},volume=1.4[n];'
-                    f'[m]volume=0.30[mv];'
-                    f'[mv][n]amix=inputs=2:duration=longest:normalize=1[out]'
+                    f'[0:a]{narr_chain}[n];'
+                    f'[1:a]atrim=start=0:duration={music_sec:.3f},'
+                    f'asetpts=PTS-STARTPTS,'
+                    f'afade=t=in:st=0:d={fade_in:.3f},'
+                    f'afade=t=out:st={fade_out_start:.3f}:d={fade_out:.3f},'
+                    f'aresample=44100,aformat=channel_layouts=stereo[m];'
+                    f'[n][m]concat=n=2:v=0:a=1[out]'
                 )
                 cmd = [
                     'ffmpeg', '-nostdin', '-y',
-                    '-i', str(theme_music),
                     '-i', str(narration_file),
+                    '-i', str(theme_music),
                     '-filter_complex', fc,
                     '-map', '[out]',
                     '-c:a', 'libmp3lame', '-b:a', '256k',
@@ -1163,8 +1174,8 @@ class AudioPipeline:
                     cmd, capture_output=True, text=True, check=False)
                 if proc.returncode != 0:
                     err = (proc.stderr or proc.stdout or '').strip()
-                    logger.error('Intro mix ffmpeg failed: %s', err)
-                    raise RuntimeError('ffmpeg intro mix failed')
+                    logger.error('Intro concat ffmpeg failed: %s', err)
+                    raise RuntimeError('ffmpeg intro concat failed')
 
             elif narration_file:
                 # Just use narration if no music

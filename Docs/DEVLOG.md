@@ -11,8 +11,9 @@ Session notes: what shipped, how to operate it, and what is still open.
 - `tts_engine.py` runs all Kokoro input through `normalize_trek_tts_text()` before the existing Kokoro cleanup.
 
 ### Intro / outro / themes (`audio_pipeline.py`)
-- Intro copy uses **Stardate** from `structure.json` → `stardate` field, else first match in `script.json`, else synthetic `52{episode_number:03d}.1`.
-- **Intro layout**: theme ~60s (env `STARDOCK_INTRO_MUSIC_SEC`), narrator delayed ~45s (`STARDOCK_INTRO_NARRATION_START_SEC`), mix with `amix` (music-first, OG-style tail).
+- Intro VO uses **`intro_spoken`** in `structure.json` when set; otherwise *Tonight, on {series}: {title}* + first sentence of **`theme`**. (Captain’s log stays in the episode script, not the bumper.)
+- **Intro layout**: **sequential** — full narration, then theme up to `STARDOCK_INTRO_MUSIC_SEC` (default 60s), `concat` (no duck/overlap). Narration: **silenceremove** lead/tail (TTS padding) + short fade-in only (no narr fade-out into music). Theme: quick fade-in (`STARDOCK_INTRO_THEME_FADE_IN_SEC`, default **0.12**) and shorter tail fade (`STARDOCK_INTRO_THEME_FADE_OUT_SEC`, default **0.9**) so handoffs do not sound like long silence. Then scene audio in `_assemble_episode`.
+- Stardate extraction for any fallback line still uses `structure.json` → `stardate`, else `script.json` scan, else synthetic `52{episode_number:03d}.1`.
 - **Theme selection**: prefers `assets/music/Cosmic_Odyssey_Main_Theme_2025-12-25T222447.wav` (intro) and `...2025-12-27T064552.wav` (outro); override with `STARDOCK_INTRO_MUSIC` / `STARDOCK_OUTRO_MUSIC`.
 - **Outro**: theme trim as **PCM WAV** (not MP3 intermediate); mix uses **`ffmpeg` subprocess** for `pan` + `amix` because ffmpeg-python mangled `pan=stereo|c0=c0`.
 - Intro/outro narrator gate accepts **`kokoro_voice` or `speaker_wav`** (Kokoro still uses `kokoro_voice`).
@@ -56,17 +57,16 @@ Session notes: what shipped, how to operate it, and what is still open.
 - `outro_file.parent.mkdir(..., exist_ok=True)` (removed duplicate `parents=` kwarg).
 - Outro mux: resample / layout alignment + direct ffmpeg for final mix.
 
-### Intro mix fix (was: music plays, narrator not over tail)
-- **Cause:** ffmpeg-python graph for mono `adelay` + `amix` (`normalize=0`) often dropped or buried narration over the theme tail.
-- **Change:** `_create_intro_segment` now builds the intro with a **`ffmpeg` subprocess** `filter_complex` (same idea as outro): theme `atrim` / fades / `apad`, narration `pan` to stereo, **`adelay=delays=MS|MS`**, ducked music (`volume=0.30`) + boosted voice (`volume=1.4`), **`amix=normalize=1`**, 44.1 kHz stereo MP3.
-- **Verify on pod:** `reassemble-audio <id> --refresh-intro` and audition `intro_complete.mp3` (narrator must sit clearly on the fading theme).
+### Intro layout (sequential VO + theme)
+- **Change:** `_create_intro_segment` now **`concat`**s: **narration first** (story teaser), then **trimmed theme** (up to `STARDOCK_INTRO_MUSIC_SEC`), stereo 44.1 kHz MP3. No duck/overlap.
+- **Verify on pod:** `reassemble-audio <id> --refresh-intro` and audition `intro_complete.mp3` (VO ends, then music; then episode scenes in `full_episode.mp3`).
 
 ---
 
 ## Needs to do / follow-ups (priority order)
 
 ### 1) Confirm intro in a real render
-- After pull, run **`reassemble-audio … --refresh-intro`** (or full `generate-audio`); tweak `STARDOCK_INTRO_NARRATION_START_SEC` / theme length if overlap timing feels wrong.
+- After pull, run **`reassemble-audio … --refresh-intro`** (or full `generate-audio`); tweak **`STARDOCK_INTRO_MUSIC_SEC`** if the theme tail feels too long or short after the VO.
 
 ### 2) Fix speech issues in the episode body
 - Run **full** `generate-audio` on the episode once `main` and assets are stable so every line uses `normalize_trek_tts_text` (stardates, species lexicon).
