@@ -820,6 +820,12 @@ Format each character as a detailed profile.
             episode["characters"] = characters
         
         try:
+            if self._use_scene_cards(episode):
+                card_scenes = self._generate_scenes_from_cards(episode)
+                if card_scenes:
+                    return card_scenes
+                logger.warning('Scene cards failed twice; using legacy outline path.')
+
             # Calculate number of scenes based on beats and target duration
             target_seconds = episode.get("target_duration_minutes", 30) * 60
             beats = episode.get("beats", [])
@@ -916,6 +922,44 @@ Format each character as a detailed profile.
             logger.error(f"Error generating scenes: {e}")
             return []
     
+    def _use_scene_cards(self, episode: Dict[str, Any]) -> bool:
+        """NARRATIVE-001 card path: flag on."""
+        from story_os.flags import feature_enabled
+        return feature_enabled('USE_SCENE_CARDS', default=False)
+
+    def _generate_scenes_from_cards(self, episode: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Plan the whole episode as ordered scene cards (one call, one re-ask)."""
+        from story_os import scene_cards as sc
+        continuity = ''
+        try:
+            number = episode.get('episode_number', 0) or 0
+            if number > 1:
+                ctx = get_episode_memory().get_previous_episode_context(
+                    current_episode_number=number, series=episode.get('series'), limit=15)
+                continuity = '\n'.join((ctx.get('plot_points') or [])[:5]
+                                       + (ctx.get('unresolved_threads') or [])[:3])
+        except Exception as e:
+            logger.warning('Card continuity context skipped: %s', e)
+        cast_names = [(c.get('name') or '').strip() for c in episode.get('characters') or []]
+        prompt = sc.build_cards_prompt(episode, continuity)
+        feedback = ''
+        for attempt in (1, 2):
+            raw = self.complete_text(sc.CARDS_SYSTEM, prompt + feedback, max_tokens=4000)
+            cards, problems = sc.parse_cards(raw)
+            if not problems:
+                problems = sc.validate_cards(cards, cast_names)
+            if not problems:
+                scenes = sc.cards_to_scenes(cards, episode.get('target_duration_minutes', 30) * 60)
+                episode['scenes'] = scenes
+                episode.setdefault('metadata', {})['outline_mode'] = 'cards'
+                self._save_episode(episode)
+                logger.info('Scene cards accepted on attempt %s: %s scenes', attempt, len(scenes))
+                return scenes
+            logger.warning('Scene cards attempt %s rejected: %s', attempt, problems[:6])
+            feedback = ('\n\nYOUR PREVIOUS ANSWER WAS REJECTED. Fix these problems '
+                        'and return the full JSON again:\n- ' + '\n- '.join(problems[:12]))
+        return []
+
     async def _generate_scene_outline(self, episode: Dict[str, Any], beat: Dict[str, Any],
                                     scene_number: int, total_scenes: int,
                                     reference_text: str, character_info: str,
@@ -1100,11 +1144,15 @@ Format each character as a detailed profile.
             total_scenes = len(episode.get("scenes", []))
             logger.info(f"Generating script for {total_scenes} scenes...")
             
-            for i, scene in enumerate(episode.get("scenes", []), 1):
+            all_scenes = episode.get("scenes", [])
+            for i, scene in enumerate(all_scenes, 1):
                 logger.info(f"Generating script for scene {i}/{total_scenes}: {scene.get('beat', 'Unknown beat')}")
-                # Generate script for this scene
+                # Generate script for this scene (sequential: sees previous scene)
                 scene_script = self._generate_scene_script(
-                    episode, scene, extra_preamble=extra_preamble)
+                    episode, scene, extra_preamble=extra_preamble,
+                    previous_scene_script=(script["scenes"][-1] if script["scenes"] else None),
+                    next_scene=(all_scenes[i] if i < len(all_scenes) else None),
+                )
                 script["scenes"].append(scene_script)
                 logger.info(f"Completed scene {i}/{total_scenes}")
             
@@ -1163,6 +1211,8 @@ Format each character as a detailed profile.
         episode: Dict[str, Any],
         scene: Dict[str, Any],
         extra_preamble: str = '',
+        previous_scene_script: Optional[Dict[str, Any]] = None,
+        next_scene: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Generate detailed script for a scene.
 
@@ -1251,6 +1301,14 @@ Format each character as a detailed profile.
         if story_os_block:
             preamble_parts.append(
                 'STORY OS (constraints and continuity):\n' + story_os_block)
+        if scene.get('card'):
+            from story_os.scene_cards import render_card_block
+            preamble_parts.append(
+                render_card_block(scene, previous_scene_script, next_scene))
+            words = int((scene.get('duration_seconds') or 0) * 2.4)
+            if words > 0:
+                preamble_parts.append(
+                    f'Length: about {words} spoken words for this scene.')
         preamble = '\n\n'.join(p for p in preamble_parts if p).strip()
         prompt = (
             f"Generate a detailed script for a Star Trek audio drama scene.\n\n"
@@ -1290,7 +1348,9 @@ Format each character as a detailed profile.
                 "setting": scene.get('setting'),
                 "lines": new_lines
             }
-            
+            if scene.get('card'):
+                scene_script['card'] = scene['card']
+
             logger.info(f"Successfully generated script for scene: {scene.get('beat', 'Unknown beat')}")
             return scene_script
             

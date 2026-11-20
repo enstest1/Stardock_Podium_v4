@@ -7,5 +7,6 @@
   "USE_GENERATION_TRACE": false,
   "USE_DIA2_DIALOGUE": false,
   "USE_BARK_SFX": false,
-  "USE_AUDIO_QA_BLOCK": false
+  "USE_AUDIO_QA_BLOCK": false,
+  "USE_SCENE_CARDS": false
 }
