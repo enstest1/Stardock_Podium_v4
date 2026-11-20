@@ -343,22 +343,12 @@ class ScriptEditor:
         """
         
         try:
-            if self.client is None:
-                logger.error("Scene regeneration requires OPENAI_API_KEY")
-                return script
-            # Generate new scene content
-            response = self.client.chat.completions.create(
-                model="gpt-4o",
-                messages=[
-                    {"role": "system", "content": "You are an expert screenwriter for audio dramas."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.7,
-                max_tokens=2000
-            )
-            
+            from story_os import llm
+            new_content = llm.complete(
+                'writer', "You are an expert screenwriter for audio dramas.",
+                prompt, temperature=0.7, max_tokens=2000)
+
             # Parse the generated content
-            new_content = response.choices[0].message.content
             new_lines = self._parse_script_lines(new_content)
             
             # Update the scene

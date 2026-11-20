@@ -178,6 +178,19 @@ class StoryStructure:
                 "Episodes will generate without series bible context."
             )
 
+    def _llm(self, role: str, system: str, user: str, *,
+             max_tokens: Optional[int] = None,
+             temperature: Optional[float] = None) -> str:
+        """Role-routed completion (BASE-002) using this instance's clients."""
+        from story_os import llm
+        clients = {}
+        if getattr(self, 'using_openrouter', False):
+            clients['openrouter'] = self.openrouter_client
+        if self.client is not None:
+            clients['openai'] = self.client
+        return llm.complete(role, system, user, max_tokens=max_tokens,
+                            temperature=temperature, clients=clients)
+
     def complete_text(
         self,
         system: str,
@@ -186,32 +199,9 @@ class StoryStructure:
     ) -> str:
         """Single chat completion (sync); shared by agentic planner."""
         try:
-            if self.using_openrouter:
-                response = self.openrouter_client.chat.completions.create(
-                    model="anthropic/claude-opus-4.5",
-                    messages=[
-                        {"role": "system", "content": system},
-                        {"role": "user", "content": user},
-                    ],
-                    temperature=0.65,
-                    max_tokens=min(max_tokens, 4096),
-                )
-            else:
-                if self.client is None:
-                    logger.error(
-                        "complete_text: set OPENAI_API_KEY or OPENROUTER_API_KEY"
-                    )
-                    return ""
-                response = self.client.chat.completions.create(
-                    model="gpt-4o",
-                    messages=[
-                        {"role": "system", "content": system},
-                        {"role": "user", "content": user},
-                    ],
-                    temperature=0.65,
-                    max_tokens=max_tokens,
-                )
-            return (response.choices[0].message.content or "").strip()
+            return self._llm('writer', system, user,
+                             max_tokens=min(max_tokens, 4096),
+                             temperature=0.65)
         except Exception as e:
             logger.error("complete_text failed: %s", e)
             return ""
@@ -368,32 +358,10 @@ class StoryStructure:
             
             prompt += ". The title should be catchy, intriguing, and reference sci-fi concepts."
             
-            # Use OpenRouter with Claude Opus 4.5 if available, otherwise fallback to OpenAI
-            if self.using_openrouter:
-                response = self.openrouter_client.chat.completions.create(
-                    model="anthropic/claude-opus-4.5",
-                    messages=[
-                        {"role": "system", "content": "You are a professional sci-fi writer specializing in Star Trek."},
-                        {"role": "user", "content": prompt}
-                    ],
-                    temperature=0.7,
-                    max_tokens=50
-                )
-            else:
-                if self.client is None:
-                    raise RuntimeError("no OpenAI / OpenRouter client")
-                response = self.client.chat.completions.create(
-                    model="gpt-4o",
-                    messages=[
-                        {"role": "system", "content": "You are a professional sci-fi writer specializing in Star Trek."},
-                        {"role": "user", "content": prompt}
-                    ],
-                    temperature=0.7,
-                    max_tokens=50
-                )
-            
-            # Extract and clean the title
-            title = response.choices[0].message.content.strip()
+            title = self._llm(
+                'planner',
+                "You are a professional sci-fi writer specializing in Star Trek.",
+                prompt, max_tokens=50, temperature=0.7)
             
             # Remove quotes if present
             if title.startswith('"') and title.endswith('"'):
@@ -546,42 +514,12 @@ The cast should serve the story you're telling, not a generic template.
 Format each character as a detailed profile.
 """
             
-            # Use OpenRouter with Claude Opus 4.5 if available, otherwise fallback to OpenAI
-            if self.using_openrouter:
-                response = self.openrouter_client.chat.completions.create(
-                    model="anthropic/claude-opus-4.5",
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": self.knowledge.build_system_prompt(
-                                "You are a Star Trek universe expert and character creator."
-                            ),
-                        },
-                        {"role": "user", "content": prompt}
-                    ],
-                    temperature=0.8,
-                    max_tokens=2000
-                )
-            else:
-                if self.client is None:
-                    raise RuntimeError("no OpenAI / OpenRouter client")
-                response = self.client.chat.completions.create(
-                    model="gpt-4o",
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": self.knowledge.build_system_prompt(
-                                "You are a Star Trek universe expert and character creator."
-                            ),
-                        },
-                        {"role": "user", "content": prompt}
-                    ],
-                    temperature=0.8,
-                    max_tokens=2000
-                )
-            
-            # Extract character data from response
-            character_text = response.choices[0].message.content
+            character_text = self._llm(
+                'planner',
+                self.knowledge.build_system_prompt(
+                    "You are a Star Trek universe expert and character creator."
+                ),
+                prompt, max_tokens=2000, temperature=0.8)
             
             # Parse characters from the text
             characters = self._parse_characters(character_text)
@@ -1039,33 +977,10 @@ Format each character as a detailed profile.
             Target scene length: {scene_duration//60} minutes {scene_duration%60} seconds.
             """
             
-            # Use OpenRouter with Claude Opus 4.5 if available, otherwise fallback to OpenAI
-            if self.using_openrouter:
-                response = await self.async_openrouter_client.chat.completions.create(
-                    model="anthropic/claude-opus-4.5",
-                    messages=[
-                        {"role": "system", "content": "You are an expert screenwriter specializing in science fiction and Star Trek."},
-                        {"role": "user", "content": prompt}
-                    ],
-                    temperature=0.7,
-                    max_tokens=1000
-                )
-            else:
-                if self.async_client is None:
-                    logger.error("Scene outline: set OPENAI_API_KEY or OPENROUTER_API_KEY")
-                    return {}
-                response = await self.async_client.chat.completions.create(
-                    model="gpt-4o",
-                    messages=[
-                        {"role": "system", "content": "You are an expert screenwriter specializing in science fiction and Star Trek."},
-                        {"role": "user", "content": prompt}
-                    ],
-                    temperature=0.7,
-                    max_tokens=1000
-                )
-            
-            # Extract scene content
-            scene_content = response.choices[0].message.content
+            scene_content = await asyncio.to_thread(
+                self._llm, 'planner',
+                "You are an expert screenwriter specializing in science fiction and Star Trek.",
+                prompt, max_tokens=1000, temperature=0.7)
             
             # Parse scene into structured format
             scene = self._parse_scene(scene_content)
@@ -1356,49 +1271,15 @@ Format each character as a detailed profile.
         try:
             # Generate scene content
             logger.info("Sending request to AI model...")
-            # Use OpenRouter with Claude Opus 4.5 if available, otherwise fallback to OpenAI
-            if self.using_openrouter:
-                response = self.openrouter_client.chat.completions.create(
-                    model="anthropic/claude-opus-4.5",
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": self.knowledge.build_system_prompt(
-                                "You are an expert screenwriter for audio dramas."
-                            ),
-                        },
-                        {"role": "user", "content": prompt}
-                    ],
-                    temperature=0.7,
-                    max_tokens=2000
-                )
-            else:
-                if self.client is None:
-                    logger.error("Scene script: set OPENAI_API_KEY or OPENROUTER_API_KEY")
-                    return {
-                        "scene_number": scene.get("scene_number"),
-                        "beat": scene.get("beat"),
-                        "setting": scene.get("setting"),
-                        "lines": scene.get("lines", []),
-                    }
-                response = self.client.chat.completions.create(
-                    model="gpt-4o",
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": self.knowledge.build_system_prompt(
-                                "You are an expert screenwriter for audio dramas."
-                            ),
-                        },
-                        {"role": "user", "content": prompt}
-                    ],
-                    temperature=0.7,
-                    max_tokens=2000
-                )
-            
+            new_content = self._llm(
+                'writer',
+                self.knowledge.build_system_prompt(
+                    "You are an expert screenwriter for audio dramas."
+                ),
+                prompt, max_tokens=2000, temperature=0.7)
+
             # Parse the generated content
             logger.info("Parsing generated content...")
-            new_content = response.choices[0].message.content
             new_lines = self._parse_script_lines(new_content)
             
             # Create scene script

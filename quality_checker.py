@@ -673,10 +673,11 @@ class QualityChecker:
         Returns:
             Dictionary with AI evaluation results
         """
-        if not self.client:
-            logger.error("OpenAI client not initialized")
+        if not (os.environ.get('OPENROUTER_API_KEY')
+                or os.environ.get('OPENAI_API_KEY')):
+            logger.error("No LLM API key for AI evaluation")
             return {}
-        
+
         try:
             # Create a simplified version of the script for evaluation
             simplified_script = self._simplify_script_for_evaluation(script)
@@ -711,20 +712,16 @@ class QualityChecker:
             """
             
             # Query the AI
-            response = self.client.chat.completions.create(
-                model="gpt-4o",
-                messages=[
-                    {"role": "system", "content": "You are a professional script evaluator. Return only valid JSON."},
-                    {"role": "user", "content": prompt}
-                ],
-                response_format={"type": "json_object"},
-                temperature=0.3,
-                max_tokens=1000
-            )
-            
+            from story_os import llm
+            content = llm.complete(
+                'editor',
+                "You are a professional script evaluator. Return only valid JSON.",
+                prompt, json=True, temperature=0.3, max_tokens=1000)
+            content = re.sub(r'^```(?:json)?\s*|\s*```$', '', content.strip())
+
             # Parse the result
             try:
-                result_json = json.loads(response.choices[0].message.content)
+                result_json = json.loads(content)
                 return result_json
             except json.JSONDecodeError:
                 logger.error("Failed to parse AI evaluation result as JSON")

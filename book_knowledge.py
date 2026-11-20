@@ -124,19 +124,13 @@ class SeriesBibleExtractor:
         openrouter_key = os.environ.get("OPENROUTER_API_KEY")
         openai_key = os.environ.get("OPENAI_API_KEY")
 
-        if openrouter_key:
-            self.client = OpenAI(
-                base_url="https://openrouter.ai/api/v1",
-                api_key=openrouter_key,
-            )
-            self.model = "anthropic/claude-opus-4.5"
-            logger.info("BibleExtractor using OpenRouter / Claude Opus")
-        elif openai_key:
-            self.client = OpenAI(api_key=openai_key)
-            self.model = "gpt-4o"
-            logger.info("BibleExtractor using OpenAI GPT-4o")
-        else:
+        if not (openrouter_key or openai_key):
             raise EnvironmentError("No LLM API key found (OPENROUTER_API_KEY or OPENAI_API_KEY)")
+        from story_os import llm
+        spec = llm.resolve('extractor')
+        self.client = llm.client_for(spec['provider'])
+        self.model = spec['model']
+        logger.info("BibleExtractor using %s / %s", spec['provider'], self.model)
 
     # ── Public entry point ──────────────────────────────────────────────────
 

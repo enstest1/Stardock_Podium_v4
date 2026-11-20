@@ -1,0 +1,12 @@
+{
+  "_notes": "Role -> model routing (BASE-002). Delete this file to return to the legacy defaults (openrouter anthropic/claude-opus-4.5, fallback openai gpt-4o).",
+  "roles": {
+    "planner":   {"provider": "openrouter", "model": "anthropic/claude-opus-5.5"},
+    "writer":    {"provider": "openrouter", "model": "anthropic/claude-opus-5.5"},
+    "editor":    {"provider": "openrouter", "model": "anthropic/claude-sonnet-5.5"},
+    "extractor": {"provider": "openrouter", "model": "anthropic/claude-sonnet-5.5"},
+    "judge_a":   {"provider": "openrouter", "model": "anthropic/claude-sonnet-5.5"},
+    "judge_b":   {"provider": "openai", "model": "gpt-4o"}
+  },
+  "fallback": {"provider": "openai", "model": "gpt-4o"}
+}
