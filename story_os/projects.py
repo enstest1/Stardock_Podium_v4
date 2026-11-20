@@ -272,7 +272,9 @@ def assign_voices(identity: Identity) -> Dict[str, Any]:
                       'captain', 'capt', 'professor', 'prof', 'father', 'sister',
                       'brother', 'mother', 'aunt', 'uncle', 'old', 'the'}
         core = [t for t in tokens if t not in honorifics] or tokens
-        for alias in {core[0], core[-1], '_'.join(core)}:
+        names = {core[0], core[-1], '_'.join(core)}
+        names |= {f'{h}_{core[-1]}' for h in ('mr', 'mrs', 'ms', 'miss', 'dr')}
+        for alias in names:
             if alias and alias != key and alias not in characters:
                 aliases.setdefault(alias, key)
     characters[EXTRA_SPEAKER_KEY] = {

@@ -75,7 +75,7 @@ def test_create_project_writes_files_and_distinct_voices(data_dir):
     assert voices['engine_order'] == ['kokoro']
     # first/last-name aliases resolve to the full cast key, honorific dropped
     from dialogue_engine import resolve_character_voice_config
-    for spoken in ('ADA', 'MOREAU', 'Dr. Ada Moreau', 'TOMAS', 'NARRATOR'):
+    for spoken in ('ADA', 'MOREAU', 'Dr. Ada Moreau', 'TOMAS', 'MR. REYES', 'NARRATOR'):
         assert resolve_character_voice_config(spoken, voices), spoken
     fmt = projects.load_format(cfg.project_id)
     assert 'star trek' not in json.dumps(fmt.model_dump()).lower()

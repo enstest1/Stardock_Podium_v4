@@ -161,6 +161,8 @@ def complete(role: str, system: str, user: str, *, json: bool = False,
 def _is_permanent(err: BaseException) -> bool:
     """Auth / billing / bad-request errors: retrying the same call is pointless."""
     status = getattr(err, 'status_code', None)
+    if status == 429 and 'insufficient_quota' in str(err):
+        return True   # out of credits, not a rate limit
     return status in (400, 401, 402, 403, 404)
 
 
