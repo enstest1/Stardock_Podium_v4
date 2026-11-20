@@ -1,25 +1,30 @@
 {
-  "_notes": "Role -> model routing (BASE-002). Delete this file to return to the legacy defaults (openrouter anthropic/claude-opus-4.5, fallback openai gpt-4o). Fallback is used automatically when the primary provider fails (e.g. OpenRouter out of credits).",
+  "_notes": "Role -> model routing (BASE-002). Delete this file to return to the legacy defaults (openrouter anthropic/claude-opus-4.5, fallback openai gpt-4o). Fallback is used automatically when the primary provider fails (e.g. OpenRouter out of credits). reasoning_headroom: extra max_tokens for models whose mandatory reasoning counts against the limit (billed only if used).",
   "roles": {
     "planner": {
       "provider": "openrouter",
-      "model": "anthropic/claude-opus-5.5"
+      "model": "anthropic/claude-opus-5.5",
+      "reasoning_headroom": 3000
     },
     "writer": {
       "provider": "openrouter",
-      "model": "anthropic/claude-opus-5.5"
+      "model": "anthropic/claude-opus-5.5",
+      "reasoning_headroom": 3000
     },
     "editor": {
       "provider": "openrouter",
-      "model": "anthropic/claude-sonnet-5.5"
+      "model": "anthropic/claude-sonnet-5.5",
+      "reasoning_headroom": 3000
     },
     "extractor": {
       "provider": "openrouter",
-      "model": "anthropic/claude-sonnet-5.5"
+      "model": "anthropic/claude-sonnet-5.5",
+      "reasoning_headroom": 3000
     },
     "judge_a": {
       "provider": "openrouter",
-      "model": "anthropic/claude-sonnet-5.5"
+      "model": "anthropic/claude-sonnet-5.5",
+      "reasoning_headroom": 3000
     },
     "judge_b": {
       "provider": "openai",

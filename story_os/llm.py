@@ -158,6 +158,10 @@ def complete(role: str, system: str, user: str, *, json: bool = False,
                      clients=clients, retries=retries)
 
 
+class EmptyCompletion(RuntimeError):
+    """The provider returned no visible text."""
+
+
 def _is_permanent(err: BaseException) -> bool:
     """Auth / billing / bad-request errors: retrying the same call is pointless."""
     status = getattr(err, 'status_code', None)
@@ -182,7 +186,9 @@ def _call(role: str, spec: Dict[str, Any], system: str, user: str, *,
     }
     mt = spec.get('max_tokens') or max_tokens
     if mt:
-        kwargs['max_tokens'] = int(mt)
+        # Reasoning models count thinking tokens against max_tokens; the
+        # headroom keeps the visible answer from being cut to nothing.
+        kwargs['max_tokens'] = int(mt) + int(spec.get('reasoning_headroom', 0))
     if json and provider == 'openai':
         kwargs['response_format'] = {'type': 'json_object'}
 
@@ -193,6 +199,14 @@ def _call(role: str, spec: Dict[str, Any], system: str, user: str, *,
             started = time.time()
             resp = client.chat.completions.create(**kwargs)
             text = (resp.choices[0].message.content or '').strip()
+            finish = getattr(resp.choices[0], 'finish_reason', None)
+            if not text:
+                if finish == 'length' and kwargs.get('max_tokens'):
+                    kwargs['max_tokens'] = min(32000, kwargs['max_tokens'] * 4)
+                    raise EmptyCompletion(
+                        f'empty answer (finish=length); raising max_tokens to '
+                        f'{kwargs["max_tokens"]}')
+                raise EmptyCompletion(f'empty answer (finish={finish})')
             usage = getattr(resp, 'usage', None)
             last_usage.clear()
             last_usage.update({

@@ -1074,6 +1074,27 @@ def cmd_produce_episode(args):
 
 
 @register_command(
+    name="write-and-render",
+    help_text='Resume a project episode: rewrite script from its scene cards, then render audio',
+    arguments=[
+        {'name': 'episode_id', **STR_ARG, 'help': 'Episode id'},
+        {'name': '--no-audio', **BOOL_ARG, 'help': 'Script only'},
+    ]
+)
+def cmd_write_and_render(args):
+    from story_structure import get_episode
+    from story_os.produce import produce_episode
+    ep = get_episode(args.episode_id)
+    if not ep or not ep.get('project_id'):
+        logger.error('Not a project episode: %s', args.episode_id)
+        return False
+    report = produce_episode(ep['project_id'], episode_id=args.episode_id,
+                             audio=not args.no_audio)
+    print(json.dumps(report, indent=2))
+    return True
+
+
+@register_command(
     name="list-projects",
     help_text='List podcast projects created with create-podcast',
     arguments=[]

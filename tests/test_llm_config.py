@@ -86,3 +86,23 @@ def test_fails_over_to_fallback_on_billing_error(tmp_path):
     assert out == 'from backup'
     assert primary.chat.completions.create.call_count == 1  # no retry on 402
     assert backup.chat.completions.create.call_args.kwargs['model'] == 'gpt-4o'
+
+
+def test_empty_length_answer_retries_with_bigger_budget(tmp_path):
+    client = MagicMock()
+    empty = MagicMock(); empty.choices = [MagicMock(
+        message=MagicMock(content=''), finish_reason='length')]
+    full = MagicMock(); full.choices = [MagicMock(
+        message=MagicMock(content='MARA: Hi.'), finish_reason='stop')]
+    client.chat.completions.create.side_effect = [empty, full]
+    cfg = tmp_path / 'c.json'
+    cfg.write_text(json.dumps({'roles': {'writer': {'reasoning_headroom': 100}}}))
+    with patch.dict(os.environ, {'OPENROUTER_API_KEY': 'k'}, clear=True), \
+            patch.object(llm, 'config_path', return_value=cfg), \
+            patch.object(llm.time, 'sleep'):
+        out = llm.complete('writer', 's', 'u', max_tokens=50,
+                           clients={'openrouter': client})
+    assert out == 'MARA: Hi.'
+    calls = client.chat.completions.create.call_args_list
+    assert calls[0].kwargs['max_tokens'] == 150
+    assert calls[1].kwargs['max_tokens'] == 600

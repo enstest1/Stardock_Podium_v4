@@ -35,8 +35,13 @@ def create_podcast(idea: str, *, mode: Optional[str] = None,
 
 def produce_episode(project_id: str, *, theme: Optional[str] = None,
                     minutes: Optional[int] = None,
-                    audio: bool = True) -> Dict[str, Any]:
-    """Run every stage for one new episode of ``project_id``."""
+                    audio: bool = True,
+                    episode_id: Optional[str] = None) -> Dict[str, Any]:
+    """Run every stage for one new episode of ``project_id``.
+
+    With ``episode_id`` of an existing episode that already has scene cards,
+    only the script and audio stages run again (resume after a failure).
+    """
     from story_structure import get_story_structure
     from story_os.asyncio_compat import run_coro
 
@@ -57,17 +62,23 @@ def produce_episode(project_id: str, *, theme: Optional[str] = None,
         report['stages'][name] = {'seconds': round(time.time() - started, 1)}
         return out
 
-    episode = stage('structure', lambda: ss.generate_episode_structure({
-        'project_id': project_id, 'theme': theme,
-        'target_duration': minutes or project.episode_minutes}))
-    eid = episode['episode_id']
-    report['episode_id'] = eid
-    cast = stage('cast', lambda: ss.generate_character_cast(eid))
-    report['stages']['cast']['characters'] = [c['name'] for c in cast]
-    scenes = stage('scene_cards', lambda: run_coro(ss.generate_scenes(eid)))
-    if not scenes:
-        raise RuntimeError('Scene planning failed (see log).')
-    report['stages']['scene_cards']['scenes'] = len(scenes)
+    existing = ss.get_episode(episode_id) if episode_id else None
+    if existing and existing.get('scenes'):
+        eid = episode_id
+        report['episode_id'] = eid
+        report['resumed'] = True
+    else:
+        episode = stage('structure', lambda: ss.generate_episode_structure({
+            'project_id': project_id, 'theme': theme,
+            'target_duration': minutes or project.episode_minutes}))
+        eid = episode['episode_id']
+        report['episode_id'] = eid
+        cast = stage('cast', lambda: ss.generate_character_cast(eid))
+        report['stages']['cast']['characters'] = [c['name'] for c in cast]
+        scenes = stage('scene_cards', lambda: run_coro(ss.generate_scenes(eid)))
+        if not scenes:
+            raise RuntimeError('Scene planning failed (see log).')
+        report['stages']['scene_cards']['scenes'] = len(scenes)
     script = stage('script', lambda: ss.generate_episode_script(eid))
     if not script or not script.get('scenes'):
         raise RuntimeError('Script generation failed (see log).')
@@ -77,6 +88,11 @@ def produce_episode(project_id: str, *, theme: Optional[str] = None,
     report['stages']['script'].update({
         'lines': len(lines), 'spoken_words': words,
         'empty_scenes': sum(1 for sc in script['scenes'] if not sc.get('lines'))})
+    if words == 0 or report['stages']['script']['empty_scenes']:
+        raise RuntimeError(
+            f"Script incomplete: {report['stages']['script']['empty_scenes']} of "
+            f"{len(script['scenes'])} scenes are empty (LLM errors in the log). "
+            f"Fix the cause, then: python main.py write-and-render {eid}")
     if audio:
         from audio_pipeline import generate_episode_audio
         meta = stage('audio', lambda: generate_episode_audio(eid, {}))
