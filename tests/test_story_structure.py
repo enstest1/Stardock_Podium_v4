@@ -45,13 +45,17 @@ class TestStoryStructure(unittest.TestCase):
         self.mem0_patcher = patch('story_structure.get_mem0_client')
         self.openai_patcher = patch('story_structure.OpenAI')
         self.async_openai_patcher = patch('story_structure.AsyncOpenAI')
-        self.search_refs_patcher = patch('story_structure.search_references')
+        self.knowledge_patcher = patch('story_structure.get_knowledge_context')
         
         # Start patchers
         self.mock_mem0 = self.mem0_patcher.start()
         self.mock_openai = self.openai_patcher.start()
         self.mock_async_openai = self.async_openai_patcher.start()
-        self.mock_search_refs = self.search_refs_patcher.start()
+        self.mock_knowledge = self.knowledge_patcher.start()
+        self.mock_knowledge.return_value.series_bible = {}
+        self.mock_knowledge.return_value.is_ready.return_value = True
+        self.mock_knowledge.return_value.get_rag_context.return_value = ''
+        self.mock_knowledge.return_value.build_system_prompt.side_effect = lambda base: base
         
         # Configure mocks
         self.mock_mem0_client = MagicMock()
@@ -84,7 +88,7 @@ class TestStoryStructure(unittest.TestCase):
         self.mem0_patcher.stop()
         self.openai_patcher.stop()
         self.async_openai_patcher.stop()
-        self.search_refs_patcher.stop()
+        self.knowledge_patcher.stop()
         
         # Remove temporary directory
         shutil.rmtree(self.temp_dir)
