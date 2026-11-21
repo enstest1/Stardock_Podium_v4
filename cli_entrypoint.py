@@ -1234,6 +1234,57 @@ def cmd_recast_project(args):
 
 
 @register_command(
+    name="approve-episode",
+    help_text="Promote a project episode's draft canon records to canon",
+    arguments=[{'name': 'episode_id', **STR_ARG, 'help': 'Episode id'}]
+)
+def cmd_approve_episode(args):
+    from story_structure import get_episode
+    from story_os.canon_store import CanonStore
+    from story_os.canon_extract import approve_episode
+    ep = get_episode(args.episode_id)
+    store = CanonStore.for_episode(ep or {})
+    if store is None:
+        logger.error('No canon ledger for %s', args.episode_id)
+        return False
+    approve_episode(store, args.episode_id)
+    if ep.get('status') != 'approved':
+        ep['status'] = 'approved'
+        from story_structure import get_story_structure
+        get_story_structure()._save_episode(ep)
+    print(f"Approved {args.episode_id}; canon now has "
+          f"{len(store.query('events'))} events, {len(store.query('promises'))} promises.")
+    return True
+
+
+@register_command(
+    name="canon-show",
+    help_text='Show the canon ledger brief for a project episode (draft included)',
+    arguments=[{'name': 'episode_id', **STR_ARG, 'help': 'Episode id'}]
+)
+def cmd_canon_show(args):
+    from story_structure import get_episode
+    from story_os.canon_store import CanonStore
+    ep = get_episode(args.episode_id)
+    store = CanonStore.for_episode(ep or {})
+    if store is None:
+        logger.error('No canon ledger for %s', args.episode_id)
+        return False
+    for kind in ('events', 'state_changes', 'beliefs', 'relationships', 'promises'):
+        rows = store.query(kind, include_draft_episode=args.episode_id)
+        print()
+        print(f"== {kind} ({len(rows)})")
+        for r in rows[:40]:
+            body = (r.get('summary') or r.get('proposition') or r.get('statement')
+                    or f"{r.get('entity', r.get('a', ''))} "
+                       f"{r.get('attribute', r.get('dimension', ''))} -> "
+                       f"{r.get('after', r.get('direction', ''))}")
+            who = r.get('holder') or ''
+            print(f"  [{r['status']}] {who + ': ' if who else ''}{body}  <{r['evidence']['quote'][:60]}>")
+    return True
+
+
+@register_command(
     name="list-projects",
     help_text='List podcast projects created with create-podcast',
     arguments=[]

@@ -131,4 +131,5 @@ def test_project_prompts_have_no_franchise_words(data_dir, tmp_path):
     joined = '\n'.join(prompts).lower()
     for word in ('star trek', 'starfleet', 'stardate', 'kirk', 'enterprise'):
         assert word not in joined, word
-    assert 'PREVIOUS SCENE' in prompts[-1]
+    assert any('PREVIOUS SCENE' in p for p in prompts)
+    assert any('continuity editor' in p for p in prompts)   # canon extraction ran

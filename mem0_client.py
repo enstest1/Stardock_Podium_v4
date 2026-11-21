@@ -118,7 +118,8 @@ class Mem0Client:
             raise
     
     def add_memory(self, content: str, user_id: str, memory_type: str, 
-                   metadata: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+                   metadata: Optional[Dict[str, Any]] = None,
+                   infer: bool = False) -> Dict[str, Any]:
         """Add a memory to the database.
         
         Args:
@@ -137,16 +138,21 @@ class Mem0Client:
         metadata["memory_type"] = memory_type
         
         try:
-            if hasattr(self, 'client'):
-                # Managed platform — mem0ai>=1.0
-                result = self.client.add(
-                    content,
-                    user_id=user_id,
-                    metadata=metadata,
-                )
-            else:
-                result = self.memory.add(
-                    content, user_id=user_id, metadata=metadata)
+            # CANON-005: store verbatim; never let Mem0's LLM inference update
+            # or delete existing memories. A client that cannot honour
+            # infer=False is refused, not silently allowed to infer.
+            target = self.client if hasattr(self, 'client') else self.memory
+            try:
+                result = target.add(content, user_id=user_id,
+                                    metadata=metadata, infer=infer)
+            except TypeError as te:
+                if 'infer' not in str(te):
+                    raise
+                if not getattr(self, '_warned_infer', False):
+                    logger.error('Mem0 client does not accept infer=False; '
+                                 'refusing to write memories (CANON-005).')
+                    self._warned_infer = True
+                return {'refused': True, 'reason': 'infer unsupported'}
             
             logger.debug(f"Added memory: {result}")
             return result

@@ -1027,17 +1027,48 @@ Format each character as a detailed profile.
         from story_os.flags import feature_enabled
         return feature_enabled('USE_SCENE_CARDS', default=False)
 
+    def _extract_canon(self, episode: Dict[str, Any], script: Dict[str, Any]) -> None:
+        if os.environ.get('STARDOCK_CANON', '1').lower() in ('0', 'false', 'no'):
+            return
+        try:
+            from story_os.canon_store import CanonStore
+            from story_os.canon_extract import extract_episode
+            store = CanonStore.for_episode(episode)
+            if store is None:
+                return
+            report = extract_episode(episode, script, store)
+            qdir = self.episodes_dir / episode['episode_id'] / 'quality'
+            qdir.mkdir(parents=True, exist_ok=True)
+            with open(qdir / 'extraction_report.json', 'w', encoding='utf-8') as f:
+                json.dump(report, f, indent=2)
+            logger.info('Canon extraction: %s accepted, %s rejected',
+                        report['accepted'], report['rejected'])
+        except Exception as e:
+            logger.warning('Canon extraction skipped: %s', e)
+
     def _generate_scenes_from_cards(self, episode: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Plan the whole episode as ordered scene cards (one call, one re-ask)."""
         from story_os import scene_cards as sc
         continuity = ''
+        if episode.get('project_id'):
+            try:
+                from story_os.canon_store import CanonStore
+                store = CanonStore.for_episode(episode)
+                if store is not None:
+                    continuity = store.continuity_brief()
+            except Exception as e:
+                logger.warning('Canon continuity skipped: %s', e)
         try:
+            if episode.get('project_id'):
+                raise StopIteration  # projects: ledger only, no legacy memory
             number = episode.get('episode_number', 0) or 0
             if number > 1:
                 ctx = get_episode_memory().get_previous_episode_context(
                     current_episode_number=number, series=episode.get('series'), limit=15)
                 continuity = '\n'.join((ctx.get('plot_points') or [])[:5]
                                        + (ctx.get('unresolved_threads') or [])[:3])
+        except StopIteration:
+            pass
         except Exception as e:
             logger.warning('Card continuity context skipped: %s', e)
         cast_names = [(c.get('name') or '').strip() for c in episode.get('characters') or []]
@@ -1280,8 +1311,9 @@ Format each character as a detailed profile.
             self._save_script(episode_id, script)
             
             if episode.get('project_id'):
-                # Legacy extraction writes global Mem0 namespaces; projects
-                # stay isolated until GEN-003 / CANON-002.
+                # Projects never use the legacy keyword extractor / global
+                # Mem0; their continuity is the canon ledger (CANON-002).
+                self._extract_canon(episode, script)
                 logger.info(f"Script generation completed for episode: {episode.get('title')}")
                 return script
 
