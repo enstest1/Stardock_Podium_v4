@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 """
-Stardock Podium - AI Star Trek Podcast Generator
+Stardock Podium - AI Podcast Studio
 
 This module serves as the main entry point for the Stardock Podium system. It performs
 environment checks, initializes all required components, and launches the CLI interface.
 
 The system is designed to run natively on Windows 10 without requiring Docker or WSL,
-while providing a complete pipeline for generating Star Trek-style podcast episodes
+while providing a complete pipeline for generating original podcast episodes in any genre
 from reference materials.
 """
 
@@ -208,7 +208,7 @@ def display_welcome_message():
     ║  ██║     ╚██████╔╝██████╔╝██║╚██████╔╝██║ ╚═╝ ██║                        ║
     ║  ╚═╝      ╚═════╝ ╚═════╝ ╚═╝ ╚═════╝ ╚═╝     ╚═╝                        ║
     ║                                                                            ║
-    ║  Welcome to Stardock Podium - Your AI-Powered Star Trek Podcast Generator   ║
+    ║  Welcome to Stardock Podium - your AI podcast studio                       ║
     ║                                                                            ║
     ╚════════════════════════════════════════════════════════════════════════════╝
     """

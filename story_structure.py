@@ -29,6 +29,7 @@ from book_knowledge import get_knowledge_context
 from episode_memory import get_episode_memory
 from mem0_client import get_mem0_client, LEGACY_PROJECT
 from script_line_ids import ensure_script_line_ids
+from story_os.legacy import legacy
 from config.paths import SHOWS_DIR
 
 # Setup logging
@@ -432,7 +433,7 @@ class StoryStructure:
         """
         try:
             # Prepare prompt for title generation
-            prompt = "Generate a Star Trek-style podcast episode title"
+            prompt = legacy('title_prompt_prefix')
             
             if theme:
                 prompt += f" with the theme of '{theme}'"
@@ -447,7 +448,7 @@ class StoryStructure:
             
             title = self._llm(
                 'planner',
-                "You are a professional sci-fi writer specializing in Star Trek.",
+                legacy('title_system'),
                 prompt, max_tokens=50, temperature=0.7)
             
             # Remove quotes if present
@@ -552,7 +553,7 @@ class StoryStructure:
 
         try:
             character_archetypes = self.mem0_client.search_memory(
-                "Star Trek character archetypes",
+                legacy('archetype_query'),
                 user_id=self.mem0_client._ns('refs'),
                 memory_type=self.mem0_client.REFERENCE_MATERIAL,
                 limit=3
@@ -612,7 +613,7 @@ Format each character as a detailed profile.
             character_text = self._llm(
                 'planner',
                 self.knowledge.build_system_prompt(
-                    "You are a Star Trek universe expert and character creator."
+                    legacy('cast_system')
                 ),
                 prompt, max_tokens=2000, temperature=0.8)
             
@@ -755,7 +756,7 @@ Format each character as a detailed profile.
         guests: List[Dict[str, Any]] = []
         try:
             raw = self.complete_text(
-                'You are a Star Trek universe character designer.',
+                legacy('guest_system'),
                 guest_prompt,
                 max_tokens=600,
             )
@@ -1186,7 +1187,7 @@ Format each character as a detailed profile.
             
             # Create prompt for scene generation
             prompt = f"""
-            Create a detailed scene outline for a Star Trek-style podcast episode.
+            {legacy('outline_header')}
             
             EPISODE INFORMATION:
             Title: {episode.get('title')}
@@ -1221,7 +1222,7 @@ Format each character as a detailed profile.
             
             scene_content = await asyncio.to_thread(
                 self._llm, 'planner',
-                "You are an expert screenwriter specializing in science fiction and Star Trek.",
+                legacy('outline_system'),
                 prompt, max_tokens=1000, temperature=0.7)
             
             # Parse scene into structured format
@@ -1562,7 +1563,7 @@ Format each character as a detailed profile.
                     f'Length: about {words} spoken words for this scene.')
         preamble = '\n\n'.join(p for p in preamble_parts if p).strip()
         prompt = (
-            f"Generate a detailed script for a Star Trek audio drama scene.\n\n"
+            legacy('script_header') + "\n\n"
         )
         if preamble:
             prompt += preamble + "\n\n"
@@ -1727,7 +1728,7 @@ Format each character as a detailed profile.
                **CAPTAIN OKONKWO (V.O.)**
                *(measured, formal)*
 
-               Captain's log, stardate 865471.3. ...
+               Log entry, day four. ...
 
            Speaker headers are ``**NAME**`` on their own line, optionally
            with a trailing parenthetical like ``(V.O.)`` / ``(CONT'D)``.

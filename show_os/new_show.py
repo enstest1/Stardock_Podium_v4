@@ -19,7 +19,7 @@ Workflow:
 Usage:
     python main.py new-show \\
         --name "Prophets and Gamma" \\
-        --concept "A Star Trek podcast set in the Bajoran sector..."
+        --concept "A serialized drama aboard a deep-sea research station..."
 """
 
 import json

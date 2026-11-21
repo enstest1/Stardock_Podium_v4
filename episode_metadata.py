@@ -7,6 +7,7 @@ metadata, including tagging, categorization, and organizational features.
 """
 
 import os
+from story_os.legacy import legacy
 import json
 import logging
 import time
@@ -630,7 +631,7 @@ class EpisodeMetadata:
             rss += '<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">\n'
             rss += '  <channel>\n'
             rss += '    <title>Stardock Podium AI Podcast</title>\n'
-            rss += '    <description>AI generated Star Trek-style podcast episodes</description>\n'
+            rss += f"    <description>{legacy('rss_description')}</description>\n"
             rss += f'    <lastBuildDate>{time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime())}</lastBuildDate>\n'
             
             for episode in episodes:

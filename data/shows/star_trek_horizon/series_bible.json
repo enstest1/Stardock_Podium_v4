@@ -65,7 +65,8 @@
       "role": "Commanding Officer",
       "personality": "Possesses the quiet gravity of someone who has seen both the best and worst of what the galaxy offers and chosen to believe in the mission anyway. Leads through clarity of purpose rather than charisma, though she can rally a crew when needed.",
       "backstory": "Rose through Starfleet during the difficult decades of Alliance-building, serving as first officer during the Romulan Reunification Crisis and commanding a border patrol vessel during the Cardassian Reconstruction. Her appointment to the Enterprise-H was controversial—some wanted a more politically connected captain—but she earned it through a career of making impossible situations work. Daughter of a Starfleet admiral and a Federation diplomat, she grew up understanding that exploration and politics are inseparable.",
-      "voice_description": "Rich contralto with deliberate pacing; speaks as if every word has been weighed. Nigerian-British accent with Starfleet formality layered over warmth. Rarely raises her voice—when she does, it matters."
+      "voice_description": "Rich contralto with deliberate pacing; speaks as if every word has been weighed. Nigerian-British accent with Starfleet formality layered over warmth. Rarely raises her voice—when she does, it matters.",
+      "character_id": "C01"
     },
     {
       "name": "Commander Tevan",
@@ -73,7 +74,8 @@
       "role": "First Officer / Executive Officer",
       "personality": "Intellectually curious in a way that sometimes reads as dry humor to non-Vulcans. Provides logical counterweight to the emotional complexity of an Alliance crew while harboring a deep, carefully controlled fascination with the unknown.",
       "backstory": "Served fifteen years in Vulcan Science Academy deep space research before transferring to Starfleet, an unusual career path that gives him perspective outside typical command-track thinking. His previous posting was as science officer on a long-range survey vessel that made first contact with three species. Requested the Enterprise specifically because the Gamma Quadrant represents the greatest scientific opportunity of the era.",
-      "voice_description": "Measured baritone with precise diction; pauses between thoughts feel intentional rather than hesitant. Speaks slightly slower than humans, with subtle emphasis on key logical points. Occasional dry observations delivered completely deadpan."
+      "voice_description": "Measured baritone with precise diction; pauses between thoughts feel intentional rather than hesitant. Speaks slightly slower than humans, with subtle emphasis on key logical points. Occasional dry observations delivered completely deadpan.",
+      "character_id": "C02"
     },
     {
       "name": "Lieutenant Commander Korath",
@@ -81,7 +83,8 @@
       "role": "Chief Tactical Officer",
       "personality": "Embodies the evolution of Klingon honor—sees protecting explorers as the highest calling because it requires courage without glory. Surprisingly philosophical about violence, viewing it as a last resort that must be executed perfectly.",
       "backstory": "Comes from a minor house that distinguished itself during the Dominion War through sacrifice rather than conquest. Trained in both Klingon Defense Force and Starfleet tactical doctrines, he's one of the first generation of Klingon officers who see the Alliance as their natural home rather than a compromise. His father died defending a Federation colony; he considers this posting the fulfillment of that legacy.",
-      "voice_description": "Deep, resonant bass with controlled intensity; speaks with the cadence of someone who learned Federation Standard as an adult but has mastered it. Growls slightly on hard consonants. Can shift from contemplative to commanding in an instant."
+      "voice_description": "Deep, resonant bass with controlled intensity; speaks with the cadence of someone who learned Federation Standard as an adult but has mastered it. Growls slightly on hard consonants. Can shift from contemplative to commanding in an instant.",
+      "character_id": "C03"
     },
     {
       "name": "Subcommander Vreenak",
@@ -89,7 +92,8 @@
       "role": "Intelligence Liaison / Second Officer",
       "personality": "Genuinely committed to the Alliance but cannot entirely shed Romulan methods—sees information control and strategic misdirection as tools, not moral failings. Finds Starfleet's transparency both admirable and tactically naive.",
       "backstory": "Named for a senator who died during the Dominion War, she carries the weight of Romulan sacrifice that made the Alliance possible. Rose through the Tal Shiar's reformed successor agency before being selected for this posting as a symbol of Romulan commitment. Her loyalty is real, but she maintains intelligence networks the captain doesn't know about—not from treachery, but from genuine belief that someone must watch the shadows.",
-      "voice_description": "Soprano with silk-over-steel quality; every sentence sounds like it might contain hidden meaning even when it doesn't. Slight pause before answering direct questions. Romulan accent manifests as elongated vowels and precise sibilants."
+      "voice_description": "Soprano with silk-over-steel quality; every sentence sounds like it might contain hidden meaning even when it doesn't. Slight pause before answering direct questions. Romulan accent manifests as elongated vowels and precise sibilants.",
+      "character_id": "C04"
     },
     {
       "name": "Lieutenant Commander Damar Tain",
@@ -97,7 +101,8 @@
       "role": "Chief Engineer",
       "personality": "Brilliant, pragmatic, and haunted by his people's history without being defined by it. Uses engineering problems as a way to impose order on a universe that proved chaotic and cruel to Cardassia.",
       "backstory": "Born during the Dominion occupation of Cardassia, orphaned in the aftermath, raised in Federation-assisted reconstruction programs. His name honors both the resistance leader and the spymaster—his parents' attempt to reconcile Cardassia's contradictions. Graduated top of his class from a joint Cardassian-Federation engineering academy. Serving alongside Bajorans is difficult, but he believes the Alliance only works if everyone faces history honestly.",
-      "voice_description": "Tenor with clipped efficiency; speaks in technical shorthand when stressed. Cardassian accent emerges as slightly nasal quality and emphasis on final syllables. Delivers bad news with clinical directness, good news with genuine but restrained warmth."
+      "voice_description": "Tenor with clipped efficiency; speaks in technical shorthand when stressed. Cardassian accent emerges as slightly nasal quality and emphasis on final syllables. Delivers bad news with clinical directness, good news with genuine but restrained warmth.",
+      "character_id": "C05"
     },
     {
       "name": "Lieutenant Commander Kira Jaro",
@@ -105,7 +110,8 @@
       "role": "Chief Science Officer",
       "personality": "Carries her people's spiritual tradition into scientific inquiry—sees exploration as a form of seeking the Prophets' purpose. Intensely focused, occasionally stubborn, but capable of profound wonder.",
       "backstory": "Granddaughter of a Resistance fighter and a Vedek, she grew up hearing stories of the Occupation and the Celestial Temple. Studied the wormhole's properties at the Bajoran Science Institute before joining Starfleet specifically to explore the Gamma Quadrant. Working with Cardassians tests her daily, but she believes the Prophets placed her here for a reason. Her faith is quiet but unshakeable.",
-      "voice_description": "Clear mezzo-soprano with musical quality; Bajoran accent softens consonants and adds slight lilt to questions. Speaks faster when excited by discovery, slower when processing difficult emotions. Prayer cadences occasionally surface in her speech patterns."
+      "voice_description": "Clear mezzo-soprano with musical quality; Bajoran accent softens consonants and adds slight lilt to questions. Speaks faster when excited by discovery, slower when processing difficult emotions. Prayer cadences occasionally surface in her speech patterns.",
+      "character_id": "C06"
     },
     {
       "name": "Lieutenant Zhanil Th'Kethris",
@@ -113,7 +119,8 @@
       "role": "Chief of Security",
       "personality": "Combines Andorian martial tradition with genuine warmth toward crewmates she considers under her protection. Quick to assess threats, slow to trust, but fiercely loyal once trust is earned.",
       "backstory": "Third-generation Starfleet from a family that helped found the Federation. Served in Starfleet Security during several Alliance integration crises, developing expertise in managing multi-species crews under pressure. Requested this posting because she believes the Enterprise represents what her ancestors fought for—and she intends to make sure it survives to prove them right.",
-      "voice_description": "Alto with crisp attack on consonants; Andorian accent manifests as slight buzz on sibilants and emphasis on action verbs. Speaks in short, direct sentences during tactical situations, more expansively in personal moments. Antennae movement audible as subtle shifts in her breathing patterns."
+      "voice_description": "Alto with crisp attack on consonants; Andorian accent manifests as slight buzz on sibilants and emphasis on action verbs. Speaks in short, direct sentences during tactical situations, more expansively in personal moments. Antennae movement audible as subtle shifts in her breathing patterns.",
+      "character_id": "C07"
     },
     {
       "name": "Lieutenant Verix Dax",
@@ -121,7 +128,8 @@
       "role": "Chief Medical Officer",
       "personality": "The Dax symbiont's centuries of experience manifest as unflappable calm and occasionally unsettling perspective on mortality. Combines scientific rigor with genuine compassion, seeing medicine as the most intimate form of exploration.",
       "backstory": "Verix is the Dax symbiont's twelfth host, carrying memories that span the Federation's history including previous Enterprise missions. The current host was a trauma surgeon during a border conflict before joining, chosen specifically because Dax needed someone who understood loss. Serves as unofficial counselor to senior staff, offering perspective that only centuries of accumulated wisdom can provide.",
-      "voice_description": "Warm tenor with unhurried cadence; speaks as if time moves differently for someone with three hundred years of memory. Occasional archaic phrasings surface from previous hosts. Trill accent barely perceptible—mostly manifests as unusual word choices and references to events no one else remembers firsthand."
+      "voice_description": "Warm tenor with unhurried cadence; speaks as if time moves differently for someone with three hundred years of memory. Occasional archaic phrasings surface from previous hosts. Trill accent barely perceptible—mostly manifests as unusual word choices and references to events no one else remembers firsthand.",
+      "character_id": "C08"
     }
   ],
   "created_at": 1776567461.1962886

@@ -7,6 +7,7 @@ of script content and audio production, flagging issues for improvement.
 """
 
 import os
+from story_os.legacy import legacy
 import json
 import logging
 import time
@@ -685,7 +686,7 @@ class QualityChecker:
             # Create prompt for evaluation
             prompt = f"""
             You are a professional script evaluator for podcast episodes. Please evaluate the following
-            Star Trek-style podcast episode script and rate its quality.
+            {legacy('evaluator_genre')} and rate its quality.
             
             EPISODE INFORMATION:
             Title: {episode.get('title', 'Unknown')}

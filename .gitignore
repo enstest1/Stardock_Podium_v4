@@ -82,3 +82,7 @@ Thumbs.db
 
 # Repomix
 repomix-output.xml 
+# v5 runtime data (like episodes/)
+backups/
+data/projects/
+data/active_show.json

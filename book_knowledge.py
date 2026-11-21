@@ -24,6 +24,7 @@ reference_memory_sync_patch.py.
 """
 
 import os
+from story_os.legacy import legacy
 import json
 import logging
 import time
@@ -47,65 +48,9 @@ EXTRACTION_STAMP_PATH = SERIES_DIR / "extraction_stamp.json"
 # Series Bible Extractor
 # ─────────────────────────────────────────────
 
-BIBLE_EXTRACTION_PROMPT = """
-You are a lore archivist for a Star Trek podcast series.
-
-Below are excerpts from Star Trek reference books and novels.
-Extract a comprehensive series bible as a JSON object.
-Return ONLY valid JSON — no preamble, no markdown fences.
-
-JSON schema:
-{
-  "universe": "string — e.g. Star Trek",
-  "era": "string — which era/timeline these books represent",
-  "technology": ["list of canonical technology names and brief descriptions"],
-  "species": [
-    {
-      "name": "string",
-      "traits": "string — key cultural/biological traits",
-      "speech_patterns": "string — how they speak (contractions, cadence, formality)"
-    }
-  ],
-  "locations": ["list of canonical locations with one-line descriptions"],
-  "starships": ["list of ship classes/names mentioned"],
-  "command_hierarchy": ["ordered list of ranks/roles"],
-  "recurring_themes": ["thematic elements that recur in this universe"],
-  "dialogue_rules": [
-    "concrete rule about how characters speak — be specific"
-  ],
-  "tone": "string — overall narrative tone and feel",
-  "moral_framework": "string — the ethical worldview of this universe",
-  "forbidden": ["things that should NOT appear — anachronisms, wrong tech, etc."]
-}
-
-Reference material:
-{reference_text}
-"""
-
-STYLE_EXTRACTION_PROMPT = """
-You are a literary analyst studying the writing style of Star Trek fiction.
-
-Below are excerpts from Star Trek reference books and novels.
-Extract a concrete style profile as a JSON object.
-Return ONLY valid JSON — no preamble, no markdown fences.
-
-JSON schema:
-{
-  "sentence_rhythm": "string — short/punchy or long/flowing, typical structure",
-  "dialogue_style": "string — how subtext works, what goes unsaid",
-  "scene_openings": "string — how scenes typically begin",
-  "pacing": "string — how tension and release are managed",
-  "vocabulary_register": "string — technical, literary, accessible, formal etc.",
-  "description_density": "string — sparse or rich, what gets described",
-  "character_interiority": "string — how much inner thought appears",
-  "conflict_style": "string — how conflict is expressed and resolved",
-  "recurring_motifs": ["list of recurring images, metaphors, symbols"],
-  "what_to_avoid": ["list of writing habits that would break the style"]
-}
-
-Reference material:
-{reference_text}
-"""
+# Legacy extraction prompts live in data/shows/legacy_format.json (BASE-003).
+BIBLE_EXTRACTION_PROMPT = legacy('bible_extraction_prompt')
+STYLE_EXTRACTION_PROMPT = legacy('style_extraction_prompt')
 
 
 class SeriesBibleExtractor:
@@ -194,14 +139,7 @@ class SeriesBibleExtractor:
         from reference_memory_sync import search_references
 
         queries = [
-            "Star Trek starship command crew",
-            "Star Trek alien species culture",
-            "Star Trek technology warp drive",
-            "Star Trek moral dilemma ethics",
-            "Star Trek dialogue conversation",
-            "Star Trek planet exploration mission",
-            "Star Trek conflict battle strategy",
-            "Star Trek history timeline federation",
+            *legacy('bible_queries'),
         ]
 
         seen_ids: set = set()
@@ -388,13 +326,13 @@ class KnowledgeContext:
         """
         Retrieve contextually relevant book chunks for a specific scene.
         Returns full chunk text (no character truncation).
-        Uses a richer query than the old 'Star Trek {theme}' approach.
+        Uses a richer query than a bare show-name + theme query.
         """
         from reference_memory_sync import search_references
 
         # Build a specific query from scene context
         query_parts = [p for p in [scene_beat, scene_setting, episode_theme] if p]
-        query = " ".join(query_parts) if query_parts else "Star Trek scene"
+        query = " ".join(query_parts) if query_parts else legacy('rag_default_query')
 
         try:
             results = search_references(query, limit=limit)

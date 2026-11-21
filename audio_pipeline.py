@@ -48,6 +48,7 @@ from script_editor import load_episode_script
 from voice_registry import get_voice_registry, get_voice, map_characters_to_voices
 from story_structure import get_episode
 from config.paths import EPISODES_DIR, VOICES_DIR
+from story_os.legacy import legacy
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -78,7 +79,7 @@ _OUTRO_MUSIC_PATTERNS = (
 )
 
 # Preferred theme filenames (place under assets/music/). Env overrides below.
-# ``theme_intro`` / ``theme_outro`` are checked first (Trek-style stems).
+# ``theme_intro`` / ``theme_outro`` are checked first (bundled stems).
 _INTRO_THEME_FILE = 'Cosmic_Odyssey_Main_Theme_2025-12-25T222447.wav'
 _OUTRO_THEME_FILE = 'Cosmic_Odyssey_Main_Theme_2025-12-27T064552.wav'
 _INTRO_MUSIC_DURATION_SEC = float(
@@ -246,10 +247,11 @@ class AudioPipeline:
         found = self._find_theme_music(patterns)
         return found[0] if found else None
 
-    def _extract_stardate_for_intro(
+    def _extract_log_number_for_intro(
             self, episode_id: str, episode: Dict[str, Any]) -> str:
-        """Return a numeric stardate string for intro TTS (expanded later)."""
-        raw = episode.get('stardate')
+        """Legacy intro: the numbered log label value (expanded later by TTS)."""
+        label = legacy('intro_number_label')
+        raw = episode.get(label.lower())
         if isinstance(raw, str) and raw.strip():
             return raw.replace(',', '').replace(' ', '').strip()
         if isinstance(raw, (int, float)):
@@ -262,7 +264,7 @@ class AudioPipeline:
                     if not isinstance(c, str):
                         continue
                     m = re.search(
-                        r'\b[Ss]tardate\s*:?\s*([\d\s,.]+)', c)
+                        rf'\b{re.escape(label)}\s*:?\s*([\d\s,.]+)', c, re.I)
                     if m:
                         return re.sub(
                             r'[\s,]', '', m.group(1)).strip()
@@ -707,21 +709,7 @@ class AudioPipeline:
         atmosphere = (scene.get('atmosphere') or '').lower()
         
         # Setting-based ambience keywords
-        ambience_mapping = {
-            'bridge': ['bridge', 'starship_bridge', 'command_center'],
-            'space': ['space', 'vacuum', 'stars'],
-            'planet': ['planet', 'alien_world', 'nature'],
-            'engine room': ['engine_room', 'machinery', 'warp_core'],
-            'medical': ['sickbay', 'medical', 'hospital'],
-            'corridor': ['corridor', 'hallway', 'footsteps'],
-            'quarters': ['quarters', 'room', 'living_space'],
-            'shuttlecraft': ['shuttle', 'small_ship', 'cockpit'],
-            'transporter': ['transporter', 'teleport', 'energy'],
-            'battle': ['battle', 'combat', 'weapons'],
-            'forest': ['forest', 'woods', 'nature'],
-            'city': ['city', 'urban', 'crowd'],
-            'underwater': ['underwater', 'ocean', 'bubbles']
-        }
+        ambience_mapping = legacy('ambience_mapping')  # legacy mixer only
         
         # Choose keywords based on setting
         keywords = []
@@ -1046,7 +1034,7 @@ class AudioPipeline:
                     episode=episode_number, season='',
                     title=(episode.get('title') or '').strip())
             else:
-                series = (episode.get('series') or 'Star Trek Horizon').strip()
+                series = (episode.get('series') or legacy('default_series')).strip()
                 title = (episode.get('title') or 'this episode').strip()
                 theme = (episode.get('theme') or '').strip()
                 hook = ''
@@ -1060,11 +1048,11 @@ class AudioPipeline:
                 if hook:
                     narration_text += hook
                 else:
-                    stardate_raw = self._extract_stardate_for_intro(
+                    number_raw = self._extract_log_number_for_intro(
                         episode_id, episode)
-                    narration_text += (
-                        f"Stardate {stardate_raw}. Episode {episode_number}."
-                    )
+                    narration_text += legacy('intro_number_template',
+                                             number=number_raw,
+                                             episode=episode_number)
 
             narrator_cfg = self.voice_config.get('characters', {}).get(
                 'narrator', {})
@@ -1106,10 +1094,7 @@ class AudioPipeline:
         """
         try:
             # Create outro narration text
-            narration_text = (
-                "End of transmission. "
-                "The Celestial Temple awaits our next journey through the stars."
-            )
+            narration_text = legacy('outro_text')
             if self._project_ctx is not None:
                 fmt = self._project_ctx['format']
                 narration_text = fmt.render(

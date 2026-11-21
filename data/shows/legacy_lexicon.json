@@ -1,0 +1,785 @@
+{
+ "_notes": "Legacy show pronunciation lexicon (moved out of code by BASE-003). Longest-first regex respellings.",
+ "entries": [
+  {
+   "pattern": "\\bRomulan Free State\\b",
+   "ignore_case": true,
+   "replacement": "Rom-yoo-lun Free Stayt"
+  },
+  {
+   "pattern": "\\bKlingon Defense Force\\b",
+   "ignore_case": true,
+   "replacement": "Kling-on Deh-fense Force"
+  },
+  {
+   "pattern": "\\bCardassian Reconstruction Authority\\b",
+   "ignore_case": true,
+   "replacement": "Car-dass-ee-un Ree-kun-struk-shun Aw-thor-ih-tee"
+  },
+  {
+   "pattern": "\\bBajoran Militia\\b",
+   "ignore_case": true,
+   "replacement": "Bay-jor-un Mih-lish-uh"
+  },
+  {
+   "pattern": "\\bFerengi Alliance\\b",
+   "ignore_case": true,
+   "replacement": "Feh-ren-jee Uh-ly-ence"
+  },
+  {
+   "pattern": "\\bFerengi Commerce Authority\\b",
+   "ignore_case": true,
+   "replacement": "Feh-ren-jee Kom-ers Aw-thor-ih-tee"
+  },
+  {
+   "pattern": "\\bJem'?Hadars\\b",
+   "ignore_case": true,
+   "replacement": "Jem-hah-darz"
+  },
+  {
+   "pattern": "\\bJem'?Hadar\\b",
+   "ignore_case": true,
+   "replacement": "Jem-hah-dar"
+  },
+  {
+   "pattern": "\\bNausicaans\\b",
+   "ignore_case": true,
+   "replacement": "Naw-sik-ee-unz"
+  },
+  {
+   "pattern": "\\bNausicaan\\b",
+   "ignore_case": true,
+   "replacement": "Naw-sik-ee-un"
+  },
+  {
+   "pattern": "\\bTalaxians\\b",
+   "ignore_case": true,
+   "replacement": "Tah-lak-see-unz"
+  },
+  {
+   "pattern": "\\bTalaxian\\b",
+   "ignore_case": true,
+   "replacement": "Tah-lak-see-un"
+  },
+  {
+   "pattern": "\\bDenobulans\\b",
+   "ignore_case": true,
+   "replacement": "Den-obb-yoo-lunz"
+  },
+  {
+   "pattern": "\\bDenobulan\\b",
+   "ignore_case": true,
+   "replacement": "Den-obb-yoo-lun"
+  },
+  {
+   "pattern": "\\bTellarites\\b",
+   "ignore_case": true,
+   "replacement": "Tell-er-ights"
+  },
+  {
+   "pattern": "\\bTellarite\\b",
+   "ignore_case": true,
+   "replacement": "Tell-er-ight"
+  },
+  {
+   "pattern": "\\bCardassians\\b",
+   "ignore_case": true,
+   "replacement": "Car-dass-ee-unz"
+  },
+  {
+   "pattern": "\\bCardassian\\b",
+   "ignore_case": true,
+   "replacement": "Car-dass-ee-un"
+  },
+  {
+   "pattern": "\\bBajorians\\b",
+   "ignore_case": true,
+   "replacement": "Bay-jor-uns"
+  },
+  {
+   "pattern": "\\bBajorian\\b",
+   "ignore_case": true,
+   "replacement": "Bay-jor-un"
+  },
+  {
+   "pattern": "\\bBajorans\\b",
+   "ignore_case": true,
+   "replacement": "Bay-jor-unz"
+  },
+  {
+   "pattern": "\\bBajoran\\b",
+   "ignore_case": true,
+   "replacement": "Bay-jor-un"
+  },
+  {
+   "pattern": "\\bRomulans\\b",
+   "ignore_case": true,
+   "replacement": "Rom-yoo-lunz"
+  },
+  {
+   "pattern": "\\bRomulan\\b",
+   "ignore_case": true,
+   "replacement": "Rom-yoo-lun"
+  },
+  {
+   "pattern": "\\bAndorians\\b",
+   "ignore_case": true,
+   "replacement": "An-dore-ee-unz"
+  },
+  {
+   "pattern": "\\bAndorian\\b",
+   "ignore_case": true,
+   "replacement": "An-dore-ee-un"
+  },
+  {
+   "pattern": "\\bBolians\\b",
+   "ignore_case": true,
+   "replacement": "Bow-lee-unz"
+  },
+  {
+   "pattern": "\\bBolian\\b",
+   "ignore_case": true,
+   "replacement": "Bow-lee-un"
+  },
+  {
+   "pattern": "\\bCaitians\\b",
+   "ignore_case": true,
+   "replacement": "Kay-shunz"
+  },
+  {
+   "pattern": "\\bCaitian\\b",
+   "ignore_case": true,
+   "replacement": "Kay-shun"
+  },
+  {
+   "pattern": "\\bOrions\\b",
+   "ignore_case": true,
+   "replacement": "Oh-ree-unz"
+  },
+  {
+   "pattern": "\\bOrion\\b",
+   "ignore_case": true,
+   "replacement": "Oh-ree-un"
+  },
+  {
+   "pattern": "\\bSulibans\\b",
+   "ignore_case": true,
+   "replacement": "Soo-lee-bunz"
+  },
+  {
+   "pattern": "\\bSuliban\\b",
+   "ignore_case": true,
+   "replacement": "Soo-lee-bun"
+  },
+  {
+   "pattern": "\\bHirogen\\b",
+   "ignore_case": true,
+   "replacement": "High-row-jen"
+  },
+  {
+   "pattern": "\\bRemans\\b",
+   "ignore_case": true,
+   "replacement": "Ree-munz"
+  },
+  {
+   "pattern": "\\bReman\\b",
+   "ignore_case": true,
+   "replacement": "Ree-mun"
+  },
+  {
+   "pattern": "\\bChangelings\\b",
+   "ignore_case": true,
+   "replacement": "Change-lingz"
+  },
+  {
+   "pattern": "\\bChangeling\\b",
+   "ignore_case": true,
+   "replacement": "Change-ling"
+  },
+  {
+   "pattern": "\\bFounders\\b",
+   "ignore_case": true,
+   "replacement": "Fown-ders"
+  },
+  {
+   "pattern": "\\bFounder\\b",
+   "ignore_case": true,
+   "replacement": "Fown-der"
+  },
+  {
+   "pattern": "\\bProphets\\b",
+   "ignore_case": true,
+   "replacement": "Prof-its"
+  },
+  {
+   "pattern": "\\bProphet\\b",
+   "ignore_case": true,
+   "replacement": "Prof-it"
+  },
+  {
+   "pattern": "\\bPah-?wraiths\\b",
+   "ignore_case": true,
+   "replacement": "Pah-rayths"
+  },
+  {
+   "pattern": "\\bPah-?wraith\\b",
+   "ignore_case": true,
+   "replacement": "Pah-rayth"
+  },
+  {
+   "pattern": "\\bEl-?Aurians\\b",
+   "ignore_case": true,
+   "replacement": "El-aw-ree-unz"
+  },
+  {
+   "pattern": "\\bEl-?Aurian\\b",
+   "ignore_case": true,
+   "replacement": "El-aw-ree-un"
+  },
+  {
+   "pattern": "\\bSymbionts\\b",
+   "ignore_case": true,
+   "replacement": "Sim-bee-onts"
+  },
+  {
+   "pattern": "\\bSymbiont\\b",
+   "ignore_case": true,
+   "replacement": "Sim-bee-ont"
+  },
+  {
+   "pattern": "\\bTrills\\b",
+   "ignore_case": true,
+   "replacement": "Trillz"
+  },
+  {
+   "pattern": "\\bTrill\\b",
+   "ignore_case": false,
+   "replacement": "Trill"
+  },
+  {
+   "pattern": "\\bVulcans\\b",
+   "ignore_case": true,
+   "replacement": "Vul-kunz"
+  },
+  {
+   "pattern": "\\bVulcan\\b",
+   "ignore_case": true,
+   "replacement": "Vul-kun"
+  },
+  {
+   "pattern": "\\bKlingons\\b",
+   "ignore_case": true,
+   "replacement": "Kling-onz"
+  },
+  {
+   "pattern": "\\bKlingon\\b",
+   "ignore_case": true,
+   "replacement": "Kling-on"
+  },
+  {
+   "pattern": "\\bFerenginar\\b",
+   "ignore_case": true,
+   "replacement": "Feh-ren-jee-nar"
+  },
+  {
+   "pattern": "\\bFerengis\\b",
+   "ignore_case": true,
+   "replacement": "Feh-ren-jeez"
+  },
+  {
+   "pattern": "\\bFerengi\\b",
+   "ignore_case": true,
+   "replacement": "Feh-ren-jee"
+  },
+  {
+   "pattern": "\\bBetazoids\\b",
+   "ignore_case": true,
+   "replacement": "Bay-tah-zoydz"
+  },
+  {
+   "pattern": "\\bBetazoid\\b",
+   "ignore_case": true,
+   "replacement": "Bay-tah-zoyd"
+  },
+  {
+   "pattern": "\\bBreen\\b",
+   "ignore_case": true,
+   "replacement": "Breen"
+  },
+  {
+   "pattern": "\\bGorn\\b",
+   "ignore_case": true,
+   "replacement": "Gorn"
+  },
+  {
+   "pattern": "\\bHorta\\b",
+   "ignore_case": true,
+   "replacement": "Hor-tah"
+  },
+  {
+   "pattern": "\\bBorg\\b",
+   "ignore_case": true,
+   "replacement": "Borg"
+  },
+  {
+   "pattern": "\\bTribbles\\b",
+   "ignore_case": true,
+   "replacement": "Trib-ulz"
+  },
+  {
+   "pattern": "\\bTribble\\b",
+   "ignore_case": true,
+   "replacement": "Trib-ul"
+  },
+  {
+   "pattern": "\\bQomar\\b",
+   "ignore_case": true,
+   "replacement": "Koh-mar"
+  },
+  {
+   "pattern": "\\bTholian Assembly\\b",
+   "ignore_case": true,
+   "replacement": "Tho-lee-un Uh-sem-blee"
+  },
+  {
+   "pattern": "\\bTholians\\b",
+   "ignore_case": true,
+   "replacement": "Tho-lee-unz"
+  },
+  {
+   "pattern": "\\bTholian\\b",
+   "ignore_case": true,
+   "replacement": "Tho-lee-un"
+  },
+  {
+   "pattern": "\\bBenzites\\b",
+   "ignore_case": true,
+   "replacement": "Benz-ights"
+  },
+  {
+   "pattern": "\\bBenzite\\b",
+   "ignore_case": true,
+   "replacement": "Benz-ight"
+  },
+  {
+   "pattern": "\\bPakleds\\b",
+   "ignore_case": true,
+   "replacement": "Pak-ledz"
+  },
+  {
+   "pattern": "\\bPakled\\b",
+   "ignore_case": true,
+   "replacement": "Pak-led"
+  },
+  {
+   "pattern": "\\bTamarians\\b",
+   "ignore_case": true,
+   "replacement": "Tah-mair-ee-unz"
+  },
+  {
+   "pattern": "\\bTamarian\\b",
+   "ignore_case": true,
+   "replacement": "Tah-mair-ee-un"
+  },
+  {
+   "pattern": "\\bChildren of Tama\\b",
+   "ignore_case": true,
+   "replacement": "Children of Tah-mah"
+  },
+  {
+   "pattern": "\\bTama\\b",
+   "ignore_case": true,
+   "replacement": "Tah-mah"
+  },
+  {
+   "pattern": "\\bYridians\\b",
+   "ignore_case": true,
+   "replacement": "Yrid-ee-unz"
+  },
+  {
+   "pattern": "\\bYridian\\b",
+   "ignore_case": true,
+   "replacement": "Yrid-ee-un"
+  },
+  {
+   "pattern": "\\bLurians\\b",
+   "ignore_case": true,
+   "replacement": "Loor-ee-unz"
+  },
+  {
+   "pattern": "\\bLurian\\b",
+   "ignore_case": true,
+   "replacement": "Loor-ee-un"
+  },
+  {
+   "pattern": "\\bOrganians\\b",
+   "ignore_case": true,
+   "replacement": "Or-gay-nee-unz"
+  },
+  {
+   "pattern": "\\bOrganian\\b",
+   "ignore_case": true,
+   "replacement": "Or-gay-nee-un"
+  },
+  {
+   "pattern": "\\bMedusans\\b",
+   "ignore_case": true,
+   "replacement": "Meh-doo-zunz"
+  },
+  {
+   "pattern": "\\bMedusan\\b",
+   "ignore_case": true,
+   "replacement": "Meh-doo-zun"
+  },
+  {
+   "pattern": "\\bDeltans\\b",
+   "ignore_case": true,
+   "replacement": "Dell-tunz"
+  },
+  {
+   "pattern": "\\bDeltan\\b",
+   "ignore_case": true,
+   "replacement": "Dell-tun"
+  },
+  {
+   "pattern": "\\bMintakans\\b",
+   "ignore_case": true,
+   "replacement": "Min-tah-kunz"
+  },
+  {
+   "pattern": "\\bMintakan\\b",
+   "ignore_case": true,
+   "replacement": "Min-tah-kun"
+  },
+  {
+   "pattern": "\\bAcamarians\\b",
+   "ignore_case": true,
+   "replacement": "Ack-uh-mair-ee-unz"
+  },
+  {
+   "pattern": "\\bAcamarian\\b",
+   "ignore_case": true,
+   "replacement": "Ack-uh-mair-ee-un"
+  },
+  {
+   "pattern": "\\bZalkonians\\b",
+   "ignore_case": true,
+   "replacement": "Zal-koh-nee-unz"
+  },
+  {
+   "pattern": "\\bZalkonian\\b",
+   "ignore_case": true,
+   "replacement": "Zal-koh-nee-un"
+  },
+  {
+   "pattern": "\\bAntedeans\\b",
+   "ignore_case": true,
+   "replacement": "An-teh-dee-unz"
+  },
+  {
+   "pattern": "\\bAntedean\\b",
+   "ignore_case": true,
+   "replacement": "An-teh-dee-un"
+  },
+  {
+   "pattern": "\\bSkrreeans\\b",
+   "ignore_case": true,
+   "replacement": "Skree-uns"
+  },
+  {
+   "pattern": "\\bSkrreean\\b",
+   "ignore_case": true,
+   "replacement": "Skree-un"
+  },
+  {
+   "pattern": "\\bEfrosians\\b",
+   "ignore_case": true,
+   "replacement": "Eff-roh-zhunz"
+  },
+  {
+   "pattern": "\\bEfrosian\\b",
+   "ignore_case": true,
+   "replacement": "Eff-roh-zhun"
+  },
+  {
+   "pattern": "\\bIyaarans\\b",
+   "ignore_case": true,
+   "replacement": "Eye-yah-runz"
+  },
+  {
+   "pattern": "\\bIyaaran\\b",
+   "ignore_case": true,
+   "replacement": "Eye-yah-run"
+  },
+  {
+   "pattern": "\\bGrazerites\\b",
+   "ignore_case": true,
+   "replacement": "Gray-zur-ights"
+  },
+  {
+   "pattern": "\\bGrazerite\\b",
+   "ignore_case": true,
+   "replacement": "Gray-zur-ight"
+  },
+  {
+   "pattern": "\\bArdanans\\b",
+   "ignore_case": true,
+   "replacement": "Ar-day-nunz"
+  },
+  {
+   "pattern": "\\bArdanan\\b",
+   "ignore_case": true,
+   "replacement": "Ar-day-nun"
+  },
+  {
+   "pattern": "\\bAngosians\\b",
+   "ignore_case": true,
+   "replacement": "An-goh-see-unz"
+  },
+  {
+   "pattern": "\\bAngosian\\b",
+   "ignore_case": true,
+   "replacement": "An-goh-see-un"
+  },
+  {
+   "pattern": "\\bRutians\\b",
+   "ignore_case": true,
+   "replacement": "Roo-shee-unz"
+  },
+  {
+   "pattern": "\\bRutian\\b",
+   "ignore_case": true,
+   "replacement": "Roo-shee-un"
+  },
+  {
+   "pattern": "\\bParadas\\b",
+   "ignore_case": true,
+   "replacement": "Puh-rah-duhz"
+  },
+  {
+   "pattern": "\\bParada\\b",
+   "ignore_case": true,
+   "replacement": "Puh-rah-duh"
+  },
+  {
+   "pattern": "\\bKelleruns\\b",
+   "ignore_case": true,
+   "replacement": "Kell-er-unz"
+  },
+  {
+   "pattern": "\\bKellerun\\b",
+   "ignore_case": true,
+   "replacement": "Kell-er-un"
+  },
+  {
+   "pattern": "\\bT'Lanis\\b",
+   "ignore_case": true,
+   "replacement": "Tee-lah-neez"
+  },
+  {
+   "pattern": "\\bT'Lani\\b",
+   "ignore_case": true,
+   "replacement": "Tee-lah-nee"
+  },
+  {
+   "pattern": "\\bLysians\\b",
+   "ignore_case": true,
+   "replacement": "Liss-ee-unz"
+  },
+  {
+   "pattern": "\\bLysian\\b",
+   "ignore_case": true,
+   "replacement": "Liss-ee-un"
+  },
+  {
+   "pattern": "\\bSheliak\\b",
+   "ignore_case": true,
+   "replacement": "Shell-ee-ak"
+  },
+  {
+   "pattern": "\\bEdo\\b",
+   "ignore_case": true,
+   "replacement": "Ee-doh"
+  },
+  {
+   "pattern": "\\bMalons\\b",
+   "ignore_case": true,
+   "replacement": "Mal-onz"
+  },
+  {
+   "pattern": "\\bMalon\\b",
+   "ignore_case": true,
+   "replacement": "Mal-on"
+  },
+  {
+   "pattern": "\\bNygeans\\b",
+   "ignore_case": true,
+   "replacement": "Nye-jee-unz"
+  },
+  {
+   "pattern": "\\bNygean\\b",
+   "ignore_case": true,
+   "replacement": "Nye-jee-un"
+  },
+  {
+   "pattern": "\\bDevore\\b",
+   "ignore_case": true,
+   "replacement": "Deh-vor"
+  },
+  {
+   "pattern": "\\bHazari\\b",
+   "ignore_case": true,
+   "replacement": "Hah-zah-ree"
+  },
+  {
+   "pattern": "\\bKrenim\\b",
+   "ignore_case": true,
+   "replacement": "Kreh-nim"
+  },
+  {
+   "pattern": "\\bVaadwaur\\b",
+   "ignore_case": true,
+   "replacement": "Vahd-wor"
+  },
+  {
+   "pattern": "\\bVidiian\\b",
+   "ignore_case": true,
+   "replacement": "Vih-dee-un"
+  },
+  {
+   "pattern": "\\bVidiians\\b",
+   "ignore_case": true,
+   "replacement": "Vih-dee-unz"
+  },
+  {
+   "pattern": "\\bVoth\\b",
+   "ignore_case": true,
+   "replacement": "Vawth"
+  },
+  {
+   "pattern": "\\bKazon\\b",
+   "ignore_case": true,
+   "replacement": "Kay-zon"
+  },
+  {
+   "pattern": "\\bKazons\\b",
+   "ignore_case": true,
+   "replacement": "Kay-zonz"
+  },
+  {
+   "pattern": "\\bXindi\\b",
+   "ignore_case": true,
+   "replacement": "Zin-dee"
+  },
+  {
+   "pattern": "\\bXindi-Arboreals\\b",
+   "ignore_case": true,
+   "replacement": "Zin-dee Ar-bor-ee-ulz"
+  },
+  {
+   "pattern": "\\bXindi-Aquatics\\b",
+   "ignore_case": true,
+   "replacement": "Zin-dee Uh-kwat-iks"
+  },
+  {
+   "pattern": "\\bXindi-Insectoids\\b",
+   "ignore_case": true,
+   "replacement": "Zin-dee In-sek-toydz"
+  },
+  {
+   "pattern": "\\bXindi-Primates\\b",
+   "ignore_case": true,
+   "replacement": "Zin-dee Pry-mates"
+  },
+  {
+   "pattern": "\\bXindi-Reptilians\\b",
+   "ignore_case": true,
+   "replacement": "Zin-dee Rep-till-ee-unz"
+  },
+  {
+   "pattern": "\\bXindi-Reptilian\\b",
+   "ignore_case": true,
+   "replacement": "Zin-dee Rep-till-ee-un"
+  },
+  {
+   "pattern": "\\bXindi-Arboreal\\b",
+   "ignore_case": true,
+   "replacement": "Zin-dee Ar-bor-ee-ul"
+  },
+  {
+   "pattern": "\\bXindi-Aquatic\\b",
+   "ignore_case": true,
+   "replacement": "Zin-dee Uh-kwat-ik"
+  },
+  {
+   "pattern": "\\bXindi-Insectoid\\b",
+   "ignore_case": true,
+   "replacement": "Zin-dee In-sek-toyd"
+  },
+  {
+   "pattern": "\\bXindi-Primate\\b",
+   "ignore_case": true,
+   "replacement": "Zin-dee Pry-mate"
+  },
+  {
+   "pattern": "\\bSphere-Builders\\b",
+   "ignore_case": true,
+   "replacement": "Sphere Builders"
+  },
+  {
+   "pattern": "\\bUndine\\b",
+   "ignore_case": true,
+   "replacement": "Un-deen"
+  },
+  {
+   "pattern": "\\bSpecies 8472\\b",
+   "ignore_case": true,
+   "replacement": "Species eight four seven two"
+  },
+  {
+   "pattern": "\\bDopterians\\b",
+   "ignore_case": true,
+   "replacement": "Dop-teer-ee-unz"
+  },
+  {
+   "pattern": "\\bDopterian\\b",
+   "ignore_case": true,
+   "replacement": "Dop-teer-ee-un"
+  },
+  {
+   "pattern": "\\bZakdorn\\b",
+   "ignore_case": true,
+   "replacement": "Zak-dorn"
+  },
+  {
+   "pattern": "\\bZakdorns\\b",
+   "ignore_case": true,
+   "replacement": "Zak-dornz"
+  },
+  {
+   "pattern": "\\bKreetassans\\b",
+   "ignore_case": true,
+   "replacement": "Kree-tass-unz"
+  },
+  {
+   "pattern": "\\bKreetassan\\b",
+   "ignore_case": true,
+   "replacement": "Kree-tass-un"
+  },
+  {
+   "pattern": "\\bCoridanites\\b",
+   "ignore_case": true,
+   "replacement": "Kor-ih-dan-ights"
+  },
+  {
+   "pattern": "\\bCoridanite\\b",
+   "ignore_case": true,
+   "replacement": "Kor-ih-dan-ight"
+  },
+  {
+   "pattern": "\\bCoridan\\b",
+   "ignore_case": true,
+   "replacement": "Kor-ih-dan"
+  }
+ ]
+}

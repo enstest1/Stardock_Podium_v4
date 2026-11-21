@@ -1,0 +1,103 @@
+{
+ "_notes": "Pre-v5 show wording, moved out of code by BASE-003. Read by story_os/legacy.py for episodes without a project_id; reproduces the old prompts byte for byte (tests/test_golden_legacy.py).",
+ "title_prompt_prefix": "Generate a Star Trek-style podcast episode title",
+ "title_system": "You are a professional sci-fi writer specializing in Star Trek.",
+ "archetype_query": "Star Trek character archetypes",
+ "cast_system": "You are a Star Trek universe expert and character creator.",
+ "guest_system": "You are a Star Trek universe character designer.",
+ "outline_header": "Create a detailed scene outline for a Star Trek-style podcast episode.",
+ "outline_system": "You are an expert screenwriter specializing in science fiction and Star Trek.",
+ "script_header": "Generate a detailed script for a Star Trek audio drama scene.",
+ "regenerate_header": "You are tasked with regenerating a scene for a Star Trek-style podcast episode.",
+ "evaluator_genre": "Star Trek-style podcast episode script",
+ "default_series": "Star Trek Horizon",
+ "intro_number_label": "Stardate",
+ "intro_number_template": "Stardate {number}. Episode {episode}.",
+ "number_labels": [
+  "stardate"
+ ],
+ "outro_text": "End of transmission. The Celestial Temple awaits our next journey through the stars.",
+ "rss_description": "AI generated Star Trek-style podcast episodes",
+ "theme_intro_prompt": "Epic space sci-fi theme music, orchestral, mysterious and adventurous, Star Trek style opening, instrumental",
+ "theme_outro_prompt": "Epic space sci-fi closing theme, orchestral, triumphant and hopeful, Star Trek style ending, fade out, instrumental",
+ "ambience_mapping": {
+  "bridge": [
+   "bridge",
+   "starship_bridge",
+   "command_center"
+  ],
+  "space": [
+   "space",
+   "vacuum",
+   "stars"
+  ],
+  "planet": [
+   "planet",
+   "alien_world",
+   "nature"
+  ],
+  "engine room": [
+   "engine_room",
+   "machinery",
+   "warp_core"
+  ],
+  "medical": [
+   "sickbay",
+   "medical",
+   "hospital"
+  ],
+  "corridor": [
+   "corridor",
+   "hallway",
+   "footsteps"
+  ],
+  "quarters": [
+   "quarters",
+   "room",
+   "living_space"
+  ],
+  "shuttlecraft": [
+   "shuttle",
+   "small_ship",
+   "cockpit"
+  ],
+  "transporter": [
+   "transporter",
+   "teleport",
+   "energy"
+  ],
+  "battle": [
+   "battle",
+   "combat",
+   "weapons"
+  ],
+  "forest": [
+   "forest",
+   "woods",
+   "nature"
+  ],
+  "city": [
+   "city",
+   "urban",
+   "crowd"
+  ],
+  "underwater": [
+   "underwater",
+   "ocean",
+   "bubbles"
+  ]
+ },
+ "bible_extraction_prompt": "\nYou are a lore archivist for a Star Trek podcast series.\n\nBelow are excerpts from Star Trek reference books and novels.\nExtract a comprehensive series bible as a JSON object.\nReturn ONLY valid JSON — no preamble, no markdown fences.\n\nJSON schema:\n{\n  \"universe\": \"string — e.g. Star Trek\",\n  \"era\": \"string — which era/timeline these books represent\",\n  \"technology\": [\"list of canonical technology names and brief descriptions\"],\n  \"species\": [\n    {\n      \"name\": \"string\",\n      \"traits\": \"string — key cultural/biological traits\",\n      \"speech_patterns\": \"string — how they speak (contractions, cadence, formality)\"\n    }\n  ],\n  \"locations\": [\"list of canonical locations with one-line descriptions\"],\n  \"starships\": [\"list of ship classes/names mentioned\"],\n  \"command_hierarchy\": [\"ordered list of ranks/roles\"],\n  \"recurring_themes\": [\"thematic elements that recur in this universe\"],\n  \"dialogue_rules\": [\n    \"concrete rule about how characters speak — be specific\"\n  ],\n  \"tone\": \"string — overall narrative tone and feel\",\n  \"moral_framework\": \"string — the ethical worldview of this universe\",\n  \"forbidden\": [\"things that should NOT appear — anachronisms, wrong tech, etc.\"]\n}\n\nReference material:\n{reference_text}\n",
+ "style_extraction_prompt": "\nYou are a literary analyst studying the writing style of Star Trek fiction.\n\nBelow are excerpts from Star Trek reference books and novels.\nExtract a concrete style profile as a JSON object.\nReturn ONLY valid JSON — no preamble, no markdown fences.\n\nJSON schema:\n{\n  \"sentence_rhythm\": \"string — short/punchy or long/flowing, typical structure\",\n  \"dialogue_style\": \"string — how subtext works, what goes unsaid\",\n  \"scene_openings\": \"string — how scenes typically begin\",\n  \"pacing\": \"string — how tension and release are managed\",\n  \"vocabulary_register\": \"string — technical, literary, accessible, formal etc.\",\n  \"description_density\": \"string — sparse or rich, what gets described\",\n  \"character_interiority\": \"string — how much inner thought appears\",\n  \"conflict_style\": \"string — how conflict is expressed and resolved\",\n  \"recurring_motifs\": [\"list of recurring images, metaphors, symbols\"],\n  \"what_to_avoid\": [\"list of writing habits that would break the style\"]\n}\n\nReference material:\n{reference_text}\n",
+ "bible_queries": [
+  "Star Trek starship command crew",
+  "Star Trek alien species culture",
+  "Star Trek technology warp drive",
+  "Star Trek moral dilemma ethics",
+  "Star Trek dialogue conversation",
+  "Star Trek planet exploration mission",
+  "Star Trek conflict battle strategy",
+  "Star Trek history timeline federation"
+ ],
+ "rag_default_query": "Star Trek scene"
+}

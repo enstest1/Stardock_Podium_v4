@@ -2,7 +2,7 @@
 """
 CLI Entrypoint for the Stardock Podium AI System.
 
-This module serves as the main command-line interface for the Star Trek-style podcast
+This module serves as the main command-line interface for the AI podcast studio
 generation system. It provides commands for:
 - Book ingestion and analysis
 - Episode generation and management
@@ -1456,6 +1456,26 @@ def cmd_claims_list(args):
 
 
 @register_command(
+    name="migrate-shows",
+    help_text='Move legacy shows into the v5 show store (backup + manifest; --dry-run first)',
+    arguments=[
+        {'name': '--dry-run', **BOOL_ARG, 'help': 'Print the plan, write nothing'},
+        {'name': '--rollback', **STR_ARG, 'required': False, 'help': 'Manifest to undo'},
+    ]
+)
+def cmd_migrate_shows(args):
+    from story_os import migrate
+    if args.rollback:
+        print(migrate.rollback(args.rollback))
+        return True
+    res = migrate.run(dry_run=args.dry_run)
+    for a in res['actions']:
+        print(f"  {a['op']:18} {a.get('show_id', '')} {a.get('path', '')} {a.get('series', '') or ''}")
+    print(res['status'], res.get('manifest', ''))
+    return True
+
+
+@register_command(
     name="list-projects",
     help_text='List podcast projects created with create-podcast',
     arguments=[]
@@ -1477,7 +1497,7 @@ def main():
     
     # Set up the argument parser
     parser = argparse.ArgumentParser(
-        description='Stardock Podium - AI Star Trek podcast generator',
+        description='Stardock Podium - AI podcast studio',
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
     

@@ -7,6 +7,7 @@ of AI-generated scripts before audio production.
 """
 
 import os
+from story_os.legacy import legacy
 import json
 import logging
 import time
@@ -325,7 +326,7 @@ class ScriptEditor:
         
         # Construct prompt
         prompt = f"""
-        You are tasked with regenerating a scene for a Star Trek-style podcast episode.
+        {legacy('regenerate_header')}
         
         CONTEXT:
         {context}

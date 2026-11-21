@@ -1,0 +1,20 @@
+{
+ "samples": [
+  {
+   "text": "Captain's log, Stardate 47215.2. The Klingons and Romulans meet a Vulcan.",
+   "expected": "Captain's log, Stardate four seven two one five point two. The Kling-onz and Rom-yoo-lunz meet a Vul-kun."
+  },
+  {
+   "text": "stardate: 3,190.1 near Bajor; the Jem'Hadar and Ferengi trade.",
+   "expected": "stardate three one nine zero point onenear Bajor; the Jem-hah-dar and Feh-ren-jee trade."
+  },
+  {
+   "text": "No special words here, just 2024 and a plain sentence.",
+   "expected": "No special words here, just 2024 and a plain sentence."
+  },
+  {
+   "text": "The Prophets and the Pah-wraiths of Bajoran faith.",
+   "expected": "The Prof-its and the Pah-rayths of Bay-jor-un faith."
+  }
+ ]
+}

@@ -8,6 +8,7 @@ import sys
 import requests
 from pathlib import Path
 from dotenv import load_dotenv
+from story_os.legacy import legacy
 
 # Load environment variables
 load_dotenv()
@@ -61,7 +62,7 @@ def generate_intro_music(api_key: str, output_dir: Path):
     """Generate intro theme music."""
     print("Generating intro theme music...")
     
-    prompt = "Epic space sci-fi theme music, orchestral, mysterious and adventurous, Star Trek style opening, instrumental"
+    prompt = legacy('theme_intro_prompt')
     intro_file = output_dir / "theme_intro.mp3"
     
     return generate_music_via_api(api_key, prompt, intro_file, duration_ms=30000)
@@ -70,7 +71,7 @@ def generate_outro_music(api_key: str, output_dir: Path):
     """Generate outro theme music."""
     print("Generating outro theme music...")
     
-    prompt = "Epic space sci-fi closing theme, orchestral, triumphant and hopeful, Star Trek style ending, fade out, instrumental"
+    prompt = legacy('theme_outro_prompt')
     outro_file = output_dir / "theme_outro.mp3"
     
     return generate_music_via_api(api_key, prompt, outro_file, duration_ms=20000)
