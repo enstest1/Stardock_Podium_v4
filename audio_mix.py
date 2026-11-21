@@ -33,13 +33,18 @@ def db(x: float) -> float:
     return 10 ** (x / 20.0)
 
 
-def load(path: str) -> np.ndarray:
-    """Decode any audio file to float32 (N, 2) at 48 kHz via ffmpeg."""
-    key = str(Path(path).resolve())
+def load(path: str, fx: Optional[str] = None) -> np.ndarray:
+    """Decode any audio file to float32 (N, 2) at 48 kHz via ffmpeg.
+
+    ``fx`` names a delivery effect from ``audio_timeline.VOICE_FX``.
+    """
+    key = str(Path(path).resolve()) + f'|{fx or ""}'
     if key in _cache:
         return _cache[key]
+    from audio_timeline import VOICE_FX
+    af = ['-af', VOICE_FX[fx]] if fx in VOICE_FX else []
     proc = subprocess.run(
-        ['ffmpeg', '-nostdin', '-v', 'error', '-i', str(path), '-f', 'f32le',
+        ['ffmpeg', '-nostdin', '-v', 'error', '-i', str(path), *af, '-f', 'f32le',
          '-acodec', 'pcm_f32le', '-ac', '2', '-ar', str(SR), '-'],
         capture_output=True, check=True)
     arr = np.frombuffer(proc.stdout, dtype=np.float32).reshape(-1, 2).copy()
@@ -126,7 +131,7 @@ def render(timeline: Dict[str, Any], out_dir: Path) -> Dict[str, Any]:
              for b in ('dialogue', 'sfx', 'ambience', 'music')}
     for clip in timeline['clips']:
         try:
-            src = load(clip['path'])
+            src = load(clip['path'], clip.get('fx'))
         except Exception as e:
             logger.warning('Skipping unreadable clip %s: %s', clip['path'], e)
             continue

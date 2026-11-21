@@ -75,6 +75,11 @@ def lint(script: Dict[str, Any], cast: List[str], *, editorial: str = 'fiction',
         for l in lines:
             text = (l.get('content') or '')
             lid = l.get('line_id')
+            if l.get('type') == 'sound_effect':
+                from audio_timeline import speech_in_cue
+                if speech_in_cue(text):
+                    findings.append(_f('speech_in_cue', 'error',
+                                       'spoken words inside a sound cue', n, lid))
             if l.get('type') == 'description' and editorial == 'fiction':
                 new = [w for w in re.findall(r'[a-z]{5,}', text.lower()) if w not in spoken_text]
                 if len(new) >= 4:

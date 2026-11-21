@@ -1649,7 +1649,8 @@ class AudioPipeline:
             try:
                 meta = json.loads(meta_p.read_text(encoding='utf-8'))
                 if meta.get('text_hash') == key:
-                    return {'path': str(wav), 'duration': meta['duration'], 'cached': True}
+                    return {'path': str(wav), 'duration': meta['duration'], 'cached': True,
+                            'fx': entry.get('fx')}
             except (OSError, json.JSONDecodeError):
                 pass
         tmp = lines_dir / f'{lid}.tmp.wav'
@@ -1669,7 +1670,7 @@ class AudioPipeline:
             'engine': 'kokoro', 'duration': dur, 'words': timings,
             'method': 'proportional', 'approximate': True}, ensure_ascii=False),
             encoding='utf-8')
-        return {'path': str(wav), 'duration': dur, 'cached': False}
+        return {'path': str(wav), 'duration': dur, 'cached': False, 'fx': entry.get('fx')}
 
     def _render_timeline_episode(self, episode_id: str, episode: Dict[str, Any],
                                  script: Dict[str, Any], audio_dir: Path) -> Dict[str, Any]:

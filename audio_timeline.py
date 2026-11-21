@@ -28,7 +28,35 @@ CUE_GUIDE = (
     '  (SFX: a kettle starts to whistle) - a specific sound at that moment; '
     'add | wait if the characters react to it\n'
     '  (MUS: low uneasy piano | dur: 8)  - rare, only for a big moment\n'
-    'Describe what is heard in plain words (4-10 words).')
+    'Describe what is heard in plain words (4-10 words).\n'
+    'Never put spoken words inside a cue: anything a person says, even a '
+    'distorted or ghostly voice, is a NAME: line.')
+
+# Delivery effects applied to a voice (AUDIO-003 extension): name -> ffmpeg filter.
+VOICE_FX = {
+    'phone': 'highpass=f=320,highpass=f=320,lowpass=f=3300,lowpass=f=3300,acompressor=threshold=-22dB:ratio=3:attack=5:release=60,volume=1.6',
+    'hollow': 'aecho=0.8:0.75:70|140:0.35|0.2,lowpass=f=5000',
+    'radio': 'highpass=f=180,lowpass=f=5200,acompressor=threshold=-20dB:ratio=4,volume=1.3',
+}
+_SPEECH_CUE = re.compile(r"^(?P<who>[^:]*?\bvoice\b[^:]*|[^:]*?\b(?:says|whispers|calls|"
+                         r"sings)\b[^:]*):\s*[\"\u201c]?(?P<words>[^\"\u201d]{3,}?)[\"\u201d]?\s*$",
+                         re.I)
+
+
+def speech_in_cue(text: str):
+    """``(SFX: Della's voice, hollowed: I know...)`` -> (who_hint, words, fx)."""
+    cue = parse_cue(text)
+    if not cue or cue['track'] != 'sfx':
+        return None
+    m = _SPEECH_CUE.match(cue['sound'])
+    if not m:
+        return None
+    who = m.group('who')
+    fx = next((k for k in VOICE_FX if k in who.lower()), None)
+    if fx is None and re.search(r'hollow|echo|ghost|distant|strange', who, re.I):
+        fx = 'hollow'
+    name = re.match(r"\s*([A-Z][a-z]+)'s\b", who)
+    return (name.group(1) if name else None), m.group('words').strip(), fx
 
 _CUE = re.compile(r'^\(?\s*(SFX|AMB|AMBIENCE|MUS|MUSIC)\s*:\s*(?P<body>.+?)\)?\s*$',
                   re.I | re.S)
@@ -134,7 +162,7 @@ def build_timeline(script: Dict[str, Any], line_audio: Dict[str, Dict[str, Any]]
                     t = max(t, prev_end + gap)
                 clips.append({'bus': 'dialogue', 'path': la['path'], 'start': t,
                               'length': la['duration'], 'line_id': lid,
-                              'role': kind})
+                              'role': kind, 'fx': line.get('fx') or la.get('fx')})
                 prev_end = t + la['duration']
                 t = prev_end
                 prev_speaker = speaker

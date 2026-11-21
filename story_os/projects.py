@@ -292,6 +292,8 @@ def assign_voices(identity: Identity) -> Dict[str, Any]:
         characters[key] = {'kokoro_voice': voice, 'display_name': member.name,
                            'tts_engine': 'kokoro',
                            'voice_description': member.voice_description}
+        if re.search(r'\bcaller\b|on the phone|phones? in', member.role or '', re.I):
+            characters[key]['fx'] = 'phone'      # heard down a telephone line
         tokens = [t for t in key.split('_') if t]
         honorifics = {'dr', 'mr', 'mrs', 'ms', 'miss', 'sir', 'lady', 'lord',
                       'captain', 'capt', 'professor', 'prof', 'father', 'sister',

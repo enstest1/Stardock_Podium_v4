@@ -159,3 +159,34 @@ def test_ingest_dedup_match_and_generate(library):
 def test_generic_settings_resolve_or_report(library, cue):
     got = audio_assets.resolve('ambience', cue, generate=False)
     assert got is None                       # empty library -> reported upstream
+
+
+def test_speech_in_cue_becomes_voiced_dialogue_and_is_linted():
+    from story_structure import fix_speech_in_cues
+    from story_os.writers_room import lint
+    lines = [{'type': 'sound_effect', 'line_id': 'a',
+              'content': "SFX: Della's voice, hollowed: I know how the show ends, Dell."},
+             {'type': 'sound_effect', 'line_id': 'b', 'content': 'SFX: same hollow voice: red wire, under desk'},
+             {'type': 'sound_effect', 'line_id': 'c', 'content': 'SFX: a steel door slams'}]
+    found = lint({'scenes': [{'scene_number': 1, 'lines': lines}]}, ['Della Reyes'])
+    assert sum(f['rule'] == 'speech_in_cue' for f in found) == 2
+    out = fix_speech_in_cues(lines, ['Della Reyes'])
+    assert [l['type'] for l in out] == ['dialogue', 'dialogue', 'sound_effect']
+    assert out[0]['character'] == 'DELLA' and out[0]['fx'] == 'hollow'
+    assert out[1]['character'] == 'DELLA' and out[0]['line_id'] == 'a'
+
+
+def test_phone_fx_band_limits_a_voice(tmp_path):
+    full = tone(tmp_path / 'wide.wav', 1.0, 6000, 0.3)['path']
+    plain = audio_mix.load(full)
+    phone = audio_mix.load(full, 'phone')
+    assert np.sqrt(np.mean(phone ** 2)) < 0.3 * np.sqrt(np.mean(plain ** 2))   # 6 kHz cut
+
+
+def test_callers_get_phone_voice():
+    from story_os.projects import Identity, assign_voices
+    v = assign_voices(Identity.model_validate({'cast': [
+        {'name': 'Della Reyes', 'role': 'overnight host'},
+        {'name': 'Margaret Hale', 'role': 'Regular caller from 1962'}]}))
+    assert v['characters']['margaret_hale'].get('fx') == 'phone'
+    assert 'fx' not in v['characters']['della_reyes']

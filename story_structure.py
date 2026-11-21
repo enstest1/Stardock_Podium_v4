@@ -35,6 +35,30 @@ from config.paths import SHOWS_DIR
 # Setup logging
 logger = logging.getLogger(__name__)
 
+def fix_speech_in_cues(lines: List[Dict[str, Any]], cast: List[str]) -> List[Dict[str, Any]]:
+    """Turn sound cues that contain speech into dialogue lines (voiced, with fx)."""
+    from audio_timeline import speech_in_cue
+    firsts = {c.split()[0].lower(): c.split()[0].upper() for c in cast if c}
+    last_who = None
+    out = []
+    for l in lines:
+        hit = speech_in_cue(l.get('content', '')) if l.get('type') == 'sound_effect' else None
+        if not hit:
+            out.append(l)
+            continue
+        who, words, fx = hit
+        speaker = firsts.get((who or '').lower()) or last_who or 'EXTRA'
+        last_who = speaker
+        new = {'type': 'dialogue', 'character': speaker, 'content': words,
+               'converted_from_cue': l.get('content')}
+        if fx:
+            new['fx'] = fx
+        if l.get('line_id'):
+            new['line_id'] = l['line_id']
+        out.append(new)
+    return out
+
+
 class StoryStructure:
     """Handles story structure using Save the Cat beat sheet approach."""
     
@@ -1711,6 +1735,8 @@ Format each character as a detailed profile.
             scene_script["lines"] = self._parse_script_lines(content)
             from story_os.claims import strip_markers
             scene_script["lines"] = [strip_markers(l) for l in scene_script["lines"]]
+            scene_script["lines"] = fix_speech_in_cues(
+                scene_script["lines"], [c.get('name', '') for c in episode.get('characters') or []])
         except Exception as e:
             logger.error("Error generating project scene script: %s", e)
         if scene.get('card'):
