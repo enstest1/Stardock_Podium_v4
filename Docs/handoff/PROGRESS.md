@@ -66,3 +66,8 @@ Not done / needs the user: TTS benchmark (EXP-TTS), ablation and originality exp
 ### 2026-11-21 — dial-in controls
 Added per-show sound settings (`sound/mix.json`: mix preset balanced/intimate/cinematic/dry, pacing tight/natural/relaxed, phone style phone_light/phone/phone_old/radio, loudness target), per-voice Kokoro speed (in the line-cache key only when not 1.0, so existing caches stay valid), `set_voice`, CLI `dialin-samples` + `sound-settings`. Sample pack rendered for `ep_cb2f5351` (14 excerpts + 28 voice auditions, all within 0.4 LU of target). Fixed: a second `plan-season` registration had shadowed the legacy command; the project one is now `plan-project-season`. Suite: 119 passed. User-facing map: `Docs/STUDIO_WORKFLOW.md`.
 
+### 2026-11-21 — experiments (free/local set)
+- GPU: installed torch/torchaudio 2.2.0+cu121 (snapshot of previous packages in `backups/pip_freeze_before_cuda_2026-11-21.txt`). Kokoro RTF 0.81 -> 0.026. Suite 122 passed.
+- EXP-TTS: `Docs/decisions/TTS-BENCHMARK-2026-11-21.md`. Kokoro stays default; T-voice thresholds tau_same 0.980 / tau_min 0.958 / tau_diff 0.923. XTTS v2 installed (user accepted CPML for personal use).
+- EXP-LONG (offline, stub writer): `experiments/longrun/2026-11-21/report.md`. 300 episodes, ep-1 recall 100 %. Fixed: memoised ledger reads, omniscience check (speed and false positives), brief keeps oldest long-horizon promises.
+
