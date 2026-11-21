@@ -602,7 +602,58 @@ class EpisodeMetadata:
         
         return normalized
     
-    def generate_episode_feed(self, format: str = "json", 
+    @staticmethod
+    def build_show_feed(channel: Dict[str, Any], items: List[Dict[str, Any]]) -> str:
+        """Per-show podcast RSS (PUB-002 amendment: extends this module).
+
+        ``channel``: title, description, link, author, language, image_url,
+        itunes_type ('episodic'|'serial'), explicit, category.
+        ``items``: guid, title, description, enclosure_url, length, pub_date
+        (epoch), duration (s), episode, season, transcript_url, chapters_url.
+        GUIDs are episode ids and must never be reused for different audio.
+        """
+        from xml.sax.saxutils import escape, quoteattr
+
+        def t(x):
+            return escape(str(x or ''))
+        when = lambda e: time.strftime('%a, %d %b %Y %H:%M:%S +0000', time.gmtime(e))
+        out = ['<?xml version="1.0" encoding="UTF-8"?>',
+               '<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" '
+               'xmlns:podcast="https://podcastindex.org/namespace/1.0" '
+               'xmlns:content="http://purl.org/rss/1.0/modules/content/">',
+               '  <channel>',
+               f"    <title>{t(channel['title'])}</title>",
+               f"    <link>{t(channel.get('link', ''))}</link>",
+               f"    <description>{t(channel.get('description', ''))}</description>",
+               f"    <language>{t(channel.get('language', 'en'))}</language>",
+               f"    <itunes:author>{t(channel.get('author', 'Stardock Podium'))}</itunes:author>",
+               f"    <itunes:type>{t(channel.get('itunes_type', 'episodic'))}</itunes:type>",
+               f"    <itunes:explicit>{'true' if channel.get('explicit') else 'false'}</itunes:explicit>",
+               f"    <itunes:category text={quoteattr(channel.get('category', 'Fiction'))} />",
+               f"    <lastBuildDate>{when(time.time())}</lastBuildDate>"]
+        if channel.get('image_url'):
+            out.append(f"    <itunes:image href={quoteattr(channel['image_url'])} />")
+        for it in items:
+            out += ['    <item>',
+                    f"      <title>{t(it['title'])}</title>",
+                    f"      <description>{t(it.get('description', ''))}</description>",
+                    f"      <guid isPermaLink=\"false\">{t(it['guid'])}</guid>",
+                    f"      <pubDate>{when(it.get('pub_date', time.time()))}</pubDate>",
+                    f"      <enclosure url={quoteattr(it['enclosure_url'])} length=\"{int(it['length'])}\" type=\"audio/mpeg\" />",
+                    f"      <itunes:duration>{int(it.get('duration', 0))}</itunes:duration>"]
+            if it.get('episode'):
+                out.append(f"      <itunes:episode>{int(it['episode'])}</itunes:episode>")
+            if it.get('season'):
+                out.append(f"      <itunes:season>{int(it['season'])}</itunes:season>")
+            if it.get('transcript_url'):
+                out.append(f"      <podcast:transcript url={quoteattr(it['transcript_url'])} type=\"text/vtt\" />")
+            if it.get('chapters_url'):
+                out.append(f"      <podcast:chapters url={quoteattr(it['chapters_url'])} type=\"application/json+chapters\" />")
+            out.append('    </item>')
+        out += ['  </channel>', '</rss>', '']
+        return '\n'.join(out)
+
+    def generate_episode_feed(self, format: str = "json",
                             filters: Optional[Dict[str, Any]] = None) -> str:
         """Generate an episode feed in the specified format.
         

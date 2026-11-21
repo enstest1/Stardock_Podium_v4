@@ -290,8 +290,13 @@ class AudioPipeline:
                 'episode': episode,
             }
             logger.info('Rendering project %s with voices from %s', pid, vpath)
+            import tts_pronunciation
+            fmt = self._project_ctx['format']
+            tts_pronunciation.set_active_show(fmt.pronunciation_lexicon, fmt.number_rules)
             return self._generate_episode_audio_impl(episode_id, options)
         finally:
+            import tts_pronunciation
+            tts_pronunciation.set_active_show(None)
             self.voice_config, self._dialogue, self._project_ctx = saved
 
     def _generate_episode_audio_impl(self, episode_id: str, options: Dict[str, Any]) -> Dict[str, Any]:

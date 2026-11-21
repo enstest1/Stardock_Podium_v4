@@ -1476,6 +1476,44 @@ def cmd_migrate_shows(args):
 
 
 @register_command(
+    name="rights-report",
+    help_text='Show what blocks an episode from being published (PUB-003)',
+    arguments=[{'name': 'episode_id', **STR_ARG, 'help': 'Episode id'}]
+)
+def cmd_rights_report(args):
+    from publish.rights import build_rights_report
+    rep = build_rights_report(args.episode_id)
+    print(json.dumps(rep, indent=2))
+    return True
+
+
+@register_command(
+    name="publish",
+    help_text='Build transcript/chapters/cover/feed; dry run unless --live',
+    arguments=[
+        {'name': 'episode_id', **STR_ARG, 'help': 'Episode id'},
+        {'name': '--live', **BOOL_ARG, 'help': 'Really publish (needs the rights gate to pass)'},
+        {'name': '--i-authorise-publication', **BOOL_ARG, 'dest': 'authorise',
+         'help': 'Required together with --live'},
+    ]
+)
+def cmd_publish(args):
+    from publish.hosts import publish_episode
+    res = publish_episode(args.episode_id, live=args.live, authorise=args.authorise)
+    dr = res.get('dry_run', {})
+    print(f"Feed: {dr.get('feed')}  items: {dr.get('items')}")
+    print('Would upload:')
+    for r in dr.get('requests', [])[-3:]:
+        print('  ', r['url'])
+    print('Rights gate:', 'PASS' if res['rights']['publishable'] else 'BLOCKED')
+    for b in res['rights']['blocking']:
+        print('  -', b)
+    for step in dr.get('manual_steps', []):
+        print('*', step)
+    return True
+
+
+@register_command(
     name="list-projects",
     help_text='List podcast projects created with create-podcast',
     arguments=[]

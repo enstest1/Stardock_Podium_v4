@@ -357,6 +357,9 @@ def format_from_identity(config: ProjectConfig,
     if identity.outro_template.strip():
         fmt.outro_template = identity.outro_template.strip()
     fmt.tagline = identity.tagline.strip()
+    if 'ai' not in fmt.outro_template.lower().replace('.', ' ').split():
+        fmt.outro_template = (fmt.outro_template.rstrip() +
+                              ' This episode was made with AI-generated writing and voices.')
     if config.capability('claims'):
         fmt.intro_template = (fmt.intro_template.rstrip() + ' This show uses AI-generated '
                               'voices; the hosts are fictional personas.')
