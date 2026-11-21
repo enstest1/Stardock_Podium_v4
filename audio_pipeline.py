@@ -316,6 +316,13 @@ class AudioPipeline:
         episode_dir = self.episodes_dir / episode_id
         audio_dir = episode_dir / "audio"
         audio_dir.mkdir(exist_ok=True)
+
+        if self._use_timeline_mixer(episode):
+            try:
+                return self._render_timeline_episode(episode_id, episode, script, audio_dir)
+            except Exception as e:
+                logger.exception('Timeline render failed: %s', e)
+                return {"error": f"Timeline render failed: {e}"}
         
         # Get character voices (registry / ElevenLabs metadata — optional for
         # Kokoro, which resolves speakers from voices/voice_config.json).
@@ -1615,6 +1622,172 @@ class AudioPipeline:
         except Exception as e:
             logger.error(f"Error assembling episode audio: {e}")
             return None
+
+    # ------------------------------------------- timeline path (AUDIO-001..005)
+
+    def _use_timeline_mixer(self, episode: Dict[str, Any]) -> bool:
+        if self._project_ctx is not None:
+            return True
+        from story_os.flags import feature_enabled
+        return feature_enabled('USE_TIMELINE_MIXER', default=False)
+
+    def _render_line_cached(self, line: Dict[str, Any], lines_dir: Path) -> Optional[Dict[str, Any]]:
+        """AUDIO-001: one wav per line_id, reused while text and voice match."""
+        import hashlib
+        kind = line.get('type')
+        text = (line.get('content') or '').replace('"', '').replace('...', '…').strip()
+        if not text:
+            return None
+        if kind == 'narration':
+            display = 'narrator'
+        else:
+            display = line.get('speaker') or line.get('character') or ''
+            if not resolve_character_voice_config(display, self.voice_config or {}):
+                if self._project_ctx is None:
+                    logger.error('No voice for speaker %r', display)
+                    return None
+                from story_os.projects import EXTRA_SPEAKER_KEY
+                display = EXTRA_SPEAKER_KEY
+        entry = resolve_character_voice_config(display, self.voice_config or {}) or {}
+        voice = entry.get('kokoro_voice') or entry.get('speaker_wav') or ''
+        key = hashlib.sha256(json.dumps(
+            [text, voice, entry.get('tts_engine', ''), 'kokoro-0.9'],
+            ensure_ascii=False).encode('utf-8')).hexdigest()
+        lid = line.get('line_id') or key[:16]
+        wav, meta_p = lines_dir / f'{lid}.wav', lines_dir / f'{lid}.json'
+        if wav.exists() and meta_p.exists():
+            try:
+                meta = json.loads(meta_p.read_text(encoding='utf-8'))
+                if meta.get('text_hash') == key:
+                    return {'path': str(wav), 'duration': meta['duration'], 'cached': True}
+            except (OSError, json.JSONDecodeError):
+                pass
+        tmp = lines_dir / f'{lid}.tmp.wav'
+        self._dialogue.synth_for_display_name(
+            text=text, character_display=display, output_path=str(tmp))
+        os.replace(tmp, wav)
+        dur = float(ffmpeg.probe(str(wav))['format']['duration'])
+        words = text.split()
+        total = sum(len(w) for w in words) or 1
+        pos, timings = 0.0, []
+        for w in words:                    # proportional alignment (approximate)
+            span = dur * len(w) / total
+            timings.append({'w': w, 'start': round(pos, 3), 'end': round(pos + span, 3)})
+            pos += span
+        meta_p.write_text(json.dumps({
+            'line_id': lid, 'text_hash': key, 'voice': voice, 'speaker': display,
+            'engine': 'kokoro', 'duration': dur, 'words': timings,
+            'method': 'proportional', 'approximate': True}, ensure_ascii=False),
+            encoding='utf-8')
+        return {'path': str(wav), 'duration': dur, 'cached': False}
+
+    def _render_timeline_episode(self, episode_id: str, episode: Dict[str, Any],
+                                 script: Dict[str, Any], audio_dir: Path) -> Dict[str, Any]:
+        import audio_assets
+        import audio_mix
+        from audio_timeline import build_timeline
+        started = time.time()
+        lines_dir = audio_dir / 'lines'
+        lines_dir.mkdir(parents=True, exist_ok=True)
+        line_audio: Dict[str, Dict[str, Any]] = {}
+        expected = failed = cached = 0
+        for scene in script.get('scenes') or []:
+            for line in scene.get('lines') or []:
+                if line.get('type') not in ('dialogue', 'narration'):
+                    continue
+                expected += 1
+                try:
+                    la = self._render_line_cached(line, lines_dir)
+                except Exception as e:
+                    logger.error('Line %s failed: %s', line.get('line_id'), e)
+                    la = None
+                if la:
+                    line_audio[line.get('line_id')] = la
+                    cached += 1 if la.get('cached') else 0
+                else:
+                    failed += 1
+
+        def part(path):
+            if path and Path(path).exists():
+                return {'path': str(path), 'duration': float(
+                    ffmpeg.probe(str(path))['format']['duration'])}
+            return None
+        intro = {'narration': part(self._generate_intro_narration(episode_id)),
+                 'music': part(self._resolve_theme_path('intro'))}
+        if self._project_ctx is not None and not self._project_ctx['format'].use_theme_music:
+            intro['music'] = None
+        outro = {'narration': part(self._generate_outro_narration(audio_dir)),
+                 'music': part(self._resolve_theme_path('outro'))}
+        if self._project_ctx is not None and not self._project_ctx['format'].use_theme_music:
+            outro['music'] = None
+
+        generate = os.environ.get('STARDOCK_SFX_GENERATE', '1').lower() not in ('0', 'false', 'no')
+        idx = audio_assets.load_index()
+        if not idx['assets']:
+            audio_assets.ingest_legacy()
+            idx = audio_assets.load_index()
+        used_assets: Dict[str, Any] = {}
+
+        def resolve(kind, text, seconds):
+            rec = audio_assets.resolve(kind, text, seconds=seconds,
+                                       generate=generate, idx=idx)
+            if rec:
+                used_assets[rec['sha']] = rec
+            return rec
+
+        def fallback_amb(scene):
+            card = scene.get('card') or {}
+            sd = card.get('sound_design') or []
+            return sd[0] if sd else None
+
+        timeline = build_timeline(script, line_audio, resolve, intro=intro,
+                                  outro=outro, scene_fallback_ambience=fallback_amb)
+        audio_assets.save_index(idx)
+        with open(audio_dir / 'timeline.json', 'w', encoding='utf-8') as f:
+            json.dump(timeline, f, indent=2)
+        mixed = audio_mix.render(timeline, audio_dir)
+        title = episode.get('title', 'Episode')
+        out = audio_dir / 'full_episode.mp3'
+        mastered = audio_mix.master(mixed['mix'], str(out), metadata={
+            'title': title, 'album': episode.get('series', ''),
+            'artist': 'Stardock Podium', 'track': str(episode.get('episode_number', '')),
+            'comment': 'Generated by Stardock Podium (AI podcast studio)'})
+        non_commercial = sorted({r['description'] for r in used_assets.values()
+                                 if (r.get('rights') or {}).get('commercial_ok') != 'yes'})
+        blocking = []
+        if failed:
+            blocking.append(f'{failed} spoken line(s) failed to render')
+        if not mastered['ok']:
+            blocking.append(f"loudness {mastered['lufs_i']} LUFS / peak "
+                            f"{mastered['true_peak_dbtp']} dBTP out of spec")
+        report = {
+            'generated_at': time.time(), 'episode_id': episode_id, 'title': title,
+            'mixer': 'timeline', 'lines_expected': expected,
+            'lines_rendered': len(line_audio), 'lines_from_cache': cached,
+            'lines_failed': failed, 'cues_placed': sum(
+                1 for c in timeline['clips'] if c['bus'] in ('sfx', 'ambience')
+                or c.get('role') == 'cue'),
+            'cues_missing': timeline['missing'], 'chapters': timeline['chapters'],
+            'loudness': mastered, 'pre_limit_peak_db': mixed['pre_limit_peak_db'],
+            'duck_active_ratio': mixed['duck_active_ratio'],
+            'assets_not_cleared_for_commercial_use': non_commercial,
+            'blocking': blocking, 'render_seconds': round(time.time() - started, 1),
+            # legacy keys read by callers
+            'scenes_generated': len(script.get('scenes') or []),
+            'scenes_successful': len(script.get('scenes') or []) if not failed else 0,
+            'total_duration': timeline['duration'],
+            'full_episode_file': str(out),
+        }
+        with open(audio_dir / 'audio_report.json', 'w', encoding='utf-8') as f:
+            json.dump(report, f, indent=2)
+        with open(audio_dir / 'generation_metadata.json', 'w', encoding='utf-8') as f:
+            json.dump(report, f, indent=2)
+        episode['audio'] = {'generated_at': report['generated_at'],
+                            'duration': timeline['duration'], 'file_path': str(out),
+                            'mixer': 'timeline'}
+        with open(self.episodes_dir / episode_id / 'structure.json', 'w') as f:
+            json.dump(episode, f, indent=2)
+        return report
 
     def reassemble_episode_audio(
             self,

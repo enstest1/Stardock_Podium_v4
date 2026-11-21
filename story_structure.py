@@ -1488,6 +1488,7 @@ Format each character as a detailed profile.
         """Scene script for a project episode: format-driven, no global bible/RAG."""
         project, fmt, identity = ctx
         from story_os.scene_cards import render_card_block
+        from audio_timeline import CUE_GUIDE
         cast_lines = []
         for c in episode.get('characters') or []:
             bits = [b for b in (c.get('role'), c.get('personality'),
@@ -1520,7 +1521,7 @@ Format each character as a detailed profile.
             '- Spoken lines as: NAME: line   (NAME in capitals, one paragraph each)\n'
             '- NARRATOR: line   only for brief audio-only orientation, at most '
             'two narrator lines per scene\n'
-            '- Sound cues on their own line in parentheses, e.g. (rain on a tin roof)\n'
+            + CUE_GUIDE + '\n'
             '- No headings, no markdown, no camera or visual directions, no '
             'acting notes inside lines.\n'
             '- Only cast members speak.'
