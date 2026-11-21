@@ -27,7 +27,7 @@ except ImportError:
 # Local imports
 from book_knowledge import get_knowledge_context
 from episode_memory import get_episode_memory
-from mem0_client import get_mem0_client
+from mem0_client import get_mem0_client, LEGACY_PROJECT
 from script_line_ids import ensure_script_line_ids
 from config.paths import SHOWS_DIR
 
@@ -141,7 +141,7 @@ class StoryStructure:
         self.episodes_dir.mkdir(exist_ok=True)
         
         # Get mem0 client
-        self.mem0_client = get_mem0_client()
+        self.mem0_client = get_mem0_client().for_project(LEGACY_PROJECT)  # GEN-003
         
         # OpenAI (optional — ``get_episode`` / file paths work without a key; LLM
         # generation requires OPENAI_API_KEY or OPENROUTER_API_KEY).
@@ -553,7 +553,7 @@ class StoryStructure:
         try:
             character_archetypes = self.mem0_client.search_memory(
                 "Star Trek character archetypes",
-                user_id="reference_materials",
+                user_id=self.mem0_client._ns('refs'),
                 memory_type=self.mem0_client.REFERENCE_MATERIAL,
                 limit=3
             )

@@ -24,7 +24,39 @@ except ImportError:
 # Setup logging
 logger = logging.getLogger(__name__)
 
-class Mem0Client:
+
+# GEN-003: every namespaced read/write is scoped to one project.
+LEGACY_PROJECT = 'legacy'          # the pre-v5 show (legacy_namespace: true)
+_LEGACY_NAMES = {'refs': 'reference_materials', 'episodes': 'episodes',
+                 'characters': 'characters', 'structures': 'story_structures',
+                 'voices': 'voice_registry', 'canon': 'canon'}
+
+
+def ns(project_id, kind: str) -> str:
+    """Mem0 user_id for a project's memory kind. No project -> error."""
+    if not project_id:
+        raise ValueError('Mem0 access needs a project_id (GEN-003); bind the client '
+                         'with get_mem0_client().for_project(project_id)')
+    if project_id == LEGACY_PROJECT:
+        return _LEGACY_NAMES[kind]
+    return f'{project_id}:{kind}'
+
+
+class _ProjectBound:
+    """Mixin: ``for_project`` returns a copy whose wrappers use ``ns``."""
+    project_id = None
+
+    def for_project(self, project_id: str):
+        import copy
+        bound = copy.copy(self)
+        bound.project_id = project_id
+        return bound
+
+    def _ns(self, kind: str) -> str:
+        return ns(self.project_id, kind)
+
+
+class Mem0Client(_ProjectBound):
     """Client for interacting with Mem0 vector database.
     
     This class handles the connection to Mem0 and provides methods for
@@ -136,6 +168,8 @@ class Mem0Client:
         
         # Ensure memory_type is in metadata for filtering
         metadata["memory_type"] = memory_type
+        if self.project_id:
+            metadata.setdefault("project_id", self.project_id)
         
         try:
             # CANON-005: store verbatim; never let Mem0's LLM inference update
@@ -273,7 +307,7 @@ class Mem0Client:
         
         return self.add_memory(
             content=content,
-            user_id="reference_materials",
+            user_id=self._ns('refs'),
             memory_type=self.REFERENCE_MATERIAL,
             metadata=metadata
         )
@@ -300,7 +334,7 @@ class Mem0Client:
         
         return self.add_memory(
             content=content,
-            user_id="episodes",
+            user_id=self._ns('episodes'),
             memory_type=self.EPISODE_MEMORY,
             metadata=metadata
         )
@@ -327,7 +361,7 @@ class Mem0Client:
         
         return self.add_memory(
             content=info,
-            user_id="characters",
+            user_id=self._ns('characters'),
             memory_type=self.CHARACTER_INFO,
             metadata=metadata
         )
@@ -344,7 +378,7 @@ class Mem0Client:
         """
         return self.search_memory(
             query=query,
-            user_id="reference_materials",
+            user_id=self._ns('refs'),
             memory_type=self.REFERENCE_MATERIAL,
             limit=limit
         )
@@ -363,7 +397,7 @@ class Mem0Client:
         """
         results = self.search_memory(
             query=query,
-            user_id="episodes",
+            user_id=self._ns('episodes'),
             memory_type=self.EPISODE_MEMORY,
             limit=limit
         )
@@ -389,7 +423,7 @@ class Mem0Client:
         """
         results = self.search_memory(
             query=query,
-            user_id="characters",
+            user_id=self._ns('characters'),
             memory_type=self.CHARACTER_INFO,
             limit=limit
         )
@@ -411,7 +445,7 @@ class Mem0Client:
             Character information or None if not found
         """
         results = self.get_all_memories(
-            user_id="characters",
+            user_id=self._ns('characters'),
             memory_type=self.CHARACTER_INFO
         )
         
@@ -467,7 +501,7 @@ class Mem0Client:
         
         return self.add_memory(
             content=content,
-            user_id="story_structures",
+            user_id=self._ns('structures'),
             memory_type=self.STORY_STRUCTURE,
             metadata=metadata
         )
@@ -482,7 +516,7 @@ class Mem0Client:
             Story structure data or None if not found
         """
         results = self.get_all_memories(
-            user_id="story_structures",
+            user_id=self._ns('structures'),
             memory_type=self.STORY_STRUCTURE
         )
         
@@ -533,7 +567,7 @@ def _env_disables_mem0() -> bool:
     return v in ("1", "true", "yes", "on")
 
 
-class _Mem0Disabled:
+class _Mem0Disabled(_ProjectBound):
     """No-op when Mem0 cannot start (e.g. missing OPENAI_API_KEY for local Qdrant path).
 
     Lets ``generate-audio`` and other flows run on hosts that only have TTS keys.
@@ -575,7 +609,7 @@ class _Mem0Disabled:
         metadata: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         return self.add_memory(
-            content, "reference_materials", self.REFERENCE_MATERIAL, metadata
+            content, self._ns('refs'), self.REFERENCE_MATERIAL, metadata
         )
 
     def add_episode_memory(
@@ -585,7 +619,7 @@ class _Mem0Disabled:
         metadata: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         return self.add_memory(
-            content, "episodes", self.EPISODE_MEMORY, metadata
+            content, self._ns('episodes'), self.EPISODE_MEMORY, metadata
         )
 
     def add_character_info(
@@ -595,7 +629,7 @@ class _Mem0Disabled:
         metadata: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         return self.add_memory(
-            info, "characters", self.CHARACTER_INFO, metadata
+            info, self._ns('characters'), self.CHARACTER_INFO, metadata
         )
 
     def search_reference_materials(

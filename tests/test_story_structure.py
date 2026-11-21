@@ -62,6 +62,7 @@ class TestStoryStructure(unittest.TestCase):
         self.mock_mem0_client.add_story_structure.return_value = True
         self.mock_mem0_client.search_memory.return_value = []
         self.mock_mem0.return_value = self.mock_mem0_client
+        self.mock_mem0_client.for_project.return_value = self.mock_mem0_client  # GEN-003
         
         self.mock_openai_client = MagicMock()
         self.mock_openai.return_value = self.mock_openai_client

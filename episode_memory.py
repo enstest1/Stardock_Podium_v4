@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Dict, List, Any, Optional, Union
 
 # Local imports
-from mem0_client import get_mem0_client
+from mem0_client import get_mem0_client, LEGACY_PROJECT
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -35,7 +35,7 @@ class EpisodeMemory:
     def __init__(self):
         """Initialize the episode memory manager."""
         from config.paths import EPISODES_DIR
-        self.mem0_client = get_mem0_client()
+        self.mem0_client = get_mem0_client().for_project(LEGACY_PROJECT)  # GEN-003
         self.episodes_dir = EPISODES_DIR
     
     def _load_episode_data(self, episode_id: str) -> Optional[Dict[str, Any]]:
@@ -636,7 +636,7 @@ class EpisodeMemory:
         """
         # Get all episode memories
         memories = self.mem0_client.get_all_memories(
-            user_id="episodes",
+            user_id=self.mem0_client._ns('episodes'),
             memory_type=self.mem0_client.EPISODE_MEMORY
         )
         

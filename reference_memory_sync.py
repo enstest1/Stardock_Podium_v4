@@ -17,7 +17,7 @@ from tqdm import tqdm
 
 # Local imports
 from epub_processor import get_processor, list_books
-from mem0_client import get_mem0_client
+from mem0_client import get_mem0_client, LEGACY_PROJECT
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ class ReferenceMemorySync:
     def __init__(self):
         """Initialize the reference memory sync."""
         self.epub_processor = get_processor()
-        self.mem0_client = get_mem0_client()
+        self.mem0_client = get_mem0_client().for_project(LEGACY_PROJECT)  # GEN-003
         
         # Create sync status directory (honors STARDOCK_DATA_DIR override)
         from config.paths import SYNC_STATUS_DIR

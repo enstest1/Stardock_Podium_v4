@@ -15,7 +15,7 @@ import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from mem0_client import get_mem0_client
+from mem0_client import get_mem0_client, LEGACY_PROJECT
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ class VoiceRegistry:
         self.voices_dir.mkdir(parents=True, exist_ok=True)
         SAMPLES_DIR.mkdir(parents=True, exist_ok=True)
 
-        self.mem0_client = get_mem0_client()
+        self.mem0_client = get_mem0_client().for_project(LEGACY_PROJECT)  # GEN-003
         self.registry = self._load_registry()
         logger.info(
             'VoiceRegistry loaded — %s voices registered',
@@ -407,7 +407,7 @@ class VoiceRegistry:
             )
             self.mem0_client.add_memory(
                 content=content,
-                user_id='voice_registry',
+                user_id=self.mem0_client._ns('voices'),
                 memory_type=self.mem0_client.VOICE_METADATA,
                 metadata={
                     'voice_registry_id': entry.get('voice_registry_id'),
@@ -426,7 +426,7 @@ class VoiceRegistry:
         try:
             results = self.mem0_client.search_memory(
                 query=description,
-                user_id='voice_registry',
+                user_id=self.mem0_client._ns('voices'),
                 memory_type=self.mem0_client.VOICE_METADATA,
                 limit=limit,
             )
