@@ -1,0 +1,29 @@
+{
+  "calls": [
+    {
+      "role": "planner",
+      "system": "You are a professional sci-fi writer specializing in Star Trek.",
+      "user": "Generate a Star Trek-style podcast episode title with the theme of 'a signal' for the series 'Main Series', episode number 1. The title should be catchy, intriguing, and reference sci-fi concepts."
+    },
+    {
+      "role": "planner",
+      "system": "You are a Star Trek universe expert and character creator.",
+      "user": "\nGenerate a cast appropriate to the show's premise (anywhere from 2 to 12 members).\n\nEPISODE CONTEXT:\nTitle: Setting: Bridge\nPlot: Something happens.\nKIRA: Hello there.\nSeries: Main Series\nTheme: a signal\n\nSHOW CAST CONCEPT:\nDetermine the right cast composition based on the show's premise.\n\nCharacter archetypes from reference material:\n\n\nFor each character, provide:\n1. Name\n2. Species\n3. Role\n4. Personality traits\n5. Key backstory elements\n6. Voice description (for voice acting \u2014 be specific about tone, cadence, accent)\n\nThe cast should serve the story you're telling, not a generic template.\nFormat each character as a detailed profile.\n"
+    },
+    {
+      "role": "writer",
+      "system": "You are an expert screenwriter for audio dramas.",
+      "user": "Generate a detailed script for a Star Trek audio drama scene.\n\nContext:\nTitle: Setting: Bridge\nPlot: Something happens.\nKIRA: Hello there.\nTheme: a signal\nBeat: Opening Image\nSetting: Bridge\nScene Number: 1\n\nCharacter Information:\nAda\nRole:  - pilot\n\n\nReference Material:\nREF\n\nGenerate a scene that includes:\n1. Scene description\n2. Character dialogue\n3. Sound effects\n4. Narration where needed\n\nFormat the output with clear scene headings and character names."
+    },
+    {
+      "role": "planner",
+      "system": "You are an expert screenwriter specializing in science fiction and Star Trek.",
+      "user": "\n            Create a detailed scene outline for a Star Trek-style podcast episode.\n            \n            EPISODE INFORMATION:\n            Title: Setting: Bridge\nPlot: Something happens.\nKIRA: Hello there.\n            Theme: a signal\n            \n            STORY BEAT: Opening Image\n            Beat Description: Sets the tone, mood, and style. Gives a snapshot of the starting world and its problems.\n            Scene Number: 1 of 15\n            Progress: 7% through the story\n            \n            CHARACTERS:\n            Ada\nRole: Unknown - pilot\n            \n            REFERENCE MATERIAL:\n            REF\n            \n            \n\n            \n\n            Create a detailed scene outline with:\n            1. Setting (where the scene takes place)\n            2. Character participants (who is in this scene)\n            3. Plot (what happens in this scene)\n            4. Dialogue suggestions (key lines or exchanges)\n            5. Atmosphere/mood\n            6. Sound effects/music suggestions\n            \n            The scene should be appropriate for the beat it's in, advancing the story in a compelling way.\n            Target scene length: 0 minutes 20 seconds.\n            "
+    },
+    {
+      "role": "planner",
+      "system": "You are an expert screenwriter specializing in science fiction and Star Trek.",
+      "user": "\n            Create a detailed scene outline for a Star Trek-style podcast episode.\n            \n            EPISODE INFORMATION:\n            Title: Setting: Bridge\nPlot: Something happens.\nKIRA: Hello there.\n            Theme: a signal\n            \n            STORY BEAT: Final Image\n            Beat Description: Shows how the world has changed, often mirroring the opening image.\n            Scene Number: 15 of 15\n            Progress: 100% through the story\n            \n            CHARACTERS:\n            Ada\nRole: Unknown - pilot\n            \n            REFERENCE MATERIAL:\n            REF\n            \n            \n\n            \n\n            Create a detailed scene outline with:\n            1. Setting (where the scene takes place)\n            2. Character participants (who is in this scene)\n            3. Plot (what happens in this scene)\n            4. Dialogue suggestions (key lines or exchanges)\n            5. Atmosphere/mood\n            6. Sound effects/music suggestions\n            \n            The scene should be appropriate for the beat it's in, advancing the story in a compelling way.\n            Target scene length: 0 minutes 20 seconds.\n            "
+    }
+  ]
+}
