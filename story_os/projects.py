@@ -183,6 +183,13 @@ class CastMember(BaseModel):
     gender: str = 'female'
     accent: str = 'american'
     kokoro_voice: str = ''
+    want: str = ''
+    need: str = ''
+    wound: str = ''
+    false_belief: str = ''
+    speech_rhythm: str = ''
+    never_says: List[str] = Field(default_factory=list)
+    verbal_tics: List[str] = Field(default_factory=list)
 
 
 class Identity(BaseModel):
@@ -228,7 +235,11 @@ def design_identity(project: ProjectConfig) -> Identity:
             'instruments, tempo, mood; no artist names", "cast": [{"name": "...", "role": "...", '
             '"personality": "...", "backstory": "...", '
             '"voice_description": "pitch, pace, texture", '
-            '"gender": "male|female", "accent": "american|british"}]}')
+            '"gender": "male|female", "accent": "american|british", '
+            '"want": "what they chase", "need": "what they actually need", '
+            '"wound": "the old hurt", "false_belief": "the lie they believe", '
+            '"speech_rhythm": "how they talk", "never_says": ["a phrase they would never use"], '
+            '"verbal_tics": ["a habit of speech"]}]}')
     feedback = ''
     last_err: Optional[Exception] = None
     for _ in (1, 2):
@@ -362,6 +373,15 @@ def create_project(config: ProjectConfig, identity: Identity,
     atomic_write_json(d / 'format.json', fmt.model_dump())
     atomic_write_json(d / 'bible.json', identity.model_dump())
     atomic_write_json(d / 'voices.json', voices)
+    try:
+        from story_os.characters import name_clashes, profiles_from_identity
+        profiles_from_identity(config.project_id, identity)
+        clashes = name_clashes([m.name for m in identity.cast])
+        if clashes:
+            logger.warning('Cast names that may sound alike: %s', clashes)
+            atomic_write_json(d / 'name_warnings.json', clashes)
+    except Exception as e:
+        logger.warning('Character profiles not created: %s', e)
     logger.info('Created project %s at %s', config.project_id, d)
     return d
 

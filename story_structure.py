@@ -1078,6 +1078,21 @@ Format each character as a detailed profile.
         except Exception as e:
             logger.warning('Card continuity context skipped: %s', e)
         cast_names = [(c.get('name') or '').strip() for c in episode.get('characters') or []]
+        fw_id = None
+        if episode.get('project_id'):
+            try:
+                from story_os import frameworks as fwk
+                from story_os.projects import load_project
+                proj = load_project(episode['project_id'])
+                fw_id, fw_reason = fwk.select_framework(
+                    episode.get('arc_slot'), fwk.load_history(episode['project_id']),
+                    family=proj.capability('frameworks'), genre=proj.genre,
+                    chooser=fwk.llm_chooser(episode.get('arc_slot')))
+                episode['framework_block'] = fwk.render_framework_block(
+                    fwk.REGISTRY[fw_id], episode.get('target_duration_minutes', 30))
+                logger.info('Framework %s (%s)', fw_id, fw_reason)
+            except Exception as e:
+                logger.warning('Framework selection skipped: %s', e)
         prompt = sc.build_cards_prompt(episode, continuity)
         feedback = ''
         for attempt in (1, 2):
@@ -1089,6 +1104,12 @@ Format each character as a detailed profile.
                 scenes = sc.cards_to_scenes(cards, episode.get('target_duration_minutes', 30) * 60)
                 episode['scenes'] = scenes
                 episode.setdefault('metadata', {})['outline_mode'] = 'cards'
+                if fw_id:
+                    episode['metadata']['framework'] = fw_id
+                    episode.pop('framework_block', None)
+                    from story_os import frameworks as fwk
+                    fwk.record(episode['project_id'], episode['episode_id'],
+                               int(episode.get('episode_number') or 0), fw_id, fw_reason)
                 self._save_episode(episode)
                 logger.info('Scene cards accepted on attempt %s: %s scenes', attempt, len(scenes))
                 return scenes
@@ -1545,6 +1566,16 @@ Format each character as a detailed profile.
             parts.append(extra_preamble.strip())
         if scene.get('card'):
             parts.append(render_card_block(scene, previous_scene_script, next_scene))
+            try:
+                from story_os.characters import load_profiles, render_character_briefs
+                from story_os.canon_store import CanonStore
+                briefs = render_character_briefs(
+                    scene['card'], load_profiles(project.project_id),
+                    CanonStore.for_episode(episode))
+                if briefs:
+                    parts.append(briefs)
+            except Exception as e:
+                logger.warning('Character briefs skipped: %s', e)
         else:
             parts.append(f"Scene plan: {scene.get('plot', '')}")
         parts.append(

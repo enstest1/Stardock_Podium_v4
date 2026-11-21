@@ -201,7 +201,7 @@ def test_only_canon_store_writes_the_ledger():
         if any(p in py.parts for p in ('tests', '.venv', '.venv-xtts', 'site-packages')):
             continue
         text = py.read_text(encoding='utf-8', errors='ignore')
-        if re.search(r"open\([^)]*\.jsonl['\"][^)]*['\"]a['\"]", text) or \
-                re.search(r"(events|beliefs|promises)\.jsonl", text):
+        if re.search(r"(events|state_changes|beliefs|relationships|promises|"
+                     r"corrections)\.jsonl", text):
             hits.append(py.name)
     assert set(hits) <= {'canon_store.py'}, hits

@@ -39,6 +39,9 @@ class SceneCard(BaseModel):
     caused_by: List[int] = Field(default_factory=list)
     hands_off: str
     sound_design: List[str] = Field(default_factory=list)
+    step: str = ''                                        # framework function id
+    objectives: Dict[str, str] = Field(default_factory=dict)   # name -> scene want
+    withheld: Dict[str, str] = Field(default_factory=dict)     # name -> secret kept
 
 
 CARDS_SYSTEM = (
@@ -60,7 +63,10 @@ _SCHEMA_HINT = """{
      "audience_learns": "new information the listener gets",
      "caused_by": [],
      "hands_off": "what this scene leaves open for the next one",
-     "sound_design": ["two or three specific sounds"]}
+     "sound_design": ["two or three specific sounds"],
+     "step": "framework function id",
+     "objectives": {"Name": "what this person wants in this scene"},
+     "withheld": {"Name": "what this person is hiding here"}}
   ]
 }"""
 
@@ -97,6 +103,8 @@ def build_cards_prompt(episode: Dict[str, Any], continuity: str = '') -> str:
         parts.append(f"This episode's season milestone: {slot['arc_beat']}")
     parts.append('CAST (use these names exactly; no one else speaks):\n'
                  + ('\n'.join(cast_lines) or '- (none given)'))
+    if episode.get('framework_block'):
+        parts.append(episode['framework_block'])
     if continuity.strip():
         parts.append('CONTINUITY FROM EARLIER EPISODES:\n' + continuity.strip())
     parts.append(
