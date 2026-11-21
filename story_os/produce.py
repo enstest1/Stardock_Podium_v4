@@ -30,6 +30,12 @@ def create_podcast(idea: str, *, mode: Optional[str] = None,
                                       minutes=minutes)
     identity = projects.design_identity(config)
     pdir = projects.create_project(config, identity, overwrite=overwrite)
+    try:
+        from story_os.music import make_show_theme
+        theme = make_show_theme(config.project_id)
+    except Exception as e:  # never block creation on music
+        theme = {'status': 'unavailable', 'reason': str(e)}
+    identity.__dict__['_theme_status'] = theme
     return config, identity, pdir
 
 

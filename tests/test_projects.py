@@ -26,7 +26,7 @@ IDENTITY = {
 
 @pytest.fixture
 def data_dir(tmp_path):
-    with patch('config.paths.DATA_DIR', tmp_path):
+    with patch('config.paths.DATA_DIR', tmp_path),             patch('config.paths.VOICES_DIR', tmp_path / 'voices'):
         yield tmp_path
 
 

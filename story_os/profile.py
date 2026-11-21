@@ -30,6 +30,11 @@ class FormatProfile(BaseModel):
     pronunciation_lexicon: Dict[str, str] = Field(default_factory=dict)
     number_rules: List[str] = Field(default_factory=list)
     use_theme_music: bool = True
+    tagline: str = ''
+    theme_prompt: str = ''          # music brief for this show's theme
+    theme_intro_path: str = ''      # per-show theme files (AUDIO-007)
+    theme_outro_path: str = ''
+    theme_rights: Dict[str, str] = Field(default_factory=dict)
 
     def render(self, template: str, **values) -> str:
         """Fill a template; unknown placeholders are left empty, not raised."""

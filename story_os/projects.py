@@ -192,6 +192,11 @@ class Identity(BaseModel):
     dialogue_rules: List[str] = Field(default_factory=list)
     narrator_gender: str = 'male'
     narrator_accent: str = 'british'
+    narrator_voice_description: str = ''
+    tagline: str = ''
+    intro_template: str = ''
+    outro_template: str = ''
+    theme_prompt: str = ''
     cast: List[CastMember] = Field(min_length=1)
 
 
@@ -213,7 +218,14 @@ def design_identity(project: ProjectConfig) -> Identity:
             '"world": "two sentences about the setting", '
             '"dialogue_rules": ["three short rules for how people talk"], '
             '"narrator_gender": "male|female", "narrator_accent": '
-            '"american|british", "cast": [{"name": "...", "role": "...", '
+            '"american|british", "narrator_voice_description": "...", '
+            '"tagline": "one short spoken hook line for the show", '
+            '"intro_template": "the spoken show opening, 1-3 short sentences, '
+            'using the placeholders {show_name}, {episode} and {title}", '
+            '"outro_template": "the spoken sign-off, 1-2 short sentences, '
+            'may use {show_name}", '
+            '"theme_prompt": "an instrumental theme-music brief: genre, '
+            'instruments, tempo, mood; no artist names", "cast": [{"name": "...", "role": "...", '
             '"personality": "...", "backstory": "...", '
             '"voice_description": "pitch, pace, texture", '
             '"gender": "male|female", "accent": "american|british"}]}')
@@ -287,16 +299,65 @@ def assign_voices(identity: Identity) -> Dict[str, Any]:
             '_notes': ['Project voices (GEN-001): Kokoro built-ins only.']}
 
 
+def cast_voices(project_id: str, identity: Identity,
+                use_llm: bool = True) -> Dict[str, Any]:
+    """Cast every speaker from the voice catalog (presets or new designs)."""
+    import voice_catalog as vcat
+    speakers = [{'key': 'narrator', 'name': 'Narrator',
+                 'gender': 'male' if identity.narrator_gender.lower().startswith('m') else 'female',
+                 'accent': identity.narrator_accent,
+                 'voice_description': identity.narrator_voice_description or 'show narrator',
+                 'lead': True}]
+    for i, m in enumerate(identity.cast):
+        speakers.append({'key': _canon(m.name), 'name': m.name,
+                         'gender': 'male' if m.gender.lower().startswith('m') else 'female',
+                         'accent': m.accent, 'voice_description': m.voice_description,
+                         'lead': i == 0})
+    speakers.append({'key': EXTRA_SPEAKER_KEY, 'name': 'Extra',
+                     'gender': 'female' if speakers[0]['gender'] == 'male' else 'male',
+                     'accent': 'american', 'voice_description': 'incidental voices'})
+    picks = vcat.cast_show(project_id, speakers, use_llm=use_llm)
+    cat = vcat.load_catalog()
+    voices = assign_voices(identity)          # aliases + record shape
+    for key, vid in picks.items():
+        entry = cat['voices'][vid]
+        voices['characters'][key]['kokoro_voice'] = entry['kokoro_voice']
+        voices['characters'][key]['voice_id'] = vid
+    for m in identity.cast:
+        m.kokoro_voice = voices['characters'][_canon(m.name)]['kokoro_voice']
+    voices['_notes'] = ['Cast from voices/catalog.json (AUDIO-006): Kokoro '
+                        'presets and designed blends only.']
+    return voices
+
+
 # ---------------------------------------------------- create / load ----
+
+def format_from_identity(config: ProjectConfig,
+                         identity: Identity) -> FormatProfile:
+    """Default format plus the show's own spoken intro/outro and theme brief."""
+    fmt = default_format(config.genre, config.mode)
+    if identity.intro_template.strip():
+        intro = identity.intro_template.strip()
+        if '{title}' not in intro:
+            intro += ' Episode {episode}: {title}.'
+        fmt.intro_template = intro
+    if identity.outro_template.strip():
+        fmt.outro_template = identity.outro_template.strip()
+    fmt.tagline = identity.tagline.strip()
+    fmt.theme_prompt = identity.theme_prompt.strip()
+    return fmt
+
 
 def create_project(config: ProjectConfig, identity: Identity,
                    fmt: Optional[FormatProfile] = None,
-                   overwrite: bool = False) -> Path:
+                   overwrite: bool = False,
+                   casting: str = 'catalog') -> Path:
     d = project_dir(config.project_id)
     if (d / 'project.json').exists() and not overwrite:
         raise FileExistsError(f'Project already exists: {d}')
-    fmt = fmt or default_format(config.genre, config.mode)
-    voices = assign_voices(identity)
+    fmt = fmt or format_from_identity(config, identity)
+    voices = (cast_voices(config.project_id, identity) if casting == 'catalog'
+              else assign_voices(identity))
     atomic_write_json(d / 'project.json', config.model_dump())
     atomic_write_json(d / 'format.json', fmt.model_dump())
     atomic_write_json(d / 'bible.json', identity.model_dump())

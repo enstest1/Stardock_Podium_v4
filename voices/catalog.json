@@ -1,0 +1,1621 @@
+{
+  "schema_version": 1,
+  "updated_at": 1795220424.1186657,
+  "voices": {
+    "kokoro:af_heart": {
+      "voice_id": "kokoro:af_heart",
+      "source": "preset",
+      "engine": "kokoro",
+      "kokoro_voice": "af_heart",
+      "gender": "female",
+      "accent": "american",
+      "traits": [
+        "warm",
+        "clear",
+        "mid-pitch",
+        "friendly"
+      ],
+      "licence": "Apache-2.0 (Kokoro-82M)",
+      "publishable": true,
+      "auto_cast": true,
+      "consent_record": null,
+      "used_by": [
+        {
+          "project_id": "the_proofing_hour",
+          "character": "narrator"
+        }
+      ]
+    },
+    "kokoro:af_bella": {
+      "voice_id": "kokoro:af_bella",
+      "source": "preset",
+      "engine": "kokoro",
+      "kokoro_voice": "af_bella",
+      "gender": "female",
+      "accent": "american",
+      "traits": [
+        "bright",
+        "expressive",
+        "youthful",
+        "energetic"
+      ],
+      "licence": "Apache-2.0 (Kokoro-82M)",
+      "publishable": true,
+      "auto_cast": true,
+      "consent_record": null,
+      "used_by": [
+        {
+          "project_id": "legacy_global",
+          "character": "captain_amara_okonkwo"
+        }
+      ]
+    },
+    "kokoro:af_nicole": {
+      "voice_id": "kokoro:af_nicole",
+      "source": "preset",
+      "engine": "kokoro",
+      "kokoro_voice": "af_nicole",
+      "gender": "female",
+      "accent": "american",
+      "traits": [
+        "soft",
+        "breathy",
+        "intimate",
+        "calm"
+      ],
+      "licence": "Apache-2.0 (Kokoro-82M)",
+      "publishable": true,
+      "auto_cast": true,
+      "consent_record": null,
+      "used_by": [
+        {
+          "project_id": "legacy_global",
+          "character": "lieutenant_commander_kira_jaro"
+        }
+      ]
+    },
+    "kokoro:af_sarah": {
+      "voice_id": "kokoro:af_sarah",
+      "source": "preset",
+      "engine": "kokoro",
+      "kokoro_voice": "af_sarah",
+      "gender": "female",
+      "accent": "american",
+      "traits": [
+        "mature",
+        "composed",
+        "measured"
+      ],
+      "licence": "Apache-2.0 (Kokoro-82M)",
+      "publishable": true,
+      "auto_cast": true,
+      "consent_record": null,
+      "used_by": []
+    },
+    "kokoro:af_nova": {
+      "voice_id": "kokoro:af_nova",
+      "source": "preset",
+      "engine": "kokoro",
+      "kokoro_voice": "af_nova",
+      "gender": "female",
+      "accent": "american",
+      "traits": [
+        "crisp",
+        "confident",
+        "modern"
+      ],
+      "licence": "Apache-2.0 (Kokoro-82M)",
+      "publishable": true,
+      "auto_cast": true,
+      "consent_record": null,
+      "used_by": []
+    },
+    "kokoro:af_sky": {
+      "voice_id": "kokoro:af_sky",
+      "source": "preset",
+      "engine": "kokoro",
+      "kokoro_voice": "af_sky",
+      "gender": "female",
+      "accent": "american",
+      "traits": [
+        "light",
+        "airy",
+        "young"
+      ],
+      "licence": "Apache-2.0 (Kokoro-82M)",
+      "publishable": true,
+      "auto_cast": true,
+      "consent_record": null,
+      "used_by": []
+    },
+    "kokoro:af_river": {
+      "voice_id": "kokoro:af_river",
+      "source": "preset",
+      "engine": "kokoro",
+      "kokoro_voice": "af_river",
+      "gender": "female",
+      "accent": "american",
+      "traits": [
+        "relaxed",
+        "smooth",
+        "low-key"
+      ],
+      "licence": "Apache-2.0 (Kokoro-82M)",
+      "publishable": true,
+      "auto_cast": true,
+      "consent_record": null,
+      "used_by": []
+    },
+    "kokoro:af_jessica": {
+      "voice_id": "kokoro:af_jessica",
+      "source": "preset",
+      "engine": "kokoro",
+      "kokoro_voice": "af_jessica",
+      "gender": "female",
+      "accent": "american",
+      "traits": [
+        "casual",
+        "chatty",
+        "young adult"
+      ],
+      "licence": "Apache-2.0 (Kokoro-82M)",
+      "publishable": true,
+      "auto_cast": true,
+      "consent_record": null,
+      "used_by": []
+    },
+    "kokoro:af_kore": {
+      "voice_id": "kokoro:af_kore",
+      "source": "preset",
+      "engine": "kokoro",
+      "kokoro_voice": "af_kore",
+      "gender": "female",
+      "accent": "american",
+      "traits": [
+        "steady",
+        "serious",
+        "low"
+      ],
+      "licence": "Apache-2.0 (Kokoro-82M)",
+      "publishable": true,
+      "auto_cast": true,
+      "consent_record": null,
+      "used_by": []
+    },
+    "kokoro:af_aoede": {
+      "voice_id": "kokoro:af_aoede",
+      "source": "preset",
+      "engine": "kokoro",
+      "kokoro_voice": "af_aoede",
+      "gender": "female",
+      "accent": "american",
+      "traits": [
+        "gentle",
+        "melodic"
+      ],
+      "licence": "Apache-2.0 (Kokoro-82M)",
+      "publishable": true,
+      "auto_cast": true,
+      "consent_record": null,
+      "used_by": []
+    },
+    "kokoro:af_alloy": {
+      "voice_id": "kokoro:af_alloy",
+      "source": "preset",
+      "engine": "kokoro",
+      "kokoro_voice": "af_alloy",
+      "gender": "female",
+      "accent": "american",
+      "traits": [
+        "neutral",
+        "even",
+        "plain"
+      ],
+      "licence": "Apache-2.0 (Kokoro-82M)",
+      "publishable": true,
+      "auto_cast": true,
+      "consent_record": null,
+      "used_by": []
+    },
+    "kokoro:am_michael": {
+      "voice_id": "kokoro:am_michael",
+      "source": "preset",
+      "engine": "kokoro",
+      "kokoro_voice": "am_michael",
+      "gender": "male",
+      "accent": "american",
+      "traits": [
+        "warm",
+        "baritone",
+        "trustworthy"
+      ],
+      "licence": "Apache-2.0 (Kokoro-82M)",
+      "publishable": true,
+      "auto_cast": true,
+      "consent_record": null,
+      "used_by": [
+        {
+          "project_id": "legacy_global",
+          "character": "commander_tevan"
+        }
+      ]
+    },
+    "kokoro:am_fenrir": {
+      "voice_id": "kokoro:am_fenrir",
+      "source": "preset",
+      "engine": "kokoro",
+      "kokoro_voice": "am_fenrir",
+      "gender": "male",
+      "accent": "american",
+      "traits": [
+        "deep",
+        "gravelly",
+        "intense"
+      ],
+      "licence": "Apache-2.0 (Kokoro-82M)",
+      "publishable": true,
+      "auto_cast": true,
+      "consent_record": null,
+      "used_by": [
+        {
+          "project_id": "legacy_global",
+          "character": "lieutenant_verix_dax"
+        }
+      ]
+    },
+    "kokoro:am_puck": {
+      "voice_id": "kokoro:am_puck",
+      "source": "preset",
+      "engine": "kokoro",
+      "kokoro_voice": "am_puck",
+      "gender": "male",
+      "accent": "american",
+      "traits": [
+        "playful",
+        "quick",
+        "wry"
+      ],
+      "licence": "Apache-2.0 (Kokoro-82M)",
+      "publishable": true,
+      "auto_cast": true,
+      "consent_record": null,
+      "used_by": []
+    },
+    "kokoro:am_adam": {
+      "voice_id": "kokoro:am_adam",
+      "source": "preset",
+      "engine": "kokoro",
+      "kokoro_voice": "am_adam",
+      "gender": "male",
+      "accent": "american",
+      "traits": [
+        "young",
+        "earnest",
+        "plain"
+      ],
+      "licence": "Apache-2.0 (Kokoro-82M)",
+      "publishable": true,
+      "auto_cast": true,
+      "consent_record": null,
+      "used_by": []
+    },
+    "kokoro:am_liam": {
+      "voice_id": "kokoro:am_liam",
+      "source": "preset",
+      "engine": "kokoro",
+      "kokoro_voice": "am_liam",
+      "gender": "male",
+      "accent": "american",
+      "traits": [
+        "youthful",
+        "bright",
+        "casual"
+      ],
+      "licence": "Apache-2.0 (Kokoro-82M)",
+      "publishable": true,
+      "auto_cast": true,
+      "consent_record": null,
+      "used_by": [
+        {
+          "project_id": "legacy_global",
+          "character": "lieutenant_commander_damar_tain"
+        }
+      ]
+    },
+    "kokoro:am_onyx": {
+      "voice_id": "kokoro:am_onyx",
+      "source": "preset",
+      "engine": "kokoro",
+      "kokoro_voice": "am_onyx",
+      "gender": "male",
+      "accent": "american",
+      "traits": [
+        "low",
+        "smooth",
+        "authoritative"
+      ],
+      "licence": "Apache-2.0 (Kokoro-82M)",
+      "publishable": true,
+      "auto_cast": true,
+      "consent_record": null,
+      "used_by": [
+        {
+          "project_id": "legacy_global",
+          "character": "lieutenant_commander_korath"
+        }
+      ]
+    },
+    "kokoro:am_echo": {
+      "voice_id": "kokoro:am_echo",
+      "source": "preset",
+      "engine": "kokoro",
+      "kokoro_voice": "am_echo",
+      "gender": "male",
+      "accent": "american",
+      "traits": [
+        "soft",
+        "resonant",
+        "calm"
+      ],
+      "licence": "Apache-2.0 (Kokoro-82M)",
+      "publishable": true,
+      "auto_cast": true,
+      "consent_record": null,
+      "used_by": []
+    },
+    "kokoro:am_eric": {
+      "voice_id": "kokoro:am_eric",
+      "source": "preset",
+      "engine": "kokoro",
+      "kokoro_voice": "am_eric",
+      "gender": "male",
+      "accent": "american",
+      "traits": [
+        "brisk",
+        "businesslike"
+      ],
+      "licence": "Apache-2.0 (Kokoro-82M)",
+      "publishable": true,
+      "auto_cast": true,
+      "consent_record": null,
+      "used_by": [
+        {
+          "project_id": "the_proofing_hour",
+          "character": "extra"
+        }
+      ]
+    },
+    "kokoro:bf_emma": {
+      "voice_id": "kokoro:bf_emma",
+      "source": "preset",
+      "engine": "kokoro",
+      "kokoro_voice": "bf_emma",
+      "gender": "female",
+      "accent": "british",
+      "traits": [
+        "clear",
+        "precise",
+        "refined"
+      ],
+      "licence": "Apache-2.0 (Kokoro-82M)",
+      "publishable": true,
+      "auto_cast": true,
+      "consent_record": null,
+      "used_by": [
+        {
+          "project_id": "the_proofing_hour",
+          "character": "priya_holt"
+        }
+      ]
+    },
+    "kokoro:bf_isabella": {
+      "voice_id": "kokoro:bf_isabella",
+      "source": "preset",
+      "engine": "kokoro",
+      "kokoro_voice": "bf_isabella",
+      "gender": "female",
+      "accent": "british",
+      "traits": [
+        "elegant",
+        "warm",
+        "poised"
+      ],
+      "licence": "Apache-2.0 (Kokoro-82M)",
+      "publishable": true,
+      "auto_cast": true,
+      "consent_record": null,
+      "used_by": []
+    },
+    "kokoro:bf_alice": {
+      "voice_id": "kokoro:bf_alice",
+      "source": "preset",
+      "engine": "kokoro",
+      "kokoro_voice": "bf_alice",
+      "gender": "female",
+      "accent": "british",
+      "traits": [
+        "crisp",
+        "young",
+        "proper"
+      ],
+      "licence": "Apache-2.0 (Kokoro-82M)",
+      "publishable": true,
+      "auto_cast": true,
+      "consent_record": null,
+      "used_by": [
+        {
+          "project_id": "legacy_global",
+          "character": "lieutenant_zhanil_thkethris"
+        }
+      ]
+    },
+    "kokoro:bf_lily": {
+      "voice_id": "kokoro:bf_lily",
+      "source": "preset",
+      "engine": "kokoro",
+      "kokoro_voice": "bf_lily",
+      "gender": "female",
+      "accent": "british",
+      "traits": [
+        "soft",
+        "sweet",
+        "young"
+      ],
+      "licence": "Apache-2.0 (Kokoro-82M)",
+      "publishable": true,
+      "auto_cast": true,
+      "consent_record": null,
+      "used_by": []
+    },
+    "kokoro:bm_george": {
+      "voice_id": "kokoro:bm_george",
+      "source": "preset",
+      "engine": "kokoro",
+      "kokoro_voice": "bm_george",
+      "gender": "male",
+      "accent": "british",
+      "traits": [
+        "older",
+        "dignified",
+        "gravelly"
+      ],
+      "licence": "Apache-2.0 (Kokoro-82M)",
+      "publishable": true,
+      "auto_cast": true,
+      "consent_record": null,
+      "used_by": [
+        {
+          "project_id": "legacy_global",
+          "character": "narrator"
+        }
+      ]
+    },
+    "kokoro:bm_fable": {
+      "voice_id": "kokoro:bm_fable",
+      "source": "preset",
+      "engine": "kokoro",
+      "kokoro_voice": "bm_fable",
+      "gender": "male",
+      "accent": "british",
+      "traits": [
+        "storyteller",
+        "warm",
+        "expressive"
+      ],
+      "licence": "Apache-2.0 (Kokoro-82M)",
+      "publishable": true,
+      "auto_cast": true,
+      "consent_record": null,
+      "used_by": []
+    },
+    "kokoro:bm_lewis": {
+      "voice_id": "kokoro:bm_lewis",
+      "source": "preset",
+      "engine": "kokoro",
+      "kokoro_voice": "bm_lewis",
+      "gender": "male",
+      "accent": "british",
+      "traits": [
+        "deep",
+        "measured",
+        "serious"
+      ],
+      "licence": "Apache-2.0 (Kokoro-82M)",
+      "publishable": true,
+      "auto_cast": true,
+      "consent_record": null,
+      "used_by": []
+    },
+    "kokoro:bm_daniel": {
+      "voice_id": "kokoro:bm_daniel",
+      "source": "preset",
+      "engine": "kokoro",
+      "kokoro_voice": "bm_daniel",
+      "gender": "male",
+      "accent": "british",
+      "traits": [
+        "calm",
+        "gentle",
+        "even"
+      ],
+      "licence": "Apache-2.0 (Kokoro-82M)",
+      "publishable": true,
+      "auto_cast": true,
+      "consent_record": null,
+      "used_by": [
+        {
+          "project_id": "legacy_global",
+          "character": "subcommander_vreenak"
+        }
+      ]
+    },
+    "sample:og/057a083b43c6bffb19594cf7": {
+      "voice_id": "sample:og/057a083b43c6bffb19594cf7",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/057a083b43c6bffb19594cf7dd2b9ab2fe43730db03b67f24a445a472bcd2b59499f2bf2fa184cdaada04e592a29818291dee8f4ea86fe856d496c0823c16453.wav",
+      "collection": "OG",
+      "label": "057a083b43c6bffb19594cf7dd2b9ab2fe43730db03b67f24a445a472bcd",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:og/1b76f206114e1dcd3b9c6c7b": {
+      "voice_id": "sample:og/1b76f206114e1dcd3b9c6c7b",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/1b76f206114e1dcd3b9c6c7b158431294bd75c7fbffe826e011da957b1840216fa563c588340a9ce570cb834932186d050a8ce9eccff574aa949be99ef5f9bc1.wav",
+      "collection": "OG",
+      "label": "1b76f206114e1dcd3b9c6c7b158431294bd75c7fbffe826e011da957b184",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:og/29b8505586cd43382cd695da": {
+      "voice_id": "sample:og/29b8505586cd43382cd695da",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/29b8505586cd43382cd695da6b943f401104be710a5b60e814ac5fe7e06b39459cf8fe1701ca83f8154b3ccd749df7c2aef33ff23950bb1a135b1e1c393dbcf6.wav",
+      "collection": "OG",
+      "label": "29b8505586cd43382cd695da6b943f401104be710a5b60e814ac5fe7e06b",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:og/302b51de89ba0e815cce38bb": {
+      "voice_id": "sample:og/302b51de89ba0e815cce38bb",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/302b51de89ba0e815cce38bba05ee858e556375d19c74554175b32c2f93dc57bc44d0a3c15bf844eea5cd752b97c28fee9b2310029276363f9eabc67eb0c9cca.wav",
+      "collection": "OG",
+      "label": "302b51de89ba0e815cce38bba05ee858e556375d19c74554175b32c2f93d",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:og/403c1ec9623855b620b043ca": {
+      "voice_id": "sample:og/403c1ec9623855b620b043ca",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/403c1ec9623855b620b043ca2ca76c02989e679e32ba27b258392b5b58382c5d906fe56dfca7f5c416bc57def7d8028826c6c8ce8606332d876484126fa1aed6.wav",
+      "collection": "OG",
+      "label": "403c1ec9623855b620b043ca2ca76c02989e679e32ba27b258392b5b5838",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:og/42d53f34c1bc50f7a7c4ed17": {
+      "voice_id": "sample:og/42d53f34c1bc50f7a7c4ed17",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/42d53f34c1bc50f7a7c4ed1765a8d1ffeaf5cd441513cc0e6c72a4af7b841345903a04d3d5b8de8877de3d8b270a8d38d38a7a2157b845c0da695f53eec413bb.wav",
+      "collection": "OG",
+      "label": "42d53f34c1bc50f7a7c4ed1765a8d1ffeaf5cd441513cc0e6c72a4af7b84",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:og/436b9e1f9da710d74eb01209": {
+      "voice_id": "sample:og/436b9e1f9da710d74eb01209",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/436b9e1f9da710d74eb01209f8f269bee70e93cadf20539cb66b5c414da0f8897e019acb4ddf0fbffee8e39ddde52b88cc458c575aa52e34118d2f14070c9ae1.wav",
+      "collection": "OG",
+      "label": "436b9e1f9da710d74eb01209f8f269bee70e93cadf20539cb66b5c414da0",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:og/43f9ea590d441fa1cffa4852": {
+      "voice_id": "sample:og/43f9ea590d441fa1cffa4852",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/43f9ea590d441fa1cffa4852603cf48f4d3d339b321f3923f1d2df708b1f1f6fe04564e78b2f5831bd86ddf5d2dc250aed01b589126902d75d11702399587184.wav",
+      "collection": "OG",
+      "label": "43f9ea590d441fa1cffa4852603cf48f4d3d339b321f3923f1d2df708b1f",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:og/47e310af6db6b62e9820ec86": {
+      "voice_id": "sample:og/47e310af6db6b62e9820ec86",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/47e310af6db6b62e9820ec86ab728d5b5a374e609c86eb3f831c1978f06ee69ede927331d4beb3d1c126bd362cc3a657b3ce2dedde4a6bb377cec1b3312ae10f.wav",
+      "collection": "OG",
+      "label": "47e310af6db6b62e9820ec86ab728d5b5a374e609c86eb3f831c1978f06e",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:og/4a3d198ccac94aa3330809ce": {
+      "voice_id": "sample:og/4a3d198ccac94aa3330809ce",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/4a3d198ccac94aa3330809ce2eef552dec6625d116950888019d1d5fbd71e82e022f2878fa2d1a4af25743f6a90ef234165fe3eaba26198c29f3afdb054ba1f8.wav",
+      "collection": "OG",
+      "label": "4a3d198ccac94aa3330809ce2eef552dec6625d116950888019d1d5fbd71",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:og/546831df9beaebff805aeed0": {
+      "voice_id": "sample:og/546831df9beaebff805aeed0",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/546831df9beaebff805aeed00791f6fc602d401cf9ca17645a59343842a5f74f2711e87a8f5a69b976c9be23784ee6f76c9379c284e97aa313a94738984e46ef.wav",
+      "collection": "OG",
+      "label": "546831df9beaebff805aeed00791f6fc602d401cf9ca17645a59343842a5",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:og/63249207b46877a627fa5155": {
+      "voice_id": "sample:og/63249207b46877a627fa5155",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/63249207b46877a627fa51558278f322c17c459c56789e094f91cb6ef3c412b5af2c1f6677460316d3442c91d741e2f3a729aeb8408f3f82bb26a0986bc5f9bc.wav",
+      "collection": "OG",
+      "label": "63249207b46877a627fa51558278f322c17c459c56789e094f91cb6ef3c4",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:og/652179379c6aa7b508476ee6": {
+      "voice_id": "sample:og/652179379c6aa7b508476ee6",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/652179379c6aa7b508476ee6b0269d93da89555358a72badb8dc1f76e0cf8a0b4d3c95c38702134aeaed9af7a64ac13cd15f89cd3a6278e2338a0f8855134789.wav",
+      "collection": "OG",
+      "label": "652179379c6aa7b508476ee6b0269d93da89555358a72badb8dc1f76e0cf",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:og/75af00ad24068fa1a9aef0ff": {
+      "voice_id": "sample:og/75af00ad24068fa1a9aef0ff",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/75af00ad24068fa1a9aef0ffb9e972914db959cf9ac7cca9d6a527566a1485f0f79b977b1eea8075babf5a6886791eec98e4ba938194a944f71afa480e3f7301.wav",
+      "collection": "OG",
+      "label": "75af00ad24068fa1a9aef0ffb9e972914db959cf9ac7cca9d6a527566a14",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:og/78899c686b3bdef6619b63f9": {
+      "voice_id": "sample:og/78899c686b3bdef6619b63f9",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/78899c686b3bdef6619b63f98b03d3f5fdf2ca7427d0ce6dace8a10befc17941b33c5b7b7c2a808f0c670e9560ad5da356b6f4b06407ce3e1a299787168c3b6a.wav",
+      "collection": "OG",
+      "label": "78899c686b3bdef6619b63f98b03d3f5fdf2ca7427d0ce6dace8a10befc1",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:og/8532ee1920f74cab963f7b28": {
+      "voice_id": "sample:og/8532ee1920f74cab963f7b28",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/8532ee1920f74cab963f7b2895f0b5d5519a8762bb1f3b742293915270928c8826003a955e9a9a092982572ddaceed20ff3eaedd2517aa8c4a3759585bfb5493.wav",
+      "collection": "OG",
+      "label": "8532ee1920f74cab963f7b2895f0b5d5519a8762bb1f3b74229391527092",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:og/95ad670587afb013217297ae": {
+      "voice_id": "sample:og/95ad670587afb013217297ae",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/95ad670587afb013217297ae3da765f6ec63f8b4a76b96415a4c9e136cc964cc4cee46c7d5b4373f4144decf56767d2ce609c95994d2a7ec89380a9bc684698a.wav",
+      "collection": "OG",
+      "label": "95ad670587afb013217297ae3da765f6ec63f8b4a76b96415a4c9e136cc9",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:og/a0d9cc9e4fb781c2b9bb5b70": {
+      "voice_id": "sample:og/a0d9cc9e4fb781c2b9bb5b70",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/a0d9cc9e4fb781c2b9bb5b70400816232767c69a85e24a37fac1d415dccd10042293f5617f5ed8c7ca0c84b94815bd985331b9ae9d20c8d580f1e070a079ee41.wav",
+      "collection": "OG",
+      "label": "a0d9cc9e4fb781c2b9bb5b70400816232767c69a85e24a37fac1d415dccd",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:og/a862e97505d11e3e4a47fbe1": {
+      "voice_id": "sample:og/a862e97505d11e3e4a47fbe1",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/a862e97505d11e3e4a47fbe1513473b1527c600e5195b3268656fe21e6316c58aa823fb347128e8c7afc5dc97702dc34d454ee54f525c74668ff2024d4174add.wav",
+      "collection": "OG",
+      "label": "a862e97505d11e3e4a47fbe1513473b1527c600e5195b3268656fe21e631",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:og/a97730f86fa90560ae105669": {
+      "voice_id": "sample:og/a97730f86fa90560ae105669",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/a97730f86fa90560ae105669364412a9ad393b32839d0151236604af188212aab60bf5168a7975fdd0a448dd3131543f5c0032e737a7164b41e9d9d85ffd6660.wav",
+      "collection": "OG",
+      "label": "a97730f86fa90560ae105669364412a9ad393b32839d0151236604af1882",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:og/aria": {
+      "voice_id": "sample:og/aria",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/aria.wav",
+      "collection": "OG",
+      "label": "aria",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:og/b1f27cc2cbe7f65947ba9786": {
+      "voice_id": "sample:og/b1f27cc2cbe7f65947ba9786",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/b1f27cc2cbe7f65947ba978603322fae97a29a2b348b87bbe4946fdf011443599b807565bfcc38b2075afa78768495e1f6175eb7f3eaab236163199ae00b25f8.wav",
+      "collection": "OG",
+      "label": "b1f27cc2cbe7f65947ba978603322fae97a29a2b348b87bbe4946fdf0114",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:og/c3c8cb4802b0f8b865586cb8": {
+      "voice_id": "sample:og/c3c8cb4802b0f8b865586cb8",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/c3c8cb4802b0f8b865586cb8cf05b16b45539f2b568f5e0293872c0c418cb2110ab8a41f7dcdc33c1bfc6af805f344dfc67f5801f60df91a998cb2eec37f177e.wav",
+      "collection": "OG",
+      "label": "c3c8cb4802b0f8b865586cb8cf05b16b45539f2b568f5e0293872c0c418c",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:og/cab08a0c4ae924c447b0a23e": {
+      "voice_id": "sample:og/cab08a0c4ae924c447b0a23e",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/cab08a0c4ae924c447b0a23eabc3594f2368a1b98f14b4025d79b4d24c2cf93c3a9d5432fe10197d56091f8e830da7fcdcb4d7ffc6ebf4fdf166dd88335a427b.wav",
+      "collection": "OG",
+      "label": "cab08a0c4ae924c447b0a23eabc3594f2368a1b98f14b4025d79b4d24c2c",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:og/d5e3abe4e1ca1d1f9f225934": {
+      "voice_id": "sample:og/d5e3abe4e1ca1d1f9f225934",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/d5e3abe4e1ca1d1f9f225934281dab8a562d0497457961569339e8b960dd6b8a3102ffedb2fa1a1a6077809d242c373fd793fee4412ddaa77696f6e218a4dcba.wav",
+      "collection": "OG",
+      "label": "d5e3abe4e1ca1d1f9f225934281dab8a562d0497457961569339e8b960dd",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:og/ef759dcc97e12b1d2832cf5e": {
+      "voice_id": "sample:og/ef759dcc97e12b1d2832cf5e",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/ef759dcc97e12b1d2832cf5e956f13adefc590081a16a4415c300a04d5de7f9b985241cc559fa4a7f96795d13a5d0727e1cb62c565d5de346324efe595f775e1.wav",
+      "collection": "OG",
+      "label": "ef759dcc97e12b1d2832cf5e956f13adefc590081a16a4415c300a04d5de",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:og/elara": {
+      "voice_id": "sample:og/elara",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/elara.wav",
+      "collection": "OG",
+      "label": "elara",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:og/ff8ee8cde3ab040f91ed8427": {
+      "voice_id": "sample:og/ff8ee8cde3ab040f91ed8427",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/ff8ee8cde3ab040f91ed8427f94f0466b7bc07d024d8b8f2a47cf390aefd3a5a77839d6f218b9f0d20b5c79b238474021863565d22550c681dd27a7e5e98cdaf.wav",
+      "collection": "OG",
+      "label": "ff8ee8cde3ab040f91ed8427f94f0466b7bc07d024d8b8f2a47cf390aefd",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:og/jalen": {
+      "voice_id": "sample:og/jalen",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/jalen.wav",
+      "collection": "OG",
+      "label": "jalen",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:og/naren": {
+      "voice_id": "sample:og/naren",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/naren.wav",
+      "collection": "OG",
+      "label": "naren",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:og/narrator": {
+      "voice_id": "sample:og/narrator",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/narrator.wav",
+      "collection": "OG",
+      "label": "narrator",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:og/sarik": {
+      "voice_id": "sample:og/sarik",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/sarik.wav",
+      "collection": "OG",
+      "label": "sarik",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:test_samples/test_aria": {
+      "voice_id": "sample:test_samples/test_aria",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/test_samples/test_aria.wav",
+      "collection": "test_samples",
+      "label": "test_aria",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:test_samples/test_aria_original": {
+      "voice_id": "sample:test_samples/test_aria_original",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/test_samples/test_aria_original.wav",
+      "collection": "test_samples",
+      "label": "test_aria_original",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:test_samples/test_elara": {
+      "voice_id": "sample:test_samples/test_elara",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/test_samples/test_elara.wav",
+      "collection": "test_samples",
+      "label": "test_elara",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:test_samples/test_elara_original": {
+      "voice_id": "sample:test_samples/test_elara_original",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/test_samples/test_elara_original.wav",
+      "collection": "test_samples",
+      "label": "test_elara_original",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:test_samples/test_jalen": {
+      "voice_id": "sample:test_samples/test_jalen",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/test_samples/test_jalen.wav",
+      "collection": "test_samples",
+      "label": "test_jalen",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:test_samples/test_jalen_original": {
+      "voice_id": "sample:test_samples/test_jalen_original",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/test_samples/test_jalen_original.wav",
+      "collection": "test_samples",
+      "label": "test_jalen_original",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:test_samples/test_naren": {
+      "voice_id": "sample:test_samples/test_naren",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/test_samples/test_naren.wav",
+      "collection": "test_samples",
+      "label": "test_naren",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:test_samples/test_naren_original": {
+      "voice_id": "sample:test_samples/test_naren_original",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/test_samples/test_naren_original.wav",
+      "collection": "test_samples",
+      "label": "test_naren_original",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:test_samples/test_narrator": {
+      "voice_id": "sample:test_samples/test_narrator",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/test_samples/test_narrator.wav",
+      "collection": "test_samples",
+      "label": "test_narrator",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:test_samples/test_narrator_original": {
+      "voice_id": "sample:test_samples/test_narrator_original",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/test_samples/test_narrator_original.wav",
+      "collection": "test_samples",
+      "label": "test_narrator_original",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:test_samples/test_sarik": {
+      "voice_id": "sample:test_samples/test_sarik",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/test_samples/test_sarik.wav",
+      "collection": "test_samples",
+      "label": "test_sarik",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:test_samples/test_sarik_original": {
+      "voice_id": "sample:test_samples/test_sarik_original",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/test_samples/test_sarik_original.wav",
+      "collection": "test_samples",
+      "label": "test_sarik_original",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:og/xxx": {
+      "voice_id": "sample:og/xxx",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/xxx.wav",
+      "collection": "OG",
+      "label": "xxx",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:og/xxxxx": {
+      "voice_id": "sample:og/xxxxx",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/xxxxx.wav",
+      "collection": "OG",
+      "label": "xxxxx",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:og/xxxxxx": {
+      "voice_id": "sample:og/xxxxxx",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/xxxxxx.wav",
+      "collection": "OG",
+      "label": "xxxxxx",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:og/xxxxxxx": {
+      "voice_id": "sample:og/xxxxxxx",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/OG/xxxxxxx.wav",
+      "collection": "OG",
+      "label": "xxxxxxx",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:star_trek_horizon/captain_amara_okonkwo": {
+      "voice_id": "sample:star_trek_horizon/captain_amara_okonkwo",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/Star_Trek_Horizon/captain_amara_okonkwo.mp3",
+      "collection": "Star_Trek_Horizon",
+      "label": "captain_amara_okonkwo",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:star_trek_horizon/commander_tevan": {
+      "voice_id": "sample:star_trek_horizon/commander_tevan",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/Star_Trek_Horizon/commander_tevan.mp3",
+      "collection": "Star_Trek_Horizon",
+      "label": "commander_tevan",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:star_trek_horizon/lt_cmdr_damar_tain": {
+      "voice_id": "sample:star_trek_horizon/lt_cmdr_damar_tain",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/Star_Trek_Horizon/lt_cmdr_damar_tain.mp3",
+      "collection": "Star_Trek_Horizon",
+      "label": "lt_cmdr_damar_tain",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:star_trek_horizon/lt_cmdr_kira_jaro": {
+      "voice_id": "sample:star_trek_horizon/lt_cmdr_kira_jaro",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/Star_Trek_Horizon/lt_cmdr_kira_jaro.mp3",
+      "collection": "Star_Trek_Horizon",
+      "label": "lt_cmdr_kira_jaro",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:star_trek_horizon/lt_cmdr_korath": {
+      "voice_id": "sample:star_trek_horizon/lt_cmdr_korath",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/Star_Trek_Horizon/lt_cmdr_korath.mp3",
+      "collection": "Star_Trek_Horizon",
+      "label": "lt_cmdr_korath",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:star_trek_horizon/lt_verix_dax": {
+      "voice_id": "sample:star_trek_horizon/lt_verix_dax",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/Star_Trek_Horizon/lt_verix_dax.mp3",
+      "collection": "Star_Trek_Horizon",
+      "label": "lt_verix_dax",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:star_trek_horizon/lt_zhanil_thkethris": {
+      "voice_id": "sample:star_trek_horizon/lt_zhanil_thkethris",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/Star_Trek_Horizon/lt_zhanil_thkethris.mp3",
+      "collection": "Star_Trek_Horizon",
+      "label": "lt_zhanil_thkethris",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:star_trek_horizon/lt_zhanil_thkethris_1": {
+      "voice_id": "sample:star_trek_horizon/lt_zhanil_thkethris_1",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/Star_Trek_Horizon/lt_zhanil_thkethris_1.mp3",
+      "collection": "Star_Trek_Horizon",
+      "label": "lt_zhanil_thkethris_1",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:star_trek_horizon/narrator": {
+      "voice_id": "sample:star_trek_horizon/narrator",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/Star_Trek_Horizon/narrator.mp3",
+      "collection": "Star_Trek_Horizon",
+      "label": "narrator",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "sample:star_trek_horizon/subcommander_vreenak": {
+      "voice_id": "sample:star_trek_horizon/subcommander_vreenak",
+      "source": "sample",
+      "engine": "xtts",
+      "speaker_wav": "voices/samples/Star_Trek_Horizon/subcommander_vreenak.mp3",
+      "collection": "Star_Trek_Horizon",
+      "label": "subcommander_vreenak",
+      "licence": "Coqui CPML (non-commercial)",
+      "publishable": false,
+      "auto_cast": false,
+      "consent_record": null,
+      "used_by": []
+    },
+    "legacy:voice_5355b474": {
+      "voice_id": "legacy:voice_5355b474",
+      "source": "legacy_elevenlabs",
+      "engine": "elevenlabs",
+      "label": "Naren",
+      "elevenlabs_voice_id": "EXAVITQu4vr4xnSDxMaL",
+      "description": "Strong and confident, with the ability to switch from commanding to serene when discussing spiritual matters. Her voice carries the weight of experience and resilience.",
+      "publishable": false,
+      "auto_cast": false,
+      "available": false,
+      "used_by": []
+    },
+    "legacy:voice_67431675": {
+      "voice_id": "legacy:voice_67431675",
+      "source": "legacy_elevenlabs",
+      "engine": "elevenlabs",
+      "label": "Aria T'Vel",
+      "elevenlabs_voice_id": "HV5LQQys2FkXruuXDrZb",
+      "description": "A Vulcan female voice that is smooth, calm, and precise in articulation. The voice should have an undercurrent of warmth that suggests a deeper understanding of emotion, while maintaining the characteristic Vulcan logical tone. The voice should be clear and measured, with perfect enunciation.",
+      "publishable": false,
+      "auto_cast": false,
+      "available": false,
+      "used_by": []
+    },
+    "legacy:voice_5a2a7b34": {
+      "voice_id": "legacy:voice_5a2a7b34",
+      "source": "legacy_elevenlabs",
+      "engine": "elevenlabs",
+      "label": "Jalen",
+      "elevenlabs_voice_id": "uLDRhO9layp3hZXPNqPL",
+      "description": "A male Trill voice that is warm and enthusiastic, carrying the wisdom of multiple lifetimes through the symbiont. The voice should have a natural eagerness that can accelerate when excited, while maintaining a sense of ancient knowledge. The tone should be friendly but authoritative, with a slight musical quality.",
+      "publishable": false,
+      "auto_cast": false,
+      "available": false,
+      "used_by": []
+    },
+    "legacy:voice_f2e8b0cf": {
+      "voice_id": "legacy:voice_f2e8b0cf",
+      "source": "legacy_elevenlabs",
+      "engine": "elevenlabs",
+      "label": "Naren",
+      "elevenlabs_voice_id": "hmHVDDDgElcw05Hab5Aq",
+      "description": "A female Bajoran voice that is strong and confident, with the ability to shift between commanding authority and spiritual serenity. The voice should carry the weight of experience and resilience, with a slight accent that reflects her Bajoran heritage. The tone should be firm but compassionate.",
+      "publishable": false,
+      "auto_cast": false,
+      "available": false,
+      "used_by": []
+    },
+    "legacy:voice_bd139ac0": {
+      "voice_id": "legacy:voice_bd139ac0",
+      "source": "legacy_elevenlabs",
+      "engine": "elevenlabs",
+      "label": "Elara",
+      "elevenlabs_voice_id": "zlQ9pP86DFdJRGrI5QVr",
+      "description": "A female Caitian voice that is softly musical with a purring undertone. The voice should be soothing and gentle, with a playful lilt that can become serious when needed. The tone should reflect her species' feline nature while maintaining clear, professional articulation.",
+      "publishable": false,
+      "auto_cast": false,
+      "available": false,
+      "used_by": []
+    },
+    "legacy:voice_79ba991b": {
+      "voice_id": "legacy:voice_79ba991b",
+      "source": "legacy_elevenlabs",
+      "engine": "elevenlabs",
+      "label": "Sarik",
+      "elevenlabs_voice_id": "ZhcjUs7alfYWoranjDAa",
+      "description": "A male El-Aurian voice that is gentle and reflective, carrying an aura of wisdom beyond his years. The voice should be deliberate and thoughtful, with a comforting, almost lyrical quality. The tone should reflect his species' long lifespan and natural empathy.",
+      "publishable": false,
+      "auto_cast": false,
+      "available": false,
+      "used_by": []
+    },
+    "legacy:voice_bfc80477": {
+      "voice_id": "legacy:voice_bfc80477",
+      "source": "legacy_elevenlabs",
+      "engine": "elevenlabs",
+      "label": "Aria T'Vel (Improved)",
+      "elevenlabs_voice_id": "NTYYhif3Ref3SlagDJyF",
+      "description": "A Vulcan female voice that is smooth, calm, and precisely articulated. \nThe voice has a logical, measured quality typical of Vulcans, with perfect enunciation and clear \nvowel pronunciation. There is an undercurrent of warmth and emotional depth that suggests she \nunderstands emotions even while maintaining Vulcan control. The voice should sound intelligent \nand authoritative, with a calm confidence. The tone is steady and controlled, never hurried or \nemotional, but capable of subtle shifts that reveal deeper feelings. The pitch is medium to \nslightly lower for a female voice, conveying wisdom and maturity. Articulation is crisp and \nprecise, with careful pronunciation of consonants.",
+      "publishable": false,
+      "auto_cast": false,
+      "available": false,
+      "used_by": []
+    },
+    "legacy:voice_2369998f": {
+      "voice_id": "legacy:voice_2369998f",
+      "source": "legacy_elevenlabs",
+      "engine": "elevenlabs",
+      "label": "Jalen (Improved)",
+      "elevenlabs_voice_id": "mPRt73eGyddBVa9A9CNm",
+      "description": "A male Trill voice that is warm, enthusiastic, and carries the wisdom \nof multiple lifetimes through the symbiont. The voice has a natural eagerness and curiosity that \ncan accelerate when excited about discoveries, while maintaining a foundation of ancient knowledge \nand experience. The tone is friendly and approachable, yet authoritative when needed. There's a \nslight musical quality to the voice, reflecting the Trill culture's appreciation for music and \nart. The voice should sound like it belongs to someone both youthful in energy and ancient in \nwisdom - enthusiastic but never naive. The pitch is medium, with warmth in the lower register. \nThe voice can shift between quick, excited delivery for scientific discoveries and slower, more \ncontemplative tones when sharing wisdom from past hosts.",
+      "publishable": false,
+      "auto_cast": false,
+      "available": false,
+      "used_by": []
+    },
+    "legacy:voice_baee3fe1": {
+      "voice_id": "legacy:voice_baee3fe1",
+      "source": "legacy_elevenlabs",
+      "engine": "elevenlabs",
+      "label": "Naren (Improved)",
+      "elevenlabs_voice_id": "b9MWoRWjKTSI9ipAOsJV",
+      "description": "A female Bajoran voice that is strong and confident, with the remarkable \nability to shift between commanding authority and spiritual serenity. The voice carries the weight \nof experience and resilience, reflecting someone who has survived occupation and emerged stronger. \nThere is a slight accent that reflects her Bajoran heritage - subtle but present, with a musical \nquality to the pronunciation. The voice should sound like it belongs to a leader - firm when giving \norders, compassionate when comforting, and reverent when speaking of the Prophets. The tone is \nfirm but never harsh, compassionate but never weak. The pitch is medium to slightly lower, conveying \nmaturity and strength. When speaking of spiritual matters, the voice takes on a softer, more \ncontemplative quality. When commanding, it becomes crisp and clear with authority.",
+      "publishable": false,
+      "auto_cast": false,
+      "available": false,
+      "used_by": []
+    },
+    "legacy:voice_10072cb7": {
+      "voice_id": "legacy:voice_10072cb7",
+      "source": "legacy_elevenlabs",
+      "engine": "elevenlabs",
+      "label": "Elara (Improved)",
+      "elevenlabs_voice_id": "wl2c369YHrfTBCRcQh5X",
+      "description": "A female Caitian voice that is softly musical with a subtle purring \nundertone. The voice should be soothing and gentle, with a playful lilt that can become serious \nand professional when needed. The tone reflects her species' feline nature - smooth, graceful, \nand fluid like a cat's movement. There's a warmth to the voice that makes patients feel at ease, \ncombined with clear, professional articulation that establishes medical authority. The voice has \na slight breathy quality that adds to its gentle nature. When serious or concerned, the playful \nelements fade but the warmth remains. The pitch is medium to slightly higher, with smooth \ntransitions between tones. The voice should sound like someone who is both nurturing and \ncompetent - a healer's voice.",
+      "publishable": false,
+      "auto_cast": false,
+      "available": false,
+      "used_by": []
+    },
+    "legacy:voice_82b5e91d": {
+      "voice_id": "legacy:voice_82b5e91d",
+      "source": "legacy_elevenlabs",
+      "engine": "elevenlabs",
+      "label": "Sarik (Improved)",
+      "elevenlabs_voice_id": "RK5lOhdEvnIrQW4427LT",
+      "description": "A male El-Aurian voice that is gentle and reflective, carrying an aura \nof wisdom beyond his years. The voice is deliberate and thoughtful, with a comforting, almost \nlyrical quality that reflects his species' long lifespan and natural empathy. The tone should \nsound like someone who has seen centuries pass - patient, understanding, and deeply empathetic. \nThere's a musical quality to the voice, with smooth, flowing speech patterns. The voice should \nsound calming and reassuring, like a wise counselor or mentor. The pitch is medium to slightly \nlower, with a richness that comes from experience. The voice moves at a measured pace, never \nrushed, with pauses that feel natural and contemplative. When speaking, it sounds like each word \nis carefully chosen and meaningful.",
+      "publishable": false,
+      "auto_cast": false,
+      "available": false,
+      "used_by": []
+    },
+    "legacy:voice_651729a3": {
+      "voice_id": "legacy:voice_651729a3",
+      "source": "legacy_elevenlabs",
+      "engine": "elevenlabs",
+      "label": "Narrator (Improved)",
+      "elevenlabs_voice_id": "JidnYYb3vc6McUQCcLcz",
+      "description": "A versatile narrator voice that is clear, authoritative, and engaging. \nThe voice should sound like a professional documentary narrator or audiobook reader - confident \nand easy to listen to for extended periods. The tone is warm but neutral, allowing the story to \ntake center stage. The voice should be articulate with excellent pronunciation, suitable for \ndescribing complex scenes and technical concepts. There should be a sense of gravitas appropriate \nfor Star Trek storytelling - serious when needed, but never melodramatic. The voice should be \nsmooth and flowing, with natural pacing that guides the listener through the narrative. The pitch \nis medium, with good projection and clarity. The voice should feel trustworthy and reliable, like \na skilled storyteller.",
+      "publishable": false,
+      "auto_cast": false,
+      "available": false,
+      "used_by": []
+    },
+    "legacy:voice_0cd2256a": {
+      "voice_id": "legacy:voice_0cd2256a",
+      "source": "legacy_elevenlabs",
+      "engine": "elevenlabs",
+      "label": "Aria T'Vel (Improved)",
+      "elevenlabs_voice_id": "1YitDZhATV9VCMV4S1Ec",
+      "description": "A Vulcan female voice that is smooth, calm, and precisely articulated. \nThe voice has a logical, measured quality typical of Vulcans, with perfect enunciation and clear \nvowel pronunciation. There is an undercurrent of warmth and emotional depth that suggests she \nunderstands emotions even while maintaining Vulcan control. The voice should sound intelligent \nand authoritative, with a calm confidence. The tone is steady and controlled, never hurried or \nemotional, but capable of subtle shifts that reveal deeper feelings. The pitch is medium to \nslightly lower for a female voice, conveying wisdom and maturity. Articulation is crisp and \nprecise, with careful pronunciation of consonants.",
+      "publishable": false,
+      "auto_cast": false,
+      "available": false,
+      "used_by": []
+    },
+    "legacy:voice_998ed53a": {
+      "voice_id": "legacy:voice_998ed53a",
+      "source": "legacy_elevenlabs",
+      "engine": "elevenlabs",
+      "label": "Jalen (Improved)",
+      "elevenlabs_voice_id": "VALymqEutvnScP9g2ez7",
+      "description": "A male Trill voice that is warm, enthusiastic, and carries the wisdom \nof multiple lifetimes through the symbiont. The voice has a natural eagerness and curiosity that \ncan accelerate when excited about discoveries, while maintaining a foundation of ancient knowledge \nand experience. The tone is friendly and approachable, yet authoritative when needed. There's a \nslight musical quality to the voice, reflecting the Trill culture's appreciation for music and \nart. The voice should sound like it belongs to someone both youthful in energy and ancient in \nwisdom - enthusiastic but never naive. The pitch is medium, with warmth in the lower register. \nThe voice can shift between quick, excited delivery for scientific discoveries and slower, more \ncontemplative tones when sharing wisdom from past hosts.",
+      "publishable": false,
+      "auto_cast": false,
+      "available": false,
+      "used_by": []
+    },
+    "legacy:voice_b7da5356": {
+      "voice_id": "legacy:voice_b7da5356",
+      "source": "legacy_elevenlabs",
+      "engine": "elevenlabs",
+      "label": "Naren (Improved)",
+      "elevenlabs_voice_id": "BDKXloP9AWigbLIR7oOu",
+      "description": "A female Bajoran voice that is strong and confident, with the remarkable \nability to shift between commanding authority and spiritual serenity. The voice carries the weight \nof experience and resilience, reflecting someone who has survived occupation and emerged stronger. \nThere is a slight accent that reflects her Bajoran heritage - subtle but present, with a musical \nquality to the pronunciation. The voice should sound like it belongs to a leader - firm when giving \norders, compassionate when comforting, and reverent when speaking of the Prophets. The tone is \nfirm but never harsh, compassionate but never weak. The pitch is medium to slightly lower, conveying \nmaturity and strength. When speaking of spiritual matters, the voice takes on a softer, more \ncontemplative quality. When commanding, it becomes crisp and clear with authority.",
+      "publishable": false,
+      "auto_cast": false,
+      "available": false,
+      "used_by": []
+    },
+    "legacy:voice_cf45f875": {
+      "voice_id": "legacy:voice_cf45f875",
+      "source": "legacy_elevenlabs",
+      "engine": "elevenlabs",
+      "label": "Elara (Improved)",
+      "elevenlabs_voice_id": "kyC5kWFrQsNJTiLPfIBu",
+      "description": "A female Caitian voice that is softly musical with a subtle purring \nundertone. The voice should be soothing and gentle, with a playful lilt that can become serious \nand professional when needed. The tone reflects her species' feline nature - smooth, graceful, \nand fluid like a cat's movement. There's a warmth to the voice that makes patients feel at ease, \ncombined with clear, professional articulation that establishes medical authority. The voice has \na slight breathy quality that adds to its gentle nature. When serious or concerned, the playful \nelements fade but the warmth remains. The pitch is medium to slightly higher, with smooth \ntransitions between tones. The voice should sound like someone who is both nurturing and \ncompetent - a healer's voice.",
+      "publishable": false,
+      "auto_cast": false,
+      "available": false,
+      "used_by": []
+    },
+    "legacy:voice_7864fa6e": {
+      "voice_id": "legacy:voice_7864fa6e",
+      "source": "legacy_elevenlabs",
+      "engine": "elevenlabs",
+      "label": "Sarik (Improved)",
+      "elevenlabs_voice_id": "gONKgryu6yykB97sHxZn",
+      "description": "A male El-Aurian voice that is gentle and reflective, carrying an aura \nof wisdom beyond his years. The voice is deliberate and thoughtful, with a comforting, almost \nlyrical quality that reflects his species' long lifespan and natural empathy. The tone should \nsound like someone who has seen centuries pass - patient, understanding, and deeply empathetic. \nThere's a musical quality to the voice, with smooth, flowing speech patterns. The voice should \nsound calming and reassuring, like a wise counselor or mentor. The pitch is medium to slightly \nlower, with a richness that comes from experience. The voice moves at a measured pace, never \nrushed, with pauses that feel natural and contemplative. When speaking, it sounds like each word \nis carefully chosen and meaningful.",
+      "publishable": false,
+      "auto_cast": false,
+      "available": false,
+      "used_by": []
+    },
+    "legacy:voice_7f798f28": {
+      "voice_id": "legacy:voice_7f798f28",
+      "source": "legacy_elevenlabs",
+      "engine": "elevenlabs",
+      "label": "Narrator (Improved)",
+      "elevenlabs_voice_id": "2Z4LPBF5YDKEVrxgQCjz",
+      "description": "A versatile narrator voice that is clear, authoritative, and engaging. \nThe voice should sound like a professional documentary narrator or audiobook reader - confident \nand easy to listen to for extended periods. The tone is warm but neutral, allowing the story to \ntake center stage. The voice should be articulate with excellent pronunciation, suitable for \ndescribing complex scenes and technical concepts. There should be a sense of gravitas appropriate \nfor Star Trek storytelling - serious when needed, but never melodramatic. The voice should be \nsmooth and flowing, with natural pacing that guides the listener through the narrative. The pitch \nis medium, with good projection and clarity. The voice should feel trustworthy and reliable, like \na skilled storyteller.",
+      "publishable": false,
+      "auto_cast": false,
+      "available": false,
+      "used_by": []
+    },
+    "design:flour_dust_dawn": {
+      "voice_id": "design:flour_dust_dawn",
+      "source": "designed",
+      "engine": "kokoro",
+      "kokoro_voice": "voices/designed/flour_dust_dawn.pt",
+      "recipe": {
+        "af_kore": 0.5,
+        "af_river": 0.3,
+        "af_nicole": 0.2
+      },
+      "gender": "female",
+      "accent": "american",
+      "traits": [
+        "mid-low pitch",
+        "unhurried",
+        "slightly husky",
+        "soft rasp",
+        "tired warmth"
+      ],
+      "description": "Mid-low pitch, unhurried pace, slightly husky texture with a soft rasp from flour dust and too little sleep",
+      "designed_for": "the_proofing_hour",
+      "licence": "Apache-2.0 (blend of Kokoro-82M presets)",
+      "publishable": true,
+      "auto_cast": true,
+      "consent_record": null,
+      "created_at": 1795220463.908215,
+      "used_by": [
+        {
+          "project_id": "the_proofing_hour",
+          "character": "nora_vance"
+        }
+      ]
+    },
+    "design:old_timber": {
+      "voice_id": "design:old_timber",
+      "source": "designed",
+      "engine": "kokoro",
+      "kokoro_voice": "voices/designed/old_timber.pt",
+      "recipe": {
+        "am_fenrir": 0.6,
+        "am_onyx": 0.25,
+        "am_echo": 0.15
+      },
+      "gender": "male",
+      "accent": "american",
+      "traits": [
+        "deep bass",
+        "slow and deliberate",
+        "gravelly",
+        "weathered",
+        "long pauses"
+      ],
+      "description": "Deep bass pitch, slow deliberate pace, gravelly and weathered texture with long pauses",
+      "designed_for": "the_proofing_hour",
+      "licence": "Apache-2.0 (blend of Kokoro-82M presets)",
+      "publishable": true,
+      "auto_cast": true,
+      "consent_record": null,
+      "created_at": 1795220465.1314263,
+      "used_by": [
+        {
+          "project_id": "the_proofing_hour",
+          "character": "walt_becker"
+        }
+      ]
+    },
+    "design:velvet_ledger": {
+      "voice_id": "design:velvet_ledger",
+      "source": "designed",
+      "engine": "kokoro",
+      "kokoro_voice": "voices/designed/velvet_ledger.pt",
+      "recipe": {
+        "bm_fable": 0.6,
+        "bm_daniel": 0.4
+      },
+      "gender": "male",
+      "accent": "british",
+      "traits": [
+        "medium-high tenor",
+        "measured",
+        "silky",
+        "polished velvet",
+        "crisp consonants"
+      ],
+      "description": "Medium-high tenor pitch, measured and silky pace, polished velvety texture with crisp consonants",
+      "designed_for": "the_proofing_hour",
+      "licence": "Apache-2.0 (blend of Kokoro-82M presets)",
+      "publishable": true,
+      "auto_cast": true,
+      "consent_record": null,
+      "created_at": 1795220466.195579,
+      "used_by": [
+        {
+          "project_id": "the_proofing_hour",
+          "character": "silas_crane"
+        }
+      ]
+    }
+  }
+}

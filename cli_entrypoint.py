@@ -1044,6 +1044,10 @@ def cmd_create_podcast(args):
     print("Cast:")
     for m in identity.cast:
         print(f"  - {m.name} ({m.role}) voice={m.kokoro_voice}")
+    theme = identity.__dict__.get('_theme_status', {})
+    print(f"Intro: {identity.tagline!r}")
+    print(f"Theme music: {theme.get('status')}"
+          + (f" - {theme.get('reason', '')[:160]}" if theme.get('reason') else ''))
     print(f"Files: {pdir}")
     if not args.produce:
         print(f"\nNext: python main.py produce-episode {config.project_id}")
@@ -1091,6 +1095,141 @@ def cmd_write_and_render(args):
     report = produce_episode(ep['project_id'], episode_id=args.episode_id,
                              audio=not args.no_audio)
     print(json.dumps(report, indent=2))
+    return True
+
+
+@register_command(
+    name="voice-catalog",
+    help_text='List the voice catalog (presets, designed voices, samples) and who uses each',
+    arguments=[
+        {'name': '--refresh', **BOOL_ARG, 'help': 'Rescan presets, samples and registry'},
+        {'name': '--source', **STR_ARG, 'required': False,
+         'choices': ['preset', 'designed', 'sample', 'legacy_elevenlabs'],
+         'help': 'Only this source'},
+    ]
+)
+def cmd_voice_catalog(args):
+    import voice_catalog as vcat
+    cat = vcat.refresh_catalog() if args.refresh else vcat.load_catalog()
+    rows = sorted(cat['voices'].values(), key=lambda v: (v['source'], v['voice_id']))
+    for v in rows:
+        if args.source and v['source'] != args.source:
+            continue
+        users = ', '.join(f"{u['project_id']}/{u['character']}" for u in v.get('used_by', []))
+        flag = 'cast' if v.get('auto_cast') else 'private'
+        print(f"{v['voice_id']:42} {v['source']:17} {v.get('gender', ''):7} "
+              f"{v.get('accent', ''):8} {flag:7} {users}")
+    counts = {}
+    for v in rows:
+        counts[v['source']] = counts.get(v['source'], 0) + 1
+    print()
+    print(f"{len(rows)} voices: {counts}  ({vcat.catalog_path()})")
+    return True
+
+
+@register_command(
+    name="design-voice",
+    help_text='Design a new Kokoro voice by blending presets, e.g. --recipe af_bella:0.6,af_sarah:0.4',
+    arguments=[
+        {'name': 'name', **STR_ARG, 'help': 'Voice name'},
+        {'name': '--recipe', **STR_ARG, 'help': 'preset:weight,preset:weight'},
+        {'name': '--traits', **STR_ARG, 'required': False, 'help': 'comma-separated'},
+        {'name': '--audition', **STR_ARG, 'required': False,
+         'help': 'Also render this line to voices/designed/<id>_audition.wav'},
+    ]
+)
+def cmd_design_voice(args):
+    import voice_catalog as vcat
+    recipe = {}
+    for part in (args.recipe or '').split(','):
+        if ':' in part:
+            k, w = part.split(':', 1)
+            recipe[k.strip()] = float(w)
+    cat = vcat.load_catalog()
+    entry = vcat.design_voice(cat, args.name, recipe,
+                              traits=[t.strip() for t in (args.traits or '').split(',') if t.strip()] or None)
+    vcat.save_catalog(cat)
+    print(json.dumps(entry, indent=2))
+    if args.audition:
+        out = vcat.designed_dir() / f"{entry['voice_id'].split(':', 1)[1]}_audition.wav"
+        vcat.audition(entry, args.audition, out)
+        print(f'Audition: {out}')
+    return True
+
+
+@register_command(
+    name="audition-voice",
+    help_text='Render a test line with any catalog voice',
+    arguments=[
+        {'name': 'voice_id', **STR_ARG, 'help': 'e.g. kokoro:bm_fable or design:...'},
+        {'name': '--text', **STR_ARG, 'default': 'This is how I sound, telling you a story tonight.'},
+        {'name': '--out', **STR_ARG, 'required': False, 'help': 'Output wav'},
+    ]
+)
+def cmd_audition_voice(args):
+    import voice_catalog as vcat
+    cat = vcat.load_catalog()
+    entry = cat['voices'].get(args.voice_id)
+    if not entry or entry.get('engine') != 'kokoro':
+        logger.error('Not a Kokoro catalog voice: %s', args.voice_id)
+        return False
+    out = Path(args.out or (vcat.designed_dir() / f"audition_{args.voice_id.replace(':', '_')}.wav"))
+    out.parent.mkdir(parents=True, exist_ok=True)
+    vcat.audition(entry, args.text, out)
+    print(f'Audition: {out}')
+    return True
+
+
+@register_command(
+    name="make-intro",
+    help_text="Create a project's theme music (ElevenLabs) and render its intro for one episode",
+    arguments=[
+        {'name': 'project_id', **STR_ARG, 'help': 'Project id'},
+        {'name': '--prompt', **STR_ARG, 'required': False, 'help': 'Override the music brief'},
+        {'name': '--regenerate', **BOOL_ARG, 'help': 'Replace existing theme files'},
+        {'name': '--intro-file', **STR_ARG, 'required': False,
+         'help': 'Use your own track (e.g. made on Suno) instead of generating'},
+        {'name': '--outro-file', **STR_ARG, 'required': False,
+         'help': 'Optional separate outro track (default: last 12 s of intro file)'},
+        {'name': '--provider', **STR_ARG, 'default': 'Suno (web)',
+         'help': 'Where the imported track came from'},
+        {'name': '--commercial', **BOOL_ARG,
+         'help': 'You hold commercial rights to the imported track'},
+    ]
+)
+def cmd_make_intro(args):
+    from story_os.music import import_show_theme, make_show_theme
+    from story_os import projects
+    if args.intro_file:
+        res = import_show_theme(args.project_id, args.intro_file, args.outro_file,
+                                provider=args.provider, commercial_ok=args.commercial)
+    else:
+        res = make_show_theme(args.project_id, prompt=args.prompt,
+                              regenerate=args.regenerate)
+    fmt = projects.load_format(args.project_id)
+    print(json.dumps(res, indent=2))
+    print(f"Spoken intro template: {fmt.intro_template}")
+    print(f"Spoken outro template: {fmt.outro_template}")
+    return res.get('status') in ('created', 'exists', 'unavailable', 'imported')
+
+
+@register_command(
+    name="recast-project",
+    help_text="Re-cast a project's voices from the catalog (may design new voices)",
+    arguments=[
+        {'name': 'project_id', **STR_ARG, 'help': 'Project id'},
+        {'name': '--no-llm', **BOOL_ARG, 'help': 'Rule-based casting only'},
+    ]
+)
+def cmd_recast_project(args):
+    from story_os import projects
+    identity = projects.load_identity(args.project_id)
+    voices = projects.cast_voices(args.project_id, identity, use_llm=not args.no_llm)
+    projects.atomic_write_json(projects.voices_path(args.project_id), voices)
+    projects.atomic_write_json(projects.project_dir(args.project_id) / 'bible.json',
+                               identity.model_dump())
+    for k, v in voices['characters'].items():
+        print(f"{k:20} {v.get('voice_id', ''):40} {v['kokoro_voice']}")
     return True
 
 

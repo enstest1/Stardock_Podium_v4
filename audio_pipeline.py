@@ -212,6 +212,11 @@ class AudioPipeline:
 
     def _resolve_theme_path(self, role: str) -> Optional[Path]:
         """Pick intro/outro theme: env override, preferred filename, then glob."""
+        if self._project_ctx is not None:
+            fmt = self._project_ctx['format']
+            own = fmt.theme_intro_path if role == 'intro' else fmt.theme_outro_path
+            if own and Path(own).is_file():
+                return Path(own)
         env_key = (
             'STARDOCK_INTRO_MUSIC' if role == 'intro' else 'STARDOCK_OUTRO_MUSIC')
         override = os.environ.get(env_key, '').strip()
