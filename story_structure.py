@@ -925,11 +925,7 @@ Format each character as a detailed profile.
                     return []
                 logger.warning('Scene cards failed twice; using legacy outline path.')
             elif episode.get('project_id'):
-                logger.error(
-                    "Mode %r uses %r outlines, which are not implemented yet "
-                    "(GEN-002). Use a fiction mode.", episode.get('mode'),
-                    self._project_context(episode)[0].capability('outline'))
-                return []
+                return self._generate_segments_from_cards(episode)
 
             # Calculate number of scenes based on beats and target duration
             target_seconds = episode.get("target_duration_minutes", 30) * 60
@@ -1034,6 +1030,50 @@ Format each character as a detailed profile.
             return ctx[0].capability('outline') == 'scene_cards'
         from story_os.flags import feature_enabled
         return feature_enabled('USE_SCENE_CARDS', default=False)
+
+    def _generate_segments_from_cards(self, episode: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """GEN-002: plan a nonfiction episode as validated segment cards."""
+        from story_os import segment_cards as sg
+        from story_os import claims as cl
+        from story_os import frameworks as fwk
+        from story_os.projects import load_project
+        from story_os.roadmap import assemble_context
+        proj = load_project(episode['project_id'])
+        claims_mode = bool(proj.capability('claims'))
+        claims = cl.retrieve(proj.project_id, f"{episode.get('title')} {episode.get('theme')}", 12) \
+            if claims_mode else []
+        objectives = (episode.get('arc_slot') or {}).get('objectives') or []
+        fw_id, fw_reason = fwk.select_framework(
+            episode.get('arc_slot'), fwk.load_history(proj.project_id),
+            family=proj.capability('frameworks'), genre=proj.genre)
+        episode['framework_block'] = fwk.render_framework_block(
+            fwk.REGISTRY[fw_id], episode.get('target_duration_minutes', 10))
+        prompt = sg.build_segment_prompt(episode, cl.render_claims_block(claims),
+                                         assemble_context(episode, 'plan'), objectives)
+        hosts = [(c.get('name') or '') for c in episode.get('characters') or []]
+        feedback = ''
+        for attempt in (1, 2):
+            raw = self.complete_text(sg.SEGMENTS_SYSTEM, prompt + feedback, max_tokens=4000)
+            cards, problems = sg.parse_segments(raw)
+            if not problems:
+                problems = sg.validate_segments(cards, hosts, claims_mode=claims_mode,
+                                                known_claims={c.claim_id for c in claims},
+                                                objectives=objectives)
+            if not problems:
+                scenes = sg.segments_to_scenes(cards, episode.get('target_duration_minutes', 10) * 60)
+                episode['scenes'] = scenes
+                episode.pop('framework_block', None)
+                episode.setdefault('metadata', {}).update(
+                    {'outline_mode': 'segments', 'framework': fw_id,
+                     'claims_offered': [c.claim_id for c in claims]})
+                self._save_episode(episode)
+                fwk.record(proj.project_id, episode['episode_id'],
+                           int(episode.get('episode_number') or 0), fw_id, fw_reason)
+                return scenes
+            logger.warning('Segment cards attempt %s rejected: %s', attempt, problems[:6])
+            feedback = ('\n\nYOUR PREVIOUS ANSWER WAS REJECTED. Fix these problems and '
+                        'return the full JSON again:\n- ' + '\n- '.join(problems[:12]))
+        return []
 
     def _extract_canon(self, episode: Dict[str, Any], script: Dict[str, Any]) -> None:
         if os.environ.get('STARDOCK_CANON', '1').lower() in ('0', 'false', 'no'):
@@ -1597,7 +1637,17 @@ Format each character as a detailed profile.
         parts = []
         if (extra_preamble or '').strip():
             parts.append(extra_preamble.strip())
-        if scene.get('card'):
+        if scene.get('segment'):
+            from story_os.segment_cards import render_segment_block
+            from story_os import claims as cl
+            parts.append(render_segment_block(scene, previous_scene_script, next_scene))
+            store = cl.ClaimStore(project.project_id).all()
+            ids = [i for i in scene['segment'].get('claim_ids') or [] if i in store]
+            parts.append(cl.render_claims_block([store[i] for i in ids]))
+            parts.append('The hosts are fictional AI personas: they never claim to be real '
+                         'people, never invent quotations, and say plainly when something is '
+                         'uncertain or disputed.')
+        elif scene.get('card'):
             parts.append(render_card_block(scene, previous_scene_script, next_scene))
             try:
                 from story_os.characters import load_profiles, render_character_briefs
@@ -1634,6 +1684,13 @@ Format each character as a detailed profile.
             'acting notes inside lines.\n'
             '- Only cast members speak.'
             + (f'\nLength: about {words} spoken words.' if words > 0 else ''))
+        try:
+            from story_os.references import style_directives
+            directives = style_directives(project.project_id, episode.get('episode_id'))
+            if directives:
+                parts.append('STYLE DIRECTIVES:\n- ' + '\n- '.join(directives))
+        except Exception as e:
+            logger.warning('Style directives skipped: %s', e)
         prompt = (f"Write the {fmt.script_noun} below for {fmt.genre_phrase}.\n\n"
                   + '\n\n'.join(p for p in parts if p))
         system = f"You are {fmt.writer_persona}."
@@ -1651,6 +1708,8 @@ Format each character as a detailed profile.
                                 max_tokens=max(600, min(4000, words * 3)),
                                 temperature=0.8)
             scene_script["lines"] = self._parse_script_lines(content)
+            from story_os.claims import strip_markers
+            scene_script["lines"] = [strip_markers(l) for l in scene_script["lines"]]
         except Exception as e:
             logger.error("Error generating project scene script: %s", e)
         if scene.get('card'):

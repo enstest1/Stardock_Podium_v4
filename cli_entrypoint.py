@@ -1366,6 +1366,96 @@ def cmd_lint_episode(args):
 
 
 @register_command(
+    name="reference-add",
+    help_text='Add a reference to a project with explicit purposes and rights',
+    arguments=[
+        {'name': 'project_id', **STR_ARG, 'help': 'Project id'},
+        {'name': 'file_path', **FILE_ARG, 'help': 'txt / md / html / epub (pdf, docx if installed)'},
+        {'name': '--purpose', **STR_ARG, 'action': 'append', 'required': True,
+         'choices': ['writing_techniques', 'factual_research', 'world_building', 'adaptation'],
+         'help': 'Repeat for several purposes'},
+        {'name': '--rights', **STR_ARG, 'default': 'unspecified',
+         'choices': ['owned', 'licensed', 'public_domain', 'fair_reference', 'unspecified']},
+        {'name': '--holder', **STR_ARG, 'default': '', 'help': 'Rights holder'},
+        {'name': '--title', **STR_ARG, 'required': False},
+    ]
+)
+def cmd_reference_add(args):
+    from story_os import references as R
+    src = R.add_reference(args.file_path, args.project_id, args.purpose,
+                          rights=args.rights, holder=args.holder, title=args.title)
+    print(f"{src.source_id}  {src.title}  purposes={src.purposes}  rights={src.rights.status}")
+    return True
+
+
+@register_command(
+    name="reference-list",
+    help_text="List a project's references (including disabled ones)",
+    arguments=[{'name': 'project_id', **STR_ARG, 'help': 'Project id'}]
+)
+def cmd_reference_list(args):
+    from story_os import references as R
+    for s in R.list_sources(args.project_id, enabled_only=False):
+        state = 'on' if s.enabled else 'off'
+        print(f"{s.source_id}  [{state}]  {s.source_format:5} {s.title}  {s.purposes}  rights={s.rights.status}")
+    return True
+
+
+@register_command(
+    name="reference-bind",
+    help_text='Let a technique reference influence the writing (directives only)',
+    arguments=[
+        {'name': 'project_id', **STR_ARG, 'help': 'Project id'},
+        {'name': 'source_id', **STR_ARG, 'help': 'SRC-...'},
+        {'name': '--influence', **FLOAT_ARG, 'default': 0.5, 'help': '0..1'},
+        {'name': '--traits', **STR_ARG, 'default': 'pacing:1,atmosphere:1,tone:1',
+         'help': 'trait:weight,... (pacing, atmosphere, dialogue_density, tone, ...)'},
+    ]
+)
+def cmd_reference_bind(args):
+    from story_os import references as R
+    traits = {k.strip(): float(v) for k, v in (t.split(':') for t in args.traits.split(','))}
+    R.bind(args.project_id, args.source_id, args.influence, traits)
+    for d in R.style_directives(args.project_id):
+        print(' -', d)
+    return True
+
+
+@register_command(
+    name="reference-set",
+    help_text='Enable, disable, remove or purge a reference',
+    arguments=[
+        {'name': 'project_id', **STR_ARG, 'help': 'Project id'},
+        {'name': 'source_id', **STR_ARG, 'help': 'SRC-...'},
+        {'name': 'action', **STR_ARG, 'choices': ['enable', 'disable', 'remove', 'purge']},
+    ]
+)
+def cmd_reference_set(args):
+    from story_os import references as R
+    if args.action in ('enable', 'disable'):
+        R.set_enabled(args.project_id, args.source_id, args.action == 'enable')
+    elif args.action == 'remove':
+        R.remove(args.project_id, args.source_id)
+    else:
+        print(R.purge(args.project_id, args.source_id))
+    return True
+
+
+@register_command(
+    name="claims-list",
+    help_text="List a project's research claims with support level",
+    arguments=[{'name': 'project_id', **STR_ARG, 'help': 'Project id'}]
+)
+def cmd_claims_list(args):
+    from story_os.claims import ClaimStore
+    for c in ClaimStore(args.project_id).all().values():
+        cites = '; '.join(f"{x.source_id} {x.locator}" for x in c.citations)
+        print(f"{c.claim_id} [{c.support}] {c.text}  ({cites})"
+              + (f"  conflicts: {c.conflicts_with}" if c.conflicts_with else ''))
+    return True
+
+
+@register_command(
     name="list-projects",
     help_text='List podcast projects created with create-podcast',
     arguments=[]

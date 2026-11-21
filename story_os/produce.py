@@ -174,6 +174,14 @@ def produce_episode(project_id: str, *, theme: Optional[str] = None,
             prev = [e.get('script') for e in ss.list_episodes()
                     if e.get('project_id') == project_id and e.get('episode_id') != eid
                     and e.get('script')]
+            if project.capability('claims'):
+                from story_os.claims import check_script
+                findings += check_script(script, project_id)
+            try:
+                from story_os.references import snapshot
+                snapshot(project_id, eid, ss.episodes_dir)
+            except Exception as e:
+                logger.warning('Reference snapshot skipped: %s', e)
             om = originality.metrics(script, names, prev)
             originality.record(project_id, eid, om)
             return {'lint': {s: sum(1 for f in findings if f['severity'] == s)

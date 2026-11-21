@@ -212,6 +212,8 @@ def design_identity(project: ProjectConfig) -> Identity:
     caps = project.capability
     cast_style = caps('cast')
     size = '2 to 4' if project.episode_minutes <= 10 else '3 to 6'
+    if cast_style == 'hosts':
+        size = '1 to 3 host personas (fictional, disclosed as AI personas, never real people) as the'
     system = ('You are a show creator and casting director for audio fiction. '
               'Everything you invent is original. Answer with JSON only.')
     user = (f'SHOW: {project.title}\nIDEA: {project.idea}\n'
@@ -355,6 +357,9 @@ def format_from_identity(config: ProjectConfig,
     if identity.outro_template.strip():
         fmt.outro_template = identity.outro_template.strip()
     fmt.tagline = identity.tagline.strip()
+    if config.capability('claims'):
+        fmt.intro_template = (fmt.intro_template.rstrip() + ' This show uses AI-generated '
+                              'voices; the hosts are fictional personas.')
     fmt.theme_prompt = identity.theme_prompt.strip()
     return fmt
 
