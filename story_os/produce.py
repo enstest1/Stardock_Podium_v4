@@ -42,7 +42,8 @@ def create_podcast(idea: str, *, mode: Optional[str] = None,
 def produce_episode(project_id: str, *, theme: Optional[str] = None,
                     minutes: Optional[int] = None,
                     audio: bool = True,
-                    episode_id: Optional[str] = None) -> Dict[str, Any]:
+                    episode_id: Optional[str] = None,
+                    season_episodes: int = 6) -> Dict[str, Any]:
     """Run every stage for one new episode of ``project_id``.
 
     With ``episode_id`` of an existing episode that already has scene cards,
@@ -59,6 +60,13 @@ def produce_episode(project_id: str, *, theme: Optional[str] = None,
             "(standalone_drama, anthology, episodic_fiction, serialized_fiction).")
     ss = get_story_structure()
     report: Dict[str, Any] = {'project_id': project_id, 'stages': {}}
+    if not episode_id and project.capability('season_plan') != 'none':
+        from story_os.roadmap import create_season, load_roadmap
+        if load_roadmap(project_id, 1) is None:
+            rm = create_season(project_id, 1, episodes=season_episodes)
+            report['season_plan'] = {'type': rm.plan_type if rm else None,
+                                     'episodes': len(rm.milestones) if rm else 0,
+                                     'title': rm.title if rm else ''}
     t0 = time.time()
 
     def stage(name, fn):

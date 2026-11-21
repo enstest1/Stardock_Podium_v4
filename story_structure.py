@@ -332,8 +332,13 @@ class StoryStructure:
         minutes = episode_data.get("target_duration") or project.episode_minutes
         theme = episode_data.get("theme") or project.idea
         brief = projects.format_brief(project, fmt, identity)
-        title = episode_data.get("title") or self._generate_project_title(
-            fmt, brief, theme, number)
+        season = int(episode_data.get("season_number") or 1)
+        from story_os.roadmap import milestone_for
+        slot = milestone_for(pid, season, number)
+        if slot and not episode_data.get("theme"):
+            theme = slot.get('arc_beat') or theme
+        title = (episode_data.get("title") or (slot or {}).get('title')
+                 or self._generate_project_title(fmt, brief, theme, number))
         episode = {
             "episode_id": episode_id,
             "project_id": pid,
@@ -341,6 +346,7 @@ class StoryStructure:
             "title": title,
             "series": project.title,
             "episode_number": number,
+            "season_number": season,
             "theme": theme,
             "format_brief": brief,
             "created_at": time.time(),
@@ -353,6 +359,8 @@ class StoryStructure:
             "audio": None,
             "metadata": {},
         }
+        if slot:
+            episode["arc_slot"] = slot
         self._save_episode(episode)
         return episode
 
@@ -1052,12 +1060,10 @@ Format each character as a detailed profile.
         continuity = ''
         if episode.get('project_id'):
             try:
-                from story_os.canon_store import CanonStore
-                store = CanonStore.for_episode(episode)
-                if store is not None:
-                    continuity = store.continuity_brief()
+                from story_os.roadmap import assemble_context
+                continuity = assemble_context(episode, 'plan')
             except Exception as e:
-                logger.warning('Canon continuity skipped: %s', e)
+                logger.warning('Story context skipped: %s', e)
         try:
             if episode.get('project_id'):
                 raise StopIteration  # projects: ledger only, no legacy memory
@@ -1314,6 +1320,12 @@ Format each character as a detailed profile.
                 # Projects never use the legacy keyword extractor / global
                 # Mem0; their continuity is the canon ledger (CANON-002).
                 self._extract_canon(episode, script)
+                try:
+                    from story_os.roadmap import mark_episode
+                    mark_episode(episode['project_id'], int(episode.get('season_number') or 1),
+                                 int(episode.get('episode_number') or 1), 'written')
+                except Exception as e:
+                    logger.warning('Roadmap status not updated: %s', e)
                 logger.info(f"Script generation completed for episode: {episode.get('title')}")
                 return script
 

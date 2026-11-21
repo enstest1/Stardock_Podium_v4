@@ -1236,7 +1236,8 @@ def cmd_recast_project(args):
 @register_command(
     name="approve-episode",
     help_text="Promote a project episode's draft canon records to canon",
-    arguments=[{'name': 'episode_id', **STR_ARG, 'help': 'Episode id'}]
+    arguments=[{'name': 'episode_id', **STR_ARG, 'help': 'Episode id'},
+               {'name': '--no-replan', **BOOL_ARG, 'help': 'Do not revise the season plan'}]
 )
 def cmd_approve_episode(args):
     from story_structure import get_episode
@@ -1248,6 +1249,15 @@ def cmd_approve_episode(args):
         logger.error('No canon ledger for %s', args.episode_id)
         return False
     approve_episode(store, args.episode_id)
+    if not getattr(args, 'no_replan', False):
+        from story_os.roadmap import mark_episode, replan_season
+        season = int(ep.get('season_number') or 1)
+        mark_episode(ep['project_id'], season, int(ep.get('episode_number') or 1), 'approved')
+        res = replan_season(ep['project_id'], season, int(ep.get('episode_number') or 1))
+        print(f"Replan: {res.get('status')}")
+        for c in res.get('changes', []):
+            print(f"  E{c['episode_number']} {c['field']}: {c['reason']} "
+                  f"({c.get('triggered_by_event_id')})")
     if ep.get('status') != 'approved':
         ep['status'] = 'approved'
         from story_structure import get_story_structure
@@ -1281,6 +1291,48 @@ def cmd_canon_show(args):
                        f"{r.get('after', r.get('direction', ''))}")
             who = r.get('holder') or ''
             print(f"  [{r['status']}] {who + ': ' if who else ''}{body}  <{r['evidence']['quote'][:60]}>")
+    return True
+
+
+@register_command(
+    name="plan-season",
+    help_text="Create a project's season plan (arc, slate or curriculum by mode)",
+    arguments=[
+        {'name': 'project_id', **STR_ARG, 'help': 'Project id'},
+        {'name': '--season', **INT_ARG, 'default': 1, 'help': 'Season number'},
+        {'name': '--episodes', **INT_ARG, 'default': 6, 'help': 'Episode count'},
+        {'name': '--direction', **STR_ARG, 'required': False, 'help': 'Arc prompt'},
+    ]
+)
+def cmd_plan_season(args):
+    from story_os.roadmap import create_season
+    rm = create_season(args.project_id, args.season, args.episodes, args.direction)
+    if rm is None:
+        print('This mode has no season plan.')
+        return True
+    return cmd_roadmap_show(args)
+
+
+@register_command(
+    name="roadmap-show",
+    help_text="Print a project's season roadmap",
+    arguments=[
+        {'name': 'project_id', **STR_ARG, 'help': 'Project id'},
+        {'name': '--season', **INT_ARG, 'default': 1, 'help': 'Season number'},
+    ]
+)
+def cmd_roadmap_show(args):
+    from story_os.roadmap import load_roadmap
+    rm = load_roadmap(args.project_id, args.season)
+    if rm is None:
+        print('No roadmap yet. Run plan-season.')
+        return False
+    print(f"{rm.title} [{rm.plan_type}] v{rm.version}: {rm.season_question}")
+    for c in rm.locked_commitments:
+        print(f"  LOCKED: {c}")
+    for m in rm.milestones:
+        print(f"  E{m.episode_number} [{m.commitment}/{m.status}/{m.structural_role}] "
+              f"{m.title}: {m.arc_beat[:110]}")
     return True
 
 
