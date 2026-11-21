@@ -256,6 +256,8 @@ class KokoroDialogueSynthesizer:
                             speaker_wav=voice_id,
                             language=lang,
                             output_path=output_path,
+                            **({'speed': float(entry['speed'])}
+                               if entry.get('speed') not in (None, 1, 1.0) else {}),
                         )
                         return 'kokoro'
                     except Exception as e:

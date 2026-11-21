@@ -26,6 +26,34 @@ DUCK_DB = {'music': -11.0, 'ambience': -7.0}
 BUS_GAIN_DB = {'dialogue': 0.0, 'sfx': -2.0, 'ambience': -3.0, 'music': -3.0}
 LIMIT_DB = -2.0
 
+# Dial-in presets: bus levels (dB) and how far beds dip under speech.
+MIX_PRESETS: Dict[str, Dict[str, Any]] = {
+    'balanced':  {},                                   # the defaults above
+    'intimate':  {'bus_gain_db': {'sfx': -5.0, 'ambience': -8.0, 'music': -6.0},
+                  'duck_db': {'music': -14.0, 'ambience': -10.0}},
+    'cinematic': {'bus_gain_db': {'sfx': 0.0, 'ambience': 1.0, 'music': 0.0},
+                  'duck_db': {'music': -9.0, 'ambience': -5.0}},
+    'dry':       {'bus_gain_db': {'sfx': -6.0, 'ambience': -14.0, 'music': -6.0},
+                  'duck_db': {'music': -14.0, 'ambience': -12.0}},
+}
+
+
+def mix_settings(preset: Any = None) -> Dict[str, Any]:
+    """Resolve a preset name / dict (with optional overrides) to full settings."""
+    raw = MIX_PRESETS.get(preset, {}) if isinstance(preset, str) or preset is None else {}
+    if isinstance(preset, dict):
+        raw = dict(MIX_PRESETS.get(preset.get('preset') or 'balanced', {}))
+        for k in ('bus_gain_db', 'duck_db'):
+            if preset.get(k):
+                raw[k] = {**raw.get(k, {}), **preset[k]}
+        for k in ('dialogue_rms_db', 'limit_db'):
+            if preset.get(k) is not None:
+                raw[k] = preset[k]
+    return {'bus_gain_db': {**BUS_GAIN_DB, **raw.get('bus_gain_db', {})},
+            'duck_db': {**DUCK_DB, **raw.get('duck_db', {})},
+            'dialogue_rms_db': raw.get('dialogue_rms_db', DIALOGUE_RMS_DB),
+            'limit_db': raw.get('limit_db', LIMIT_DB)}
+
 _cache: Dict[str, np.ndarray] = {}
 
 
@@ -123,9 +151,14 @@ def limit(x: np.ndarray, ceiling_db: float = LIMIT_DB) -> np.ndarray:
     return x * gain[:, None]
 
 
-def render(timeline: Dict[str, Any], out_dir: Path) -> Dict[str, Any]:
-    """Render stems + mix.wav. Returns paths and stats."""
+def render(timeline: Dict[str, Any], out_dir: Path,
+           settings: Any = None) -> Dict[str, Any]:
+    """Render stems + mix.wav. Returns paths and stats.
+
+    ``settings``: a ``MIX_PRESETS`` name or dict (see ``mix_settings``).
+    """
     import soundfile as sf
+    cfg = mix_settings(settings)
     total = int((timeline['duration'] + 0.5) * SR)
     buses = {b: np.zeros((total, 2), dtype=np.float32)
              for b in ('dialogue', 'sfx', 'ambience', 'music')}
@@ -140,7 +173,7 @@ def render(timeline: Dict[str, Any], out_dir: Path) -> Dict[str, Any]:
         if clip['bus'] == 'dialogue':
             level = rms_db(seg[np.abs(seg).max(axis=1) > db(-45)]) if len(seg) else -120
             if level > -90:
-                seg *= db(max(-12.0, min(12.0, DIALOGUE_RMS_DB - level)))
+                seg *= db(max(-12.0, min(12.0, cfg['dialogue_rms_db'] - level)))
         seg *= db(clip.get('gain_db', 0.0))
         seg = fade(seg, clip.get('fade_in', 0.005), clip.get('fade_out', 0.01))
         start = int(round(clip['start'] * SR))
@@ -148,12 +181,12 @@ def render(timeline: Dict[str, Any], out_dir: Path) -> Dict[str, Any]:
         if end > start:
             buses[clip['bus']][start:end] += seg[: end - start]
     env = presence_envelope(buses['dialogue'])
-    for bus, depth in DUCK_DB.items():
+    for bus, depth in cfg['duck_db'].items():
         gain = 1 - (1 - db(depth)) * env
         buses[bus] *= gain[:, None]
-    mix = sum(buses[b] * db(BUS_GAIN_DB[b]) for b in buses)
+    mix = sum(buses[b] * db(cfg['bus_gain_db'][b]) for b in buses)
     pre_peak = float(np.abs(mix).max()) if len(mix) else 0.0
-    mix = limit(mix)
+    mix = limit(mix, cfg['limit_db'])
     out_dir.mkdir(parents=True, exist_ok=True)
     stems = {}
     for b, arr in buses.items():

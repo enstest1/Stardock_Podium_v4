@@ -255,8 +255,9 @@ class KokoroEngine(TTSEngine):
         speaker_wav: str,
         language: str,
         output_path: str,
+        speed: float = 1.0,
     ) -> None:
-        """Synthesize speech using Kokoro KPipeline.
+        """Synthesize speech using Kokoro KPipeline (``speed`` 0.5-2.0).
 
         ``speaker_wav`` is treated as a **Kokoro voice name** (e.g.
         ``'af_heart'``). If it looks like a file path (ends in ``.wav``) and
@@ -267,7 +268,8 @@ class KokoroEngine(TTSEngine):
             voice = self._resolve_voice(speaker_wav)
             clean_text = _clean_kokoro_text(normalize_tts_text(text))
             with self._synth_lock:
-                chunks = list(self._pipeline(clean_text, voice=voice, speed=1.0))
+                chunks = list(self._pipeline(clean_text, voice=voice,
+                                             speed=max(0.5, min(2.0, float(speed or 1.0)))))
                 if not chunks:
                     raise SynthError(f'Kokoro returned no audio for: {text[:80]}')
                 # Clean each chunk *before* concatenation so Kokoro's

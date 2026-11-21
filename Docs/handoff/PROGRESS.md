@@ -62,3 +62,7 @@ Showcase: `create-podcast "<late-night call-in radio show; callers from other ye
 - Rights gate: BLOCKED (free-tier SFX are non-commercial; bundled theme licence unknown) — correct.
 
 Not done / needs the user: TTS benchmark (EXP-TTS), ablation and originality experiments (EXP-ABLATE, EXP-ORIG, EXP-LONG; cost approval), live host adapter (host choice + API key), commercial music/SFX (paid ElevenLabs plan or Suno-made themes via `make-intro --intro-file`), forced aligner (licence choice), pypdf/python-docx for PDF/DOCX references.
+
+### 2026-11-21 — dial-in controls
+Added per-show sound settings (`sound/mix.json`: mix preset balanced/intimate/cinematic/dry, pacing tight/natural/relaxed, phone style phone_light/phone/phone_old/radio, loudness target), per-voice Kokoro speed (in the line-cache key only when not 1.0, so existing caches stay valid), `set_voice`, CLI `dialin-samples` + `sound-settings`. Sample pack rendered for `ep_cb2f5351` (14 excerpts + 28 voice auditions, all within 0.4 LU of target). Fixed: a second `plan-season` registration had shadowed the legacy command; the project one is now `plan-project-season`. Suite: 119 passed. User-facing map: `Docs/STUDIO_WORKFLOW.md`.
+

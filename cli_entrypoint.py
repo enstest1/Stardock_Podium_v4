@@ -1240,6 +1240,54 @@ def cmd_recast_project(args):
 
 
 @register_command(
+    name="dialin-samples",
+    help_text="Render A/B excerpts of an episode (mix, pacing, phone voice, loudness, voices)",
+    arguments=[
+        {'name': 'episode_id', **STR_ARG, 'help': 'A rendered episode id'},
+        {'name': '--no-voices', **BOOL_ARG, 'help': 'Skip voice auditions'},
+    ]
+)
+def cmd_dialin_samples(args):
+    import audio_dialin
+    from story_structure import get_episode
+    ep = get_episode(args.episode_id) or {}
+    out = audio_dialin.make_samples(args.episode_id, project_id=ep.get('project_id'),
+                                    voices=not args.no_voices)
+    print(f'Samples: {out}  (see README.md there)')
+    return True
+
+
+@register_command(
+    name="sound-settings",
+    help_text="Show or change a project's sound settings (mix, pacing, phone voice, loudness, voice speed/swap)",
+    arguments=[
+        {'name': 'project_id', **STR_ARG, 'help': 'Project id'},
+        {'name': '--mix', **STR_ARG, 'help': 'balanced | intimate | cinematic | dry'},
+        {'name': '--pacing', **STR_ARG, 'help': 'tight | natural | relaxed'},
+        {'name': '--phone', **STR_ARG, 'help': 'phone_light | phone | phone_old | radio'},
+        {'name': '--loudness', **FLOAT_ARG, 'help': 'Target LUFS, e.g. -16'},
+        {'name': '--speed', **STR_ARG, 'help': 'character=rate[,character=rate] (0.7-1.3)'},
+        {'name': '--voice', **STR_ARG, 'help': 'character=voice_id[,...] from voice-catalog'},
+    ]
+)
+def cmd_sound_settings(args):
+    import audio_dialin
+    cur = audio_dialin.save_settings(args.project_id, mix=args.mix, pacing=args.pacing,
+                                     phone_style=args.phone, loudness_lufs=args.loudness)
+    for pair in filter(None, (args.voice or '').split(',')):
+        ch, vid = pair.split('=', 1)
+        e = audio_dialin.set_voice(args.project_id, ch.strip(), vid.strip())
+        print(f"voice  {ch.strip():16} -> {e['voice_id']}")
+    for pair in filter(None, (args.speed or '').split(',')):
+        ch, rate = pair.split('=', 1)
+        e = audio_dialin.set_voice_speed(args.project_id, ch.strip(), float(rate))
+        print(f"speed  {ch.strip():16} -> {e.get('speed', 1.0)}")
+    print(json.dumps(cur, indent=2))
+    print('Re-render with: python main.py write-and-render <episode_id>  (cached lines are reused)')
+    return True
+
+
+@register_command(
     name="approve-episode",
     help_text="Promote a project episode's draft canon records to canon",
     arguments=[{'name': 'episode_id', **STR_ARG, 'help': 'Episode id'},
@@ -1301,7 +1349,7 @@ def cmd_canon_show(args):
 
 
 @register_command(
-    name="plan-season",
+    name="plan-project-season",
     help_text="Create a project's season plan (arc, slate or curriculum by mode)",
     arguments=[
         {'name': 'project_id', **STR_ARG, 'help': 'Project id'},
@@ -1310,7 +1358,7 @@ def cmd_canon_show(args):
         {'name': '--direction', **STR_ARG, 'required': False, 'help': 'Arc prompt'},
     ]
 )
-def cmd_plan_season(args):
+def cmd_plan_project_season(args):
     from story_os.roadmap import create_season
     rm = create_season(args.project_id, args.season, args.episodes, args.direction)
     if rm is None:
@@ -1331,7 +1379,7 @@ def cmd_roadmap_show(args):
     from story_os.roadmap import load_roadmap
     rm = load_roadmap(args.project_id, args.season)
     if rm is None:
-        print('No roadmap yet. Run plan-season.')
+        print('No roadmap yet. Run plan-project-season.')
         return False
     print(f"{rm.title} [{rm.plan_type}] v{rm.version}: {rm.season_question}")
     for c in rm.locked_commitments:

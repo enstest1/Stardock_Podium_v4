@@ -37,6 +37,18 @@ VOICE_FX = {
     'phone': 'highpass=f=320,highpass=f=320,lowpass=f=3300,lowpass=f=3300,acompressor=threshold=-22dB:ratio=3:attack=5:release=60,volume=1.6',
     'hollow': 'aecho=0.8:0.75:70|140:0.35|0.2,lowpass=f=5000',
     'radio': 'highpass=f=180,lowpass=f=5200,acompressor=threshold=-20dB:ratio=4,volume=1.3',
+    # dial-in variants of the telephone sound (chosen per show in sound/mix.json)
+    'phone_light': 'highpass=f=220,lowpass=f=4800,acompressor=threshold=-24dB:ratio=2:attack=5:release=80,volume=1.3',
+    'phone_old': ('highpass=f=450,highpass=f=450,lowpass=f=2600,lowpass=f=2600,'
+                  'acompressor=threshold=-26dB:ratio=6:attack=3:release=50,'
+                  'asoftclip=type=tanh,volume=2.2'),
+}
+
+# Pacing presets (seconds). ``build_timeline(pacing=...)`` takes a name or dict.
+PACING_PRESETS = {
+    'tight':   {'line_gap': 0.18, 'same_speaker_gap': 0.08, 'narration_gap': 0.30, 'scene_gap': 0.9},
+    'natural': {'line_gap': 0.30, 'same_speaker_gap': 0.15, 'narration_gap': 0.45, 'scene_gap': 1.4},
+    'relaxed': {'line_gap': 0.50, 'same_speaker_gap': 0.25, 'narration_gap': 0.75, 'scene_gap': 2.4},
 }
 _SPEECH_CUE = re.compile(r"^(?P<who>[^:]*?\bvoice\b[^:]*|[^:]*?\b(?:says|whispers|calls|"
                          r"sings)\b[^:]*):\s*[\"\u201c]?(?P<words>[^\"\u201d]{3,}?)[\"\u201d]?\s*$",
@@ -113,14 +125,20 @@ def build_timeline(script: Dict[str, Any], line_audio: Dict[str, Dict[str, Any]]
                    *, intro: Optional[Dict[str, Any]] = None,
                    outro: Optional[Dict[str, Any]] = None,
                    scene_fallback_ambience: Optional[Callable[[Dict], str]] = None,
+                   pacing: Any = None, fx_map: Optional[Dict[str, str]] = None,
                    ) -> Dict[str, Any]:
     """Place every clip. ``line_audio[line_id] = {path, duration}``.
 
     ``resolve(kind, text, seconds) -> asset record with 'file'/'duration'``
     or None. ``intro``/``outro``: ``{narration: {path, duration},
     music: {path, duration}|None}``.
+    ``pacing``: a ``PACING_PRESETS`` name or dict of gaps (default natural).
+    ``fx_map`` swaps delivery effects, e.g. ``{'phone': 'phone_old'}``.
     Returns ``{clips, missing, chapters, duration}``.
     """
+    pace = dict(PACING_PRESETS['natural'])
+    pace.update(PACING_PRESETS.get(pacing, {}) if isinstance(pacing, str) else (pacing or {}))
+    fx_map = fx_map or {}
     clips: List[Dict[str, Any]] = []
     missing: List[Dict[str, Any]] = []
     chapters: List[Dict[str, Any]] = []
@@ -157,12 +175,14 @@ def build_timeline(script: Dict[str, Any], line_audio: Dict[str, Dict[str, Any]]
                     continue
                 speaker = line.get('character') or line.get('speaker') or 'NARRATOR'
                 if t > scene_start:
-                    gap = (NARRATION_GAP if kind == 'narration' else
-                           SAME_SPEAKER_GAP if speaker == prev_speaker else LINE_GAP)
+                    gap = (pace['narration_gap'] if kind == 'narration' else
+                           pace['same_speaker_gap'] if speaker == prev_speaker
+                           else pace['line_gap'])
                     t = max(t, prev_end + gap)
                 clips.append({'bus': 'dialogue', 'path': la['path'], 'start': t,
                               'length': la['duration'], 'line_id': lid,
-                              'role': kind, 'fx': line.get('fx') or la.get('fx')})
+                              'role': kind, 'fx': fx_map.get(line.get('fx') or la.get('fx'),
+                                                             line.get('fx') or la.get('fx'))})
                 prev_end = t + la['duration']
                 t = prev_end
                 prev_speaker = speaker
@@ -208,7 +228,7 @@ def build_timeline(script: Dict[str, Any], line_audio: Dict[str, Dict[str, Any]]
             else:
                 missing.append({'kind': 'ambience', 'text': amb_text,
                                 'scene': scene.get('scene_number')})
-        t = scene_end + SCENE_GAP
+        t = scene_end + pace['scene_gap']
 
     if outro and outro.get('narration'):
         narr = outro['narration']
