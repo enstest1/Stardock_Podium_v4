@@ -1067,12 +1067,18 @@ def cmd_create_podcast(args):
         {'name': '--minutes', **INT_ARG, 'required': False,
          'help': 'Override episode length'},
         {'name': '--no-audio', **BOOL_ARG, 'help': 'Script only'},
+        {'name': '--resume', **STR_ARG, 'required': False,
+         'help': 'Episode id to resume (finished stages are skipped)'},
+        {'name': '--force', **STR_ARG, 'required': False,
+         'choices': ['cast', 'outline', 'script', 'edit', 'lint', 'extract', 'audio'],
+         'help': 'Re-run this stage and everything after it'},
     ]
 )
 def cmd_produce_episode(args):
     from story_os.produce import produce_episode
     report = produce_episode(args.project_id, theme=args.theme,
-                             minutes=args.minutes, audio=not args.no_audio)
+                             minutes=args.minutes, audio=not args.no_audio,
+                             episode_id=args.resume, force=args.force)
     print(json.dumps(report, indent=2))
     return True
 
@@ -1093,7 +1099,7 @@ def cmd_write_and_render(args):
         logger.error('Not a project episode: %s', args.episode_id)
         return False
     report = produce_episode(ep['project_id'], episode_id=args.episode_id,
-                             audio=not args.no_audio)
+                             audio=not args.no_audio, force='script')
     print(json.dumps(report, indent=2))
     return True
 

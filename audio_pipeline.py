@@ -1727,12 +1727,33 @@ class AudioPipeline:
             audio_assets.ingest_legacy()
             idx = audio_assets.load_index()
         used_assets: Dict[str, Any] = {}
+        # AUDIO-008: a show's recurring sounds keep one asset across episodes.
+        ident_path = None
+        identities: Dict[str, Any] = {}
+        if self._project_ctx is not None:
+            from story_os.projects import project_dir
+            ident_path = project_dir(self._project_ctx['project'].project_id) / 'sound' / 'identities.json'
+            if ident_path.exists():
+                identities = json.loads(ident_path.read_text(encoding='utf-8'))
 
         def resolve(kind, text, seconds):
-            rec = audio_assets.resolve(kind, text, seconds=seconds,
-                                       generate=generate, idx=idx)
+            key = f'{kind}:{audio_assets.slug(text)}'
+            sha = identities.get(key, {}).get('sha')
+            rec = idx['assets'].get(sha) if sha else None
+            if rec is None:
+                for k, v in identities.items():       # near-identical wording
+                    if k.startswith(kind + ':') and audio_assets.match(
+                            kind, text, {'assets': {v['sha']: idx['assets'].get(v['sha'])}}
+                            if idx['assets'].get(v['sha']) else {'assets': {}}, threshold=0.8):
+                        rec = idx['assets'][v['sha']]
+                        break
+            if rec is None:
+                rec = audio_assets.resolve(kind, text, seconds=seconds,
+                                           generate=generate, idx=idx)
             if rec:
                 used_assets[rec['sha']] = rec
+                identities.setdefault(key, {'sha': rec['sha'], 'description': text,
+                                            'first_episode': episode_id})
             return rec
 
         def fallback_amb(scene):
@@ -1743,6 +1764,9 @@ class AudioPipeline:
         timeline = build_timeline(script, line_audio, resolve, intro=intro,
                                   outro=outro, scene_fallback_ambience=fallback_amb)
         audio_assets.save_index(idx)
+        if ident_path is not None and identities:
+            ident_path.parent.mkdir(parents=True, exist_ok=True)
+            ident_path.write_text(json.dumps(identities, indent=2), encoding='utf-8')
         with open(audio_dir / 'timeline.json', 'w', encoding='utf-8') as f:
             json.dump(timeline, f, indent=2)
         mixed = audio_mix.render(timeline, audio_dir)

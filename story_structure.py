@@ -1303,8 +1303,30 @@ Format each character as a detailed profile.
             logger.info(f"Generating script for {total_scenes} scenes...")
             
             all_scenes = episode.get("scenes", [])
+            drafts_dir = self.episodes_dir / episode_id / 'drafts' / 'scenes'
+            prev_key = ''
             for i, scene in enumerate(all_scenes, 1):
                 logger.info(f"Generating script for scene {i}/{total_scenes}: {scene.get('beat', 'Unknown beat')}")
+                # AUTO-001 per-scene resume (projects): reuse a draft only if
+                # its card and the previous scene's text are unchanged.
+                draft_key = None
+                if episode.get('project_id'):
+                    import hashlib
+                    draft_key = hashlib.sha256(json.dumps(
+                        [scene.get('card') or scene.get('plot'), prev_key, extra_preamble],
+                        sort_keys=True, default=str).encode()).hexdigest()
+                    dp = drafts_dir / f'{i:02d}.json'
+                    if dp.exists():
+                        try:
+                            d = json.loads(dp.read_text(encoding='utf-8'))
+                            if d.get('key') == draft_key and d['scene'].get('lines'):
+                                script["scenes"].append(d['scene'])
+                                prev_key = hashlib.sha256(json.dumps(
+                                    d['scene'], sort_keys=True).encode()).hexdigest()
+                                logger.info('Reused scene %s draft', i)
+                                continue
+                        except (OSError, json.JSONDecodeError, KeyError):
+                            pass
                 # Generate script for this scene (sequential: sees previous scene)
                 scene_script = self._generate_scene_script(
                     episode, scene, extra_preamble=extra_preamble,
@@ -1312,6 +1334,16 @@ Format each character as a detailed profile.
                     next_scene=(all_scenes[i] if i < len(all_scenes) else None),
                 )
                 script["scenes"].append(scene_script)
+                if draft_key and scene_script.get('lines'):
+                    import hashlib
+                    from script_line_ids import ensure_script_line_ids as _ids
+                    _ids({'scenes': [scene_script]})
+                    drafts_dir.mkdir(parents=True, exist_ok=True)
+                    (drafts_dir / f'{i:02d}.json').write_text(json.dumps(
+                        {'key': draft_key, 'scene': scene_script}, ensure_ascii=False),
+                        encoding='utf-8')
+                    prev_key = hashlib.sha256(json.dumps(
+                        scene_script, sort_keys=True).encode()).hexdigest()
                 logger.info(f"Completed scene {i}/{total_scenes}")
             
             ensure_script_line_ids(script)
