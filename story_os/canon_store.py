@@ -58,6 +58,17 @@ class CanonStore:
 
     def __init__(self, root: Path):
         self.dir = Path(root) / 'canon'
+        self._cache: Dict[str, Any] = {}
+
+    def _stamp(self, *paths: Path):
+        out = []
+        for p in paths:
+            try:
+                st = p.stat()
+                out.append((st.st_size, st.st_mtime_ns))
+            except OSError:
+                out.append(None)
+        return tuple(out)
 
     @classmethod
     def for_episode(cls, episode: Dict[str, Any]) -> Optional['CanonStore']:
@@ -110,7 +121,20 @@ class CanonStore:
             return [json.loads(line) for line in f if line.strip()]
 
     def records(self, kind: str) -> List[Dict[str, Any]]:
-        """Replay a kind with corrections applied (latest line per id)."""
+        """Replay a kind with corrections applied (latest line per id).
+
+        Memoised on the ledger files' size and mtime: the files are
+        append-only, so any write changes the stamp and invalidates.
+        """
+        stamp = self._stamp(self._file(kind), self.dir / 'corrections.jsonl')
+        hit = self._cache.get(kind)
+        if hit and hit[0] == stamp:
+            return [dict(r) for r in hit[1]]
+        out = self._replay(kind)
+        self._cache[kind] = (stamp, out)
+        return [dict(r) for r in out]
+
+    def _replay(self, kind: str) -> List[Dict[str, Any]]:
         idf = ID_FIELD[kind]
         latest: Dict[str, Dict[str, Any]] = {}
         order: List[str] = []
@@ -193,9 +217,16 @@ class CanonStore:
                       for b in mis[-6:]]
         prom = self.open_promises(horizons=('episode', 'season', 'series'))
         if prom:
-            lines.append('OPEN PROMISES TO THE AUDIENCE (develop or pay off):')
-            lines += [f"- [{p['promise_id']}] ({p['kind']}, {p['horizon']}) {p['statement']}"
-                      for p in prom[-8:]]
+            # Oldest long-horizon setups first (so early promises are not
+            # forgotten as the ledger grows), then the newest ones.
+            long_h = [p for p in prom if p['horizon'] in ('season', 'series')]
+            pick = long_h[:4]
+            pick += [p for p in prom if p not in pick][-(8 - len(pick)):]
+            lines.append(f'OPEN PROMISES TO THE AUDIENCE (develop or pay off; '
+                         f'{len(prom)} open, oldest setups first):')
+            lines += [f"- [{p['promise_id']}] ({p['kind']}, {p['horizon']}, planted "
+                      f"{p.get('planted_in') or p['episode_id']}) {p['statement']}"
+                      for p in pick]
         return '\n'.join(lines)
 
     # ------------------------------------------------------------ index --

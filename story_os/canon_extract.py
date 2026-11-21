@@ -292,24 +292,37 @@ def omniscience_check(script: Dict[str, Any], store: CanonStore,
                       episode_id: str) -> List[Dict[str, Any]]:
     """Flag lines where a speaker states a canon fact they cannot know (CANON-003).
 
-    Deterministic part: a speaker asserting the summary words of an event they
-    neither witnessed nor were told about. Cheap heuristic; the LLM check of
-    the spec is left for when the fixture oracle exists.
+    Deterministic part: a speaker asserting the distinctive words of an event
+    they neither witnessed nor were told about. Words that occur in more than
+    5 % of events (names, places, recurring props) don't count as distinctive.
+    The ledger is read once per call. The LLM check of the spec is left for
+    when the fixture oracle exists.
     """
-    issues = []
+    from collections import Counter
     events = store.query('events')
+    if not events:
+        return []
+    words = [{w for w in norm(e['summary']).split() if len(w) > 4} for e in events]
+    df = Counter(w for ws in words for w in ws)
+    cap = max(2, int(0.05 * len(events)))
+    keys = [{w for w in ws if df[w] <= cap} for ws in words]
+    known: Dict[str, set] = {}
+    for b in store.query('beliefs'):
+        if b.get('about_event_id'):
+            known.setdefault(b['holder'].strip().lower(), set()).add(b['about_event_id'])
+    present = [{a.lower() for a in e['actors']} | {w.lower() for w in e.get('witnesses', [])}
+               for e in events]
+    issues = []
     for scene in script.get('scenes') or []:
         for line in scene.get('lines') or []:
             who = (line.get('character') or '').strip()
             if not who:
                 continue
+            wl = who.lower()
             said = set(norm(line.get('content', '')).split())
-            known = {b['about_event_id'] for b in store.beliefs_of(who) if b.get('about_event_id')}
-            for e in events:
-                key = {w for w in norm(e['summary']).split() if len(w) > 4}
-                if len(key) >= 3 and len(key & said) >= max(3, int(0.7 * len(key))) \
-                        and e['event_id'] not in known and who.lower() not in {a.lower() for a in e['actors']} \
-                        and who.lower() not in {w.lower() for w in e.get('witnesses', [])}:
+            kn = known.get(wl, set())
+            for e, key, pres in zip(events, keys, present):
+                if len(key) >= 3 and len(key & said) >= max(3, int(0.7 * len(key)))                         and e['event_id'] not in kn and wl not in pres:
                     issues.append({'line_id': line.get('line_id'), 'speaker': who,
                                    'event_id': e['event_id'], 'severity': 'error'})
     return issues

@@ -86,3 +86,7 @@ repomix-output.xml
 backups/
 data/projects/
 data/active_show.json
+
+# experiment audio (reports and results.json are tracked)
+experiments/**/*.wav
+experiments/**/*.mp3
