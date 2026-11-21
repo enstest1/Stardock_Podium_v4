@@ -82,6 +82,24 @@ def produce_episode(project_id: str, *, theme: Optional[str] = None,
         report['episode_id'] = eid
         report['resumed'] = True
     else:
+        from story_os.flags import feature_enabled
+        if not theme and feature_enabled('USE_WRITERS_ROOM', default=False):
+            from story_os.roadmap import milestone_for
+            from story_os.writers_room import choose_premise
+            from story_os.canon_store import CanonStore
+            n_next = 1 + max([e.get('episode_number', 0) for e in ss.list_episodes()
+                              if e.get('project_id') == project_id], default=0)
+            slot = milestone_for(project_id, 1, n_next) or {}
+            fmt = projects.load_format(project_id)
+            ctx = (projects.format_brief(project, fmt, projects.load_identity(project_id))
+                   + f"\nCAST: {', '.join(m.name for m in projects.load_identity(project_id).cast)}"
+                   + f"\nSEASON MILESTONE FOR EPISODE {n_next}: {slot.get('arc_beat', project.idea)}"
+                   + f"\nLENGTH: {minutes or project.episode_minutes} minutes")
+            premise = stage('premises', lambda: choose_premise(
+                ctx, CanonStore(projects.project_dir(project_id))))
+            if premise:
+                theme = premise['logline']
+                report['stages']['premises']['chosen'] = premise
         episode = stage('structure', lambda: ss.generate_episode_structure({
             'project_id': project_id, 'theme': theme,
             'target_duration': minutes or project.episode_minutes}))
@@ -93,7 +111,11 @@ def produce_episode(project_id: str, *, theme: Optional[str] = None,
         if not scenes:
             raise RuntimeError('Scene planning failed (see log).')
         report['stages']['scene_cards']['scenes'] = len(scenes)
-    script = stage('script', lambda: ss.generate_episode_script(eid))
+    ss.defer_canon = True
+    try:
+        script = stage('script', lambda: ss.generate_episode_script(eid))
+    finally:
+        ss.defer_canon = False
     if not script or not script.get('scenes'):
         raise RuntimeError('Script generation failed (see log).')
     lines = [ln for sc in script['scenes'] for ln in sc.get('lines', [])]
@@ -107,6 +129,38 @@ def produce_episode(project_id: str, *, theme: Optional[str] = None,
             f"Script incomplete: {report['stages']['script']['empty_scenes']} of "
             f"{len(script['scenes'])} scenes are empty (LLM errors in the log). "
             f"Fix the cause, then: python main.py write-and-render {eid}")
+    from story_os import originality, writers_room
+    from story_os.canon_store import CanonStore
+    from story_os.flags import feature_enabled
+    ep = ss.get_episode(eid)
+    cast = [c.get('name', '') for c in ep.get('characters') or []]
+    editorial = project.capability('editorial')
+    if feature_enabled('USE_WRITERS_ROOM', default=False):
+        edit = stage('edit_round', lambda: writers_room.run_edit_round(eid))
+        report['stages']['edit_round'].update({
+            'patches': len(edit['patches']), 'plan': edit['plan']['status'],
+            'revised_scenes': edit['revised']})
+        script = ss.get_episode(eid).get('script') or script
+        ep = ss.get_episode(eid)
+    findings = writers_room.lint(script, cast, editorial=editorial,
+                                 store=CanonStore.for_episode(ep))
+    report['lint'] = {s: sum(1 for f in findings if f['severity'] == s)
+                      for s in ('error', 'warning', 'info')}
+    report['lint']['rules'] = sorted({f['rule'] for f in findings if f['severity'] != 'info'})
+    prev = [e.get('script') for e in ss.list_episodes()
+            if e.get('project_id') == project_id and e.get('episode_id') != eid and e.get('script')]
+    om = originality.metrics(script, cast, prev)
+    originality.record(project_id, eid, om)
+    report['originality'] = {k: om[k] for k in ('distinct_2', 'self_repeat_4gram',
+                                                'slop_per_1k_words', 'cross_episode_jaccard',
+                                                'flags')}
+    stage('canon', lambda: ss._extract_canon(ep, script))
+    try:
+        from story_os.roadmap import mark_episode
+        mark_episode(project_id, int(ep.get('season_number') or 1),
+                     int(ep.get('episode_number') or 1), 'written')
+    except Exception:
+        pass
     if audio:
         from audio_pipeline import generate_episode_audio
         meta = stage('audio', lambda: generate_episode_audio(eid, {}))

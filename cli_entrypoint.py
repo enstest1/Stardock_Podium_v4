@@ -1337,6 +1337,29 @@ def cmd_roadmap_show(args):
 
 
 @register_command(
+    name="lint-episode",
+    help_text='Audio-first script lint and originality metrics for a project episode',
+    arguments=[{'name': 'episode_id', **STR_ARG, 'help': 'Episode id'}]
+)
+def cmd_lint_episode(args):
+    from story_structure import get_episode
+    from story_os import originality, projects, writers_room
+    from story_os.canon_store import CanonStore
+    ep = get_episode(args.episode_id)
+    if not ep or not ep.get('script'):
+        logger.error('No script for %s', args.episode_id)
+        return False
+    cast = [c.get('name', '') for c in ep.get('characters') or []]
+    editorial = (projects.load_project(ep['project_id']).capability('editorial')
+                 if ep.get('project_id') else 'fiction')
+    for f in writers_room.lint(ep['script'], cast, editorial=editorial,
+                               store=CanonStore.for_episode(ep)):
+        print(f"[{f['severity']:7}] scene {f['scene']}: {f['rule']}: {f['message']}")
+    print(json.dumps(originality.metrics(ep['script'], cast), indent=2))
+    return True
+
+
+@register_command(
     name="list-projects",
     help_text='List podcast projects created with create-podcast',
     arguments=[]

@@ -8,5 +8,7 @@
   "USE_DIA2_DIALOGUE": false,
   "USE_BARK_SFX": false,
   "USE_AUDIO_QA_BLOCK": false,
-  "USE_SCENE_CARDS": false
+  "USE_SCENE_CARDS": false,
+  "USE_WRITERS_ROOM": false,
+  "USE_TIMELINE_MIXER": false
 }

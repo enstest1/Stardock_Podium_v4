@@ -1340,7 +1340,8 @@ Format each character as a detailed profile.
             if episode.get('project_id'):
                 # Projects never use the legacy keyword extractor / global
                 # Mem0; their continuity is the canon ledger (CANON-002).
-                self._extract_canon(episode, script)
+                if not getattr(self, 'defer_canon', False):
+                    self._extract_canon(episode, script)
                 try:
                     from story_os.roadmap import mark_episode
                     mark_episode(episode['project_id'], int(episode.get('season_number') or 1),
