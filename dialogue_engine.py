@@ -16,6 +16,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import time
 import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -246,18 +247,30 @@ class KokoroDialogueSynthesizer:
                         'from requirements.txt (kokoro, torch, soundfile).'
                     )
                 voice_id = _pick_voice_id(entry, character_key)
-                try:
-                    get_kokoro_engine().synth(
-                        text=text,
-                        speaker_wav=voice_id,
-                        language=lang,
-                        output_path=output_path,
-                    )
-                    return 'kokoro'
-                except Exception as e:
-                    last_err = e
-                    logger.error('Kokoro failed for %s: %s', character_key, e)
-                    raise SynthError(str(e)) from e
+                # First use of a voice downloads it from HuggingFace; retry
+                # transient network failures instead of dropping the line.
+                for attempt in range(1, 4):
+                    try:
+                        get_kokoro_engine().synth(
+                            text=text,
+                            speaker_wav=voice_id,
+                            language=lang,
+                            output_path=output_path,
+                        )
+                        return 'kokoro'
+                    except Exception as e:
+                        last_err = e
+                        msg = str(e)
+                        transient = any(k in msg for k in (
+                            'Connection', 'Timeout', 'timed out', '10054'))
+                        if transient and attempt < 3:
+                            logger.warning(
+                                'Kokoro network error for %s (attempt %s); '
+                                'retrying: %s', character_key, attempt, e)
+                            time.sleep(2 * attempt)
+                            continue
+                        logger.error('Kokoro failed for %s: %s', character_key, e)
+                        raise SynthError(msg) from e
 
         msg = f'All configured TTS engines failed for {character_key}'
         if last_err:
